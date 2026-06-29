@@ -451,6 +451,30 @@ impl FloatElement for f64 {
     fn recip(self) -> Self {
         1.0 / self
     }
+    #[inline]
+    fn floor(self) -> Self {
+        libm::floor(self)
+    }
+    #[inline]
+    fn ceil(self) -> Self {
+        libm::ceil(self)
+    }
+    #[inline]
+    fn round(self) -> Self {
+        libm::round(self)
+    }
+    #[inline]
+    fn trunc(self) -> Self {
+        libm::trunc(self)
+    }
+    #[inline]
+    fn signum(self) -> Self {
+        if self.is_nan() {
+            self
+        } else {
+            libm::copysign(1.0, self)
+        }
+    }
 }
 
 impl FloatElement for half::f16 {
