@@ -1,0 +1,17 @@
+[package]
+name = "eunomia-gpu"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Atlas GPU datatype vocabulary: device-buffer-friendly vector/element types over the eunomia scalar SSOT"
+
+[dependencies]
+eunomia = { workspace = true }
+bytemuck = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["eunomia/std"]

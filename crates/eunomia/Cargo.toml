@@ -1,0 +1,22 @@
+[package]
+name = "eunomia"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Atlas datatype law: the Single Source of Truth for numeric/scalar datatype vocabulary (scalars, complex, packed formats, conversions)"
+
+[dependencies]
+half = { workspace = true }
+bytemuck = { workspace = true }
+libm = { version = "0.2.8", default-features = false }
+rkyv = { workspace = true, optional = true }
+
+[features]
+default = ["std", "parallel", "mnemosyne-memory"]
+std = []
+parallel = []
+mnemosyne-memory = []
+rkyv = ["dep:rkyv"]

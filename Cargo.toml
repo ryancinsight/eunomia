@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["crates/eunomia", "crates/eunomia-gpu"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Ryan Clanton <ryanclanton@outlook.com>"]
+license = "MIT OR Apache-2.0"
+rust-version = "1.95"
+repository = "https://github.com/ryancinsight/eunomia"
+
+[workspace.dependencies]
+eunomia = { path = "crates/eunomia" }
+eunomia-gpu = { path = "crates/eunomia-gpu" }
+half = { version = "2.3", default-features = false }
+bytemuck = { version = "1.14", features = ["derive"] }
+libm = { version = "0.2.8", default-features = false }
+rkyv = { version = "0.7", default-features = false }
