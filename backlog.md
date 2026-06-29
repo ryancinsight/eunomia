@@ -68,15 +68,23 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
   - **Scalar field surface: DONE** — `RealField`/`ComplexField` (eunomia PR #7,
     `traits/field.rs` + `impls/field.rs`). Generic field code now runs over
     f32/f64 *and* `Complex<f32>/<f64>` without nalgebra.
-  - **Remaining (the large part):** gaia/CFDrs use nalgebra **matrix/vector/
-    geometry types** (Point3, Vector3, DMatrix, decompositions), not just the
-    scalar field — so their `Scalar` traits can't drop `nalgebra::RealField`
-    until those are replaced. Route per GPU utilization: dense/array + CPU
-    linalg → **leto** (`leto-ops` eigen/SVD/LU/QR/cholesky already exist), GPU
-    paths → **hephaestus**; swap each `Scalar: nalgebra::RealField` →
-    `eunomia::RealField` once its matrix usage is migrated. Per-repo [arch]
-    passes; ADR-gated. (leto/hephaestus keep nalgebra as a *dev*-oracle — out
-    of scope.)
+  - **Geometry library: in leto, NOT eunomia.** eunomia is datatypes (scalars/
+    complex + the RealField/ComplexField scalar field traits). The nalgebra
+    *geometry* (Vector/Point/Unit/Quaternion/Isometry + cross/norm/transforms)
+    is linear algebra → **leto** (CPU; `leto::geometry`) / **hephaestus** (GPU).
+    (An earlier mis-placement in eunomia-gpu was reverted, PR #9.)
+    - **Vector: DONE** — `leto::geometry::Vector<T,N>` (Vector2/Vector3) over
+      `eunomia::RealField`: dot/norm/norm_squared/normalize/distance/cross.
+      leto PR #7. Covers gaia's dot/norm/cross/normalize surface (~450 uses).
+    - Remaining geometry: `Point<T,N>` (affine), `Unit<T,N>`,
+      `Quaternion`/`UnitQuaternion` + `Isometry3` (rotation algebra —
+      correctness-critical, analytically tested).
+  - **gaia migration (E-018, the large part):** swap 57 files
+    `nalgebra::{Vector3,Point3,Isometry3,…}` → `leto::geometry::*`; `.cholesky()`
+    (×5) → `leto-ops`; then `Scalar: nalgebra::RealField` → `eunomia::RealField`;
+    drop nalgebra + num_traits from gaia; build + run gaia's full suite
+    (geometry correctness is the gate). Multi-session; each phase verified.
+    (leto/hephaestus keep nalgebra as a *dev*-oracle — out of scope.)
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
 
