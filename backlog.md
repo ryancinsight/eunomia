@@ -49,11 +49,25 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
   stft}) onto `eunomia::Complex<f32>`. Large — likely split per-crate.
 - **E-012 [arch]** **CFDrs** (8 files) + **ritk** (12 files): swap `num_complex`
   usages (mostly stability/spectral) to `eunomia::Complex`; add eunomia wiring.
-- **E-013 [minor]** Replace direct `num-traits` deps (CFDrs, ritk, gaia, leto)
-  with `eunomia::FloatElement` where the `Float` surface suffices (now covers
-  transcendentals); keep num-traits only where a richer trait is genuinely used.
+- **E-013 [minor]** Replace direct `num-traits` deps with `eunomia::FloatElement`/
+  `NumericElement`.
+  - **leto: DONE** — leto PR #6 (reduction/statistics off num_traits::Float/Zero/
+    One; num-traits dropped from leto + leto-ops; full suite green). Enabled by
+    the float-surface completion below.
+  - CFDrs, ritk, gaia: remaining (same pattern — `Float`→`FloatElement`,
+    `zero()`/`one()`→`ZERO`/`ONE`, `from(x).ok_or`→`from_f64`).
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
+
+## Capabilities + cleanup (done, this round)
+
+- **E-014 [patch]** Vertical-hierarchy/SRP cleanup: `eunomia-gpu` flat lib.rs →
+  `vector.rs`+`ops.rs` (ops via `core::array::from_fn`); `traits.rs` god-file →
+  `traits/{numeric,float,cast}.rs`. — eunomia PR #4.
+- **E-015 [patch]** Native f64 transcendentals for the `F64` wrapper (was
+  f32-routed → widen-narrow defect). — eunomia PR #5.
+- **E-016 [minor]** Completed `FloatElement` to num-traits `Float` parity:
+  floor/ceil/round/trunc/signum + exact `powi`. — eunomia PR #6.
 
 Note: leto/hephaestus retain `num-complex` as a **dev-dependency** (nalgebra
 differential oracle returns `num_complex::Complex`) — that is correct and out of
