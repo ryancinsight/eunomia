@@ -7,7 +7,7 @@
 //! decompositions) lives in leto (CPU) / hephaestus (GPU); eunomia owns only the
 //! scalar field vocabulary.
 
-use super::FloatElement;
+use super::{FloatElement, NumericElement};
 use core::ops::{Add, Div, Mul, Neg, Sub};
 
 /// An ordered real scalar field: the [`FloatElement`] math surface plus a total
@@ -29,6 +29,32 @@ pub trait RealField: FloatElement + PartialOrd + Neg<Output = Self> {
     const SQRT_2: Self;
     /// Machine epsilon (the difference between 1 and the next representable value).
     const EPSILON: Self;
+
+    /// Positive infinity.
+    #[inline]
+    fn infinity() -> Self {
+        <Self as NumericElement>::INFINITY
+    }
+    /// Negative infinity.
+    #[inline]
+    fn neg_infinity() -> Self {
+        -<Self as NumericElement>::INFINITY
+    }
+    /// Not-a-number.
+    #[inline]
+    fn nan() -> Self {
+        <Self as NumericElement>::NAN
+    }
+    /// The smallest finite value.
+    #[inline]
+    fn min_value() -> Self {
+        <Self as NumericElement>::MIN_VALUE
+    }
+    /// The largest finite value.
+    #[inline]
+    fn max_value() -> Self {
+        <Self as NumericElement>::MAX_VALUE
+    }
 
     /// A value with the magnitude of `self` and the sign of `sign`.
     fn copysign(self, sign: Self) -> Self;
