@@ -6,7 +6,7 @@
 //! values round-trip through GPU device buffers and FFI boundaries identically
 //! to `num_complex::Complex`.
 
-use core::ops::{Add, Div, Mul, Neg, Sub};
+use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 /// A complex number `re + im·i`.
 ///
@@ -87,6 +87,34 @@ impl<T: Neg<Output = T>> Neg for Complex<T> {
             re: -self.re,
             im: -self.im,
         }
+    }
+}
+
+/// Component-wise remainder.
+///
+/// Complex numbers have no canonical `%`; this applies `Rem` field-wise. It
+/// exists so `Complex<T>` can satisfy generic scalar-element trait bounds that
+/// require `Rem` (e.g. a numeric `Scalar` supertrait) where the operation is
+/// never semantically exercised on complex values.
+impl<T: Rem<Output = T>> Rem for Complex<T> {
+    type Output = Self;
+    #[inline(always)]
+    fn rem(self, other: Self) -> Self {
+        Self {
+            re: self.re % other.re,
+            im: self.im % other.im,
+        }
+    }
+}
+
+/// Complex numbers admit no total order. `partial_cmp` therefore always returns
+/// `None`; the impl exists only so `Complex<T>` can satisfy a `PartialOrd`
+/// trait bound required of generic scalar elements — it never claims an
+/// ordering. Equality is the derived `PartialEq`.
+impl<T: PartialEq> PartialOrd for Complex<T> {
+    #[inline(always)]
+    fn partial_cmp(&self, _other: &Self) -> Option<core::cmp::Ordering> {
+        None
     }
 }
 
