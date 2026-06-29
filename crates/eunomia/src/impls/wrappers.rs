@@ -413,6 +413,30 @@ impl FloatElement for F64 {
     fn recip(self) -> Self {
         F64(1.0 / self.0)
     }
+    #[inline]
+    fn floor(self) -> Self {
+        F64(libm::floor(self.0))
+    }
+    #[inline]
+    fn ceil(self) -> Self {
+        F64(libm::ceil(self.0))
+    }
+    #[inline]
+    fn round(self) -> Self {
+        F64(libm::round(self.0))
+    }
+    #[inline]
+    fn trunc(self) -> Self {
+        F64(libm::trunc(self.0))
+    }
+    #[inline]
+    fn signum(self) -> Self {
+        if self.0.is_nan() {
+            self
+        } else {
+            F64(libm::copysign(1.0, self.0))
+        }
+    }
 }
 impl_float_element!(
     Bf16,
@@ -450,5 +474,25 @@ mod tests {
         assert!((F64(0.1).ln().0 - 0.1_f64.ln()).abs() < 1e-15);
         assert!((F64(0.7).sin().0 - 0.7_f64.sin()).abs() < 1e-15);
         assert!((F64(2.0).powf(F64(10.0)).0 - 1024.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn rounding_and_powi_surface() {
+        // UFCS calls the FloatElement impl explicitly (concrete f64 would
+        // otherwise resolve to std's inherent methods, not eunomia's).
+        assert_eq!(FloatElement::floor(2.7_f64), 2.0);
+        assert_eq!(FloatElement::ceil(2.2_f64), 3.0);
+        assert_eq!(FloatElement::round(2.5_f64), 3.0);
+        assert_eq!(FloatElement::trunc(-2.7_f64), -2.0);
+        // signum: ±1 with the sign (num_traits / std semantics), NaN→NaN.
+        assert_eq!(FloatElement::signum(-3.5_f64), -1.0);
+        assert_eq!(FloatElement::signum(0.0_f64), 1.0);
+        // powi: exact integer power, correct for negative base + exponent.
+        assert_eq!(FloatElement::powi(2.0_f64, 10), 1024.0);
+        assert_eq!(FloatElement::powi(-2.0_f64, 3), -8.0);
+        assert!((FloatElement::powi(2.0_f64, -2) - 0.25).abs() < 1e-15);
+        // F64 wrapper (native impl).
+        assert_eq!(FloatElement::floor(F64(2.7)).0, 2.0);
+        assert_eq!(FloatElement::powi(F64(2.0), 10).0, 1024.0);
     }
 }

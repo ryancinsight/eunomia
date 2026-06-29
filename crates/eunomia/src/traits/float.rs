@@ -74,4 +74,61 @@ pub trait FloatElement: private::Sealed + NumericElement {
     fn recip(self) -> Self {
         Self::from_f32(1.0 / self.to_f32())
     }
+
+    // ── Rounding / sign ──
+
+    /// Largest integer `≤ self`.
+    #[inline]
+    fn floor(self) -> Self {
+        Self::from_f32(libm::floorf(self.to_f32()))
+    }
+    /// Smallest integer `≥ self`.
+    #[inline]
+    fn ceil(self) -> Self {
+        Self::from_f32(libm::ceilf(self.to_f32()))
+    }
+    /// Nearest integer, half away from zero.
+    #[inline]
+    fn round(self) -> Self {
+        Self::from_f32(libm::roundf(self.to_f32()))
+    }
+    /// Integer part (toward zero).
+    #[inline]
+    fn trunc(self) -> Self {
+        Self::from_f32(libm::truncf(self.to_f32()))
+    }
+    /// Sign of `self`: `1` for positive/`+0`, `-1` for negative/`-0`, NaN for
+    /// NaN (matching `f64::signum` / `num_traits::Float::signum`).
+    #[inline]
+    fn signum(self) -> Self {
+        let x = self.to_f32();
+        if x.is_nan() {
+            Self::from_f32(x)
+        } else {
+            Self::from_f32(libm::copysignf(1.0, x))
+        }
+    }
+
+    /// `self` raised to an integer power via exponentiation by squaring.
+    ///
+    /// Exact for integer exponents and correct for negative bases (unlike
+    /// [`powf`](Self::powf)). A default over the [`NumericElement`] arithmetic —
+    /// no per-type implementation needed, so no precision is lost.
+    #[inline]
+    fn powi(self, mut n: i32) -> Self {
+        let mut base = self;
+        if n < 0 {
+            base = <Self as NumericElement>::ONE / base;
+            n = -n;
+        }
+        let mut acc = <Self as NumericElement>::ONE;
+        while n > 0 {
+            if n & 1 == 1 {
+                acc *= base;
+            }
+            base *= base;
+            n >>= 1;
+        }
+        acc
+    }
 }
