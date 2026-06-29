@@ -406,6 +406,51 @@ impl FloatElement for f64 {
     fn to_f32(self) -> f32 {
         self as f32
     }
+    // Native double-precision transcendentals (override the f32-routed defaults).
+    #[inline]
+    fn exp(self) -> Self {
+        libm::exp(self)
+    }
+    #[inline]
+    fn ln(self) -> Self {
+        libm::log(self)
+    }
+    #[inline]
+    fn sin(self) -> Self {
+        libm::sin(self)
+    }
+    #[inline]
+    fn cos(self) -> Self {
+        libm::cos(self)
+    }
+    #[inline]
+    fn tan(self) -> Self {
+        libm::tan(self)
+    }
+    #[inline]
+    fn sinh(self) -> Self {
+        libm::sinh(self)
+    }
+    #[inline]
+    fn cosh(self) -> Self {
+        libm::cosh(self)
+    }
+    #[inline]
+    fn tanh(self) -> Self {
+        libm::tanh(self)
+    }
+    #[inline]
+    fn atan2(self, other: Self) -> Self {
+        libm::atan2(self, other)
+    }
+    #[inline]
+    fn powf(self, n: Self) -> Self {
+        libm::pow(self, n)
+    }
+    #[inline]
+    fn recip(self) -> Self {
+        1.0 / self
+    }
 }
 
 impl FloatElement for half::f16 {
