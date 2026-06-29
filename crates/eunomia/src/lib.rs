@@ -14,7 +14,7 @@ mod traits;
 mod types;
 
 // Re-export core traits
-pub use traits::{CastFrom, CastTo, FloatElement, NumericElement};
+pub use traits::{CastFrom, CastTo, ComplexField, FloatElement, NumericElement, RealField};
 
 // Re-export wrapper types
 pub use types::{Bf16, Bf4, Bf8, Complex, F16, F32, F4, F64, F8, I16, I32, I8};

@@ -9,9 +9,11 @@ pub(crate) mod private {
 }
 
 mod cast;
+mod field;
 mod float;
 mod numeric;
 
 pub use cast::{CastFrom, CastTo};
+pub use field::{ComplexField, RealField};
 pub use float::FloatElement;
 pub use numeric::NumericElement;
