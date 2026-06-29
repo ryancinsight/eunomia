@@ -55,8 +55,18 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
     One; num-traits dropped from leto + leto-ops; full suite green). Enabled by
     the float-surface completion below.
   - **ritk: DONE** — ritk PR #28 (gaussian_kernel → FloatElement; num-traits dropped from ritk-tensor-ops).
-  - CFDrs, gaia: remaining (same pattern — `Float`→`FloatElement`,
-    `zero()`/`one()`→`ZERO`/`ONE`, `from(x).ok_or`→`from_f64`).
+  - **CFDrs, gaia: NOT a clean swap** — their central `Scalar` traits bound
+    `num_traits::Float` *alongside* `nalgebra::RealField` (gaia
+    `src/domain/core/scalar.rs`: `Scalar: RealField + Float + ToPrimitive`),
+    so the domain math leans on RealField. Dropping num_traits there is
+    entangled with the larger **nalgebra → eunomia** migration, which first
+    needs a eunomia `RealField`-equivalent (ordered/field/real surface beyond
+    `FloatElement`). Promote as its own [arch] item — see E-017.
+
+- **E-017 [arch]** nalgebra → eunomia: design the field/real-scalar surface
+  (`RealField`/`ComplexField` equivalent) so nalgebra-coupled crates (gaia,
+  CFDrs, and the leto/hephaestus nalgebra *dev*-oracle is separate) can drop
+  nalgebra. Large; gates the gaia/CFDrs num-traits removal too. Needs an ADR.
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
 
