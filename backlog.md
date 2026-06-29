@@ -73,18 +73,25 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
     *geometry* (Vector/Point/Unit/Quaternion/Isometry + cross/norm/transforms)
     is linear algebra → **leto** (CPU; `leto::geometry`) / **hephaestus** (GPU).
     (An earlier mis-placement in eunomia-gpu was reverted, PR #9.)
-    - **Vector: DONE** — `leto::geometry::Vector<T,N>` (Vector2/Vector3) over
-      `eunomia::RealField`: dot/norm/norm_squared/normalize/distance/cross.
-      leto PR #7. Covers gaia's dot/norm/cross/normalize surface (~450 uses).
-    - Remaining geometry: `Point<T,N>` (affine), `Unit<T,N>`,
-      `Quaternion`/`UnitQuaternion` + `Isometry3` (rotation algebra —
-      correctness-critical, analytically tested).
-  - **gaia migration (E-018, the large part):** swap 57 files
-    `nalgebra::{Vector3,Point3,Isometry3,…}` → `leto::geometry::*`; `.cholesky()`
-    (×5) → `leto-ops`; then `Scalar: nalgebra::RealField` → `eunomia::RealField`;
-    drop nalgebra + num_traits from gaia; build + run gaia's full suite
-    (geometry correctness is the gate). Multi-session; each phase verified.
-    (leto/hephaestus keep nalgebra as a *dev*-oracle — out of scope.)
+    **Phase 1 — geometry library: COMPLETE** (in `leto::geometry`, 6 leto PRs):
+    - Vector<T,N> (PR #7): dot/norm/norm_squared/normalize/distance/cross.
+    - Point<T,N> (affine) + Unit<T,N> (PR #2 in leto-geometry series).
+    - Quaternion/UnitQuaternion (Hamilton product, from_axis_angle,
+      transform_vector q·v·q⁻¹) + Translation3/Isometry3 (from_parts,
+      transform_point/vector, inverse). Rotations analytically tested.
+    - Axis constructors (x/y/z_axis → Unit), Point From, optional `serde`
+      (manual tuple impl for const-generic Vector). leto main `a81476d`.
+    Covers gaia's entire geometry surface; 9 tests, clippy clean.
+  - **Phase 2 — gaia swap (the large mechanical part, remaining):** atomic —
+    gaia must build before any merge, so it's one focused pass, not partial:
+    enable leto's `serde` feature in gaia; `Scalar: nalgebra::RealField + Float`
+    → `eunomia::RealField`; swap `nalgebra::{Vector3,Point3,Vector2,Point2,
+    Isometry3,Unit,UnitQuaternion,Translation3}` → `leto::geometry::*` across 57
+    files; map `nalgebra::distance_squared(a,b)` → `a.distance_squared(b)` (×6),
+    drop `&` on `from_axis_angle(&axis,…)`; `.cholesky()` (×5) → `leto-ops`;
+    drop nalgebra + num_traits; build + run gaia's full suite (geometry
+    correctness is the gate). (leto/hephaestus keep nalgebra as a *dev*-oracle —
+    out of scope.)
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
 
