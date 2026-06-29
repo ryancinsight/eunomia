@@ -54,7 +54,8 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
   - **leto: DONE** — leto PR #6 (reduction/statistics off num_traits::Float/Zero/
     One; num-traits dropped from leto + leto-ops; full suite green). Enabled by
     the float-surface completion below.
-  - CFDrs, ritk, gaia: remaining (same pattern — `Float`→`FloatElement`,
+  - **ritk: DONE** — ritk PR #28 (gaussian_kernel → FloatElement; num-traits dropped from ritk-tensor-ops).
+  - CFDrs, gaia: remaining (same pattern — `Float`→`FloatElement`,
     `zero()`/`one()`→`ZERO`/`ONE`, `from(x).ok_or`→`from_f64`).
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
