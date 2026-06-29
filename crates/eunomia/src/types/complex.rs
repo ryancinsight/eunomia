@@ -16,6 +16,7 @@ use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
 /// defined field-wise (`Add`/`Sub`/`Neg`) and by the complex product/quotient
 /// (`Mul`/`Div`), generic over the component scalar `T`.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(C)]
 pub struct Complex<T> {
     /// Real part.
