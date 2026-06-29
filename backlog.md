@@ -63,10 +63,20 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
     needs a eunomia `RealField`-equivalent (ordered/field/real surface beyond
     `FloatElement`). Promote as its own [arch] item — see E-017.
 
-- **E-017 [arch]** nalgebra → eunomia: design the field/real-scalar surface
-  (`RealField`/`ComplexField` equivalent) so nalgebra-coupled crates (gaia,
-  CFDrs, and the leto/hephaestus nalgebra *dev*-oracle is separate) can drop
-  nalgebra. Large; gates the gaia/CFDrs num-traits removal too. Needs an ADR.
+- **E-017 [arch]** nalgebra → eunomia (+ leto/hephaestus for the actual linear
+  algebra).
+  - **Scalar field surface: DONE** — `RealField`/`ComplexField` (eunomia PR #7,
+    `traits/field.rs` + `impls/field.rs`). Generic field code now runs over
+    f32/f64 *and* `Complex<f32>/<f64>` without nalgebra.
+  - **Remaining (the large part):** gaia/CFDrs use nalgebra **matrix/vector/
+    geometry types** (Point3, Vector3, DMatrix, decompositions), not just the
+    scalar field — so their `Scalar` traits can't drop `nalgebra::RealField`
+    until those are replaced. Route per GPU utilization: dense/array + CPU
+    linalg → **leto** (`leto-ops` eigen/SVD/LU/QR/cholesky already exist), GPU
+    paths → **hephaestus**; swap each `Scalar: nalgebra::RealField` →
+    `eunomia::RealField` once its matrix usage is migrated. Per-repo [arch]
+    passes; ADR-gated. (leto/hephaestus keep nalgebra as a *dev*-oracle — out
+    of scope.)
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
 
