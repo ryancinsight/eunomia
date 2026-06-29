@@ -82,8 +82,24 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
     - Axis constructors (x/y/z_axis → Unit), Point From, optional `serde`
       (manual tuple impl for const-generic Vector). leto main `a81476d`.
     Covers gaia's entire geometry surface; 9 tests, clippy clean.
-  - **Phase 2 — gaia swap (the large mechanical part, remaining):** atomic —
-    gaia must build before any merge, so it's one focused pass, not partial:
+  - **Phase 1.5 — geometry library nalgebra-API completion: DONE.** scalar
+    constructors (`Vector3::new(x,y,z)`), `.x/.y/.z` field access (repr(C)
+    swizzle Deref, gaia uses ~1667×), serde, full operator set (Div + assign
+    ops), and `eunomia::RealField::{infinity,neg_infinity,nan,min/max_value}`.
+    leto main `5fa1a0a`+, eunomia main `7e4e64e`. The library is now a faithful
+    nalgebra geometry replacement.
+  - **Phase 2 — gaia swap: bulk applied, 462 build errors remain (WIP, local,
+    NOT pushed/merged).** Reduced 519→462 via the library components above.
+    The residue is a **per-site tail**, NOT library-fixable:
+    - E0369 ×113: mostly `scalar * vector` — leto **cannot** impl this (orphan
+      rule: `Mul<Vector> for f64`), so each site flips to `vector * scalar`.
+    - E0308 ×135: type mismatches from nalgebra↔leto API shape differences.
+    - E0599 ×120: `.unwrap()`/`.unwrap_or_default()` on methods that are now
+      infallible (try_normalize/to_usize) — remove per site.
+    - E0433 ×45 (unresolved paths), E0277 ×41 (bounds).
+    Requires a **dedicated focused pass** of careful per-file manual review
+    across 57 files of geometry code (correctness-critical) — not batch-fixable
+    and not responsibly rushable. Original atomic steps:
     enable leto's `serde` feature in gaia; `Scalar: nalgebra::RealField + Float`
     → `eunomia::RealField`; swap `nalgebra::{Vector3,Point3,Vector2,Point2,
     Isometry3,Unit,UnitQuaternion,Translation3}` → `leto::geometry::*` across 57
