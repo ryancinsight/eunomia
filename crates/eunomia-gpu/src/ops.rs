@@ -60,9 +60,60 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy, const N: usize> Vector<T, N> {
     }
 }
 
+/// Euclidean geometry over a real scalar field.
+impl<T: eunomia::RealField, const N: usize> Vector<T, N> {
+    /// Squared Euclidean norm `Σ aᵢ²`.
+    #[inline]
+    pub fn norm_squared(self) -> T {
+        self.dot(self)
+    }
+
+    /// Euclidean norm (length) `√(Σ aᵢ²)`.
+    #[inline]
+    pub fn norm(self) -> T {
+        self.norm_squared().sqrt()
+    }
+
+    /// Unit vector in the same direction, `self / ‖self‖`.
+    ///
+    /// Matches `nalgebra`'s `normalize`: division by a zero norm yields a
+    /// non-finite result rather than panicking; callers that may pass a zero
+    /// vector should guard the norm themselves.
+    #[inline]
+    pub fn normalize(self) -> Self {
+        self * self.norm().recip()
+    }
+}
+
+/// 3-vector cross product.
+impl<T: eunomia::RealField> Vector<T, 3> {
+    /// Cross product `self × rhs`.
+    #[inline]
+    pub fn cross(self, rhs: Self) -> Self {
+        let [ax, ay, az] = self.data;
+        let [bx, by, bz] = rhs.data;
+        Self {
+            data: [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx],
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{Vec2, Vec4};
+    use crate::{Vec2, Vec4, Vector};
+
+    #[test]
+    fn geometry_norm_normalize_cross() {
+        let x = Vector::<f64, 3>::new([1.0, 0.0, 0.0]);
+        let y = Vector::<f64, 3>::new([0.0, 1.0, 0.0]);
+        // right-handed: x × y = z
+        assert_eq!(x.cross(y).data, [0.0, 0.0, 1.0]);
+        assert_eq!(x.dot(y), 0.0);
+        let v = Vector::<f64, 3>::new([3.0, 4.0, 0.0]);
+        assert_eq!(v.norm_squared(), 25.0);
+        assert_eq!(v.norm(), 5.0);
+        assert!((v.normalize().norm() - 1.0).abs() < 1e-12);
+    }
 
     #[test]
     fn arithmetic_and_dot() {
