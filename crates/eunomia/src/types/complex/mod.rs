@@ -9,6 +9,7 @@
 //!
 //! Operators live in [`ops`]; the floating-point surface in [`float`].
 
+mod consts;
 mod float;
 mod ops;
 
