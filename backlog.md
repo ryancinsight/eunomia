@@ -72,6 +72,37 @@ mechanical — no eunomia round-trips needed mid-migration):
     same lever leto's operators provided for gaia.
   - `Complex` is `#[repr(C)]`/Pod, layout-identical to `num_complex::Complex`, so
     device buffers and FFI round-trip identically.
+  - Full num_complex **operator** surface now on eunomia::Complex (added across
+    this session): `Complex32`/`Complex64` aliases (`8da90f8`); reference ops
+    (`4f07783`); scalar `Complex*T`/`/T` + complex compound-assign (`cb5ff34`);
+    `ZERO`/`ONE` consts (`eb19b03`); `Sum`/`Product` (`da9d2c3`); scalar
+    `Complex±T` + scalar compound-assign `*= s`/`/= s`/`+= s`/`-= s` (`762e58f`).
+
+**apollo-fft LIB migration: DONE (local WIP, branch `refactor/apollo-fft-eunomia`,
+apollo `3b00eb0` — NOT merged).** The apollo-fft *library* compiles on
+eunomia::Complex (0 lib errors); 122 files. What it took (the reusable playbook
+for the remaining ~19 apollo crates):
+  - `num_complex::Complex` → `eunomia::Complex` in apollo-fft src **and**
+    `apollo-fft-macros` quote!{} templates (the macros emit Complex code — they
+    must migrate too; their compile-time `ComplexF64` is a *local* type, leave it).
+  - num_traits scalar bounds: `num_traits::Float` → `eunomia::RealField` (NOT
+    `FloatElement` — `RealField` carries `Neg`/ordering); `num_traits::NumAssign`
+    → `core::ops::{Add,Sub,Mul,Div}Assign`; drop the `type Complex: num_traits::Zero`
+    bound (apollo's `complex(0,0)` is the zero).
+  - `F::zero()`/`F::one()` (scalar) → `<F as eunomia::NumericElement>::ZERO`/`ONE`;
+    BUT a self-contained numeric trait with its own `zero()` (e.g. `KernelScalar`,
+    impl'd for real **and** Complex) keeps `T::zero()` — do not force NumericElement
+    on it (Complex isn't NumericElement).
+  - wire eunomia into the workspace (`[patch]` + git dep); mnemosyne feature
+    `num-complex` → `eunomia`; drop num-complex/num-traits from the crate Cargo.toml.
+- **BLOCKER for the rest of apollo — ndarray → leto.** apollo-fft *tests* (88
+  errors) and likely sibling crates use `ndarray::Array::zeros()`, which requires
+  the element `A: num_traits::Zero`. eunomia::Complex cannot impl num_traits::Zero
+  (orphan rule; eunomia avoids the num_traits dep). So the full apollo migration
+  requires replacing **ndarray with leto** for complex-element arrays — the leto
+  integration in scope for this campaign, a large additional layer. Until then
+  apollo cannot fully drop num-complex/num-traits, and apollo-fft cannot merge
+  (the ~19 consumer crates + tests keep the workspace red).
 
 - **E-011 [arch]** **apollo FIRST (critical-path upstream).** ~250 num_complex
   files across ~20 crates (apollo-{fft,czt,dctdst,dht,frft,fwht,gft,hilbert,mellin,
