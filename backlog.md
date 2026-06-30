@@ -88,26 +88,27 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
     ops), and `eunomia::RealField::{infinity,neg_infinity,nan,min/max_value}`.
     leto main `5fa1a0a`+, eunomia main `7e4e64e`. The library is now a faithful
     nalgebra geometry replacement.
-  - **Phase 2 — gaia swap: bulk applied, 462 build errors remain (WIP, local,
-    NOT pushed/merged).** Reduced 519→462 via the library components above.
-    The residue is a **per-site tail**, NOT library-fixable:
-    - E0369 ×113: mostly `scalar * vector` — leto **cannot** impl this (orphan
-      rule: `Mul<Vector> for f64`), so each site flips to `vector * scalar`.
-    - E0308 ×135: type mismatches from nalgebra↔leto API shape differences.
-    - E0599 ×120: `.unwrap()`/`.unwrap_or_default()` on methods that are now
-      infallible (try_normalize/to_usize) — remove per site.
-    - E0433 ×45 (unresolved paths), E0277 ×41 (bounds).
-    Requires a **dedicated focused pass** of careful per-file manual review
-    across 57 files of geometry code (correctness-critical) — not batch-fixable
-    and not responsibly rushable. Original atomic steps:
-    enable leto's `serde` feature in gaia; `Scalar: nalgebra::RealField + Float`
-    → `eunomia::RealField`; swap `nalgebra::{Vector3,Point3,Vector2,Point2,
-    Isometry3,Unit,UnitQuaternion,Translation3}` → `leto::geometry::*` across 57
-    files; map `nalgebra::distance_squared(a,b)` → `a.distance_squared(b)` (×6),
-    drop `&` on `from_axis_angle(&axis,…)`; `.cholesky()` (×5) → `leto-ops`;
-    drop nalgebra + num_traits; build + run gaia's full suite (geometry
-    correctness is the gate). (leto/hephaestus keep nalgebra as a *dev*-oracle —
-    out of scope.)
+  - **Phase 2 — gaia swap: DONE.** gaia PR #5 (`refactor/migrate-to-leto-
+    geometry`, gaia main `dfcf3a4`). 462 build errors → 0; **922 tests pass**,
+    clippy clean; `nalgebra` + `num-traits` dropped from gaia Cargo.toml
+    (incl. dev-deps). The per-site tail was resolved by category:
+    - `Scalar: nalgebra::RealField + Float + ToPrimitive` → `eunomia::RealField`.
+    - `nalgebra::{Vector,Point,Unit,UnitQuaternion,Isometry3,Translation3}` →
+      `leto::geometry::*`.
+    - `Float::min/max/clamp/abs/sqrt/sin/atan2(...)` free-fns → method calls
+      (`min_scalar`/`max_scalar`/native).
+    - `scalar * vector` → `vector * scalar` (orphan rule); `&v`/`&unit` args
+      dropped or derefed for leto's by-value `Copy` ops (incl. `.dot`/`.cross`,
+      `from_axis_angle`); `to_f64(&x).unwrap()` → `to_f64(x)` (eunomia
+      conversions are infallible, take `self` by value).
+    - **Root unifier:** added `[patch]` redirecting leto's git-eunomia to the
+      local path so gaia saw **one** eunomia instance — this alone cleared the
+      ~44 "`norm`/`dot`/`cross` exists but `T: RealField` not satisfied" errors.
+    - Enabled by 4 leto additions this pass (leto `f2e3d5f`..`1b07ff0`):
+      nalgebra-compat reference + transform operators (`&p-&q`, `rotation*v`,
+      `iso*p`), `Vector3::{x,y,z}()` basis ctors, `Point += / -= Vector` +
+      `Point: Default` (origin).
+    (leto/hephaestus keep nalgebra as a *dev*-oracle — out of scope.)
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
 
