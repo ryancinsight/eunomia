@@ -61,19 +61,30 @@ num_complex type at the boundary. eunomia::Complex IS layout-identical
 *could* unblock ritk while keeping num-complex as a thin dep — but that does NOT
 remove the dependency, so it is rejected. apollo must migrate its public API first.
 
+**eunomia-side prerequisites for apollo: COMPLETE** (the swap is now purely
+mechanical — no eunomia round-trips needed mid-migration):
+  - Complex method surface verified against apollo-fft's usage
+    (`new`/`sin`/`cos`/`norm`/`sqrt`/`tanh`/`exp`/`ln`/`conj`/`arg`/… all present);
+    the one gap, `powi`, was added (eunomia `4538864`, exact exponentiation-by-
+    squaring).
+  - Reference operators (`&a·&b`, `a·&b`, `&a·b` for Add/Sub/Mul/Div) added
+    (eunomia `4f07783`) so apollo's bulk `&a*&b` sites compile unchanged — the
+    same lever leto's operators provided for gaia.
+  - `Complex` is `#[repr(C)]`/Pod, layout-identical to `num_complex::Complex`, so
+    device buffers and FFI round-trip identically.
+
 - **E-011 [arch]** **apollo FIRST (critical-path upstream).** ~250 num_complex
   files across ~20 crates (apollo-{fft,czt,dctdst,dht,frft,fwht,gft,hilbert,mellin,
   ntt,nufft,qft,radon,sdft,sft,sht,stft,…}). apollo-fft *alone* is 121 num_complex
-  files (larger than the whole gaia migration). Per-crate sub-items; apollo-fft is
-  the first (it is what ritk needs). Each crate: add eunomia dep+patch; swap
-  `num_complex::Complex` → `eunomia::Complex` (layout-identical, mechanical bulk);
-  fix `&a * &b` ref-ops → by-value `Copy` (eunomia::Complex has no ref operator
-  impls — same orphan situation as leto Vector; candidate: add ref `Mul`/`Add` to
-  eunomia::Complex to make these bulk-mechanical); `num-complex` `bytemuck` feature
-  → native Pod, `serde` → E-009; `mnemosyne` `features=["num-complex"]` →
-  `["eunomia"]`; consolidate the GPU `ComplexPod {re,im}` structs onto
-  `eunomia::Complex<f32>`. **FFT-numerics correctness is the gate** (differential
-  vs reference transforms) — not rushable.
+  files (larger than the whole gaia migration), and is consumed by ~19 sibling
+  crates, so its public `Complex` API change ripples across the whole workspace —
+  migrate **bottom-up, apollo-fft first** (it is what ritk needs). Each crate: add
+  eunomia dep+patch; swap `num_complex::Complex` → `eunomia::Complex` (layout-
+  identical, mechanical bulk — ref-ops + `powi` now exist, see prereqs above);
+  `num-complex` `bytemuck` feature → native Pod, `serde` → E-009; `mnemosyne`
+  `features=["num-complex"]` → `["eunomia"]`; consolidate the GPU `ComplexPod
+  {re,im}` structs onto `eunomia::Complex<f32>`. **FFT-numerics correctness is the
+  gate** (differential vs reference transforms) — not rushable.
 - **E-012 [arch]** **ritk** — UNBLOCKED ONLY AFTER apollo-fft (E-011). Then a clean
   ~10-file swap of ritk-filter (`num_complex::Complex` → `eunomia::Complex`,
   drop the `num-complex` bytemuck dep). Trial run done + reverted; resume post-apollo.
