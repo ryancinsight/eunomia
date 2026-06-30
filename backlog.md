@@ -109,11 +109,13 @@ for the remaining ~19 apollo crates):
     `.sum`/`.mapv`/`.fold` (23 each), `.assign` (12), `.iter_mut` (8), `.row` (5).
     Name-maps (apollo-side rewrites, no redundant leto aliases): `.len()`→
     `.size()`, `.dim()`→`.shape()`, `.to_owned()`→`.to_contiguous()` (already on
-    `ArrayView`), `.sum()`→`leto::reduction`. Genuine leto gaps: **`mapv`+`fold`
-    (leto `c22a916`), `mapv_inplace`+`assign` (leto `f996308`) — DONE**; still
-    needed — `iter_mut` (general mutable *strided* element iterator; `mapv_inplace`
-    already covers in-place element transforms via the contiguous-fast/strided-
-    fallback walk), `row`/`column` (map to `index_axis`/slicing).
+    `ArrayView`/`Array`), `.sum()`→`leto::reduction`, `.iter_mut()`→
+    `.as_slice_mut().unwrap().iter_mut()` (contiguous; apollo's FFT buffers are).
+    Genuine leto gaps — **SUBSTANTIALLY DONE**: `mapv`+`fold` (`c22a916`),
+    `mapv_inplace`+`assign` (`f996308`), `as_slice`+`as_slice_mut` (`e760726`).
+    The leto array surface now covers apollo's ndarray usage. Only `row`/`column`
+    (→ `index_axis`/`lanes`) and a general *strided* mutable iterator remain, both
+    minor / already worked around (`as_slice_mut` for contiguous in-place iter).
   - Construction-shape note: leto constructors take `[usize; N]` not ndarray's
     tuple/usize, e.g. `Array2::zeros((r, c))` → `Array2::zeros([r, c])`.
   - Sequencing: grow leto's array API to parity (clean mergeable enablers, like
