@@ -95,14 +95,28 @@ for the remaining ~19 apollo crates):
     on it (Complex isn't NumericElement).
   - wire eunomia into the workspace (`[patch]` + git dep); mnemosyne feature
     `num-complex` → `eunomia`; drop num-complex/num-traits from the crate Cargo.toml.
-- **BLOCKER for the rest of apollo — ndarray → leto.** apollo-fft *tests* (88
-  errors) and likely sibling crates use `ndarray::Array::zeros()`, which requires
-  the element `A: num_traits::Zero`. eunomia::Complex cannot impl num_traits::Zero
-  (orphan rule; eunomia avoids the num_traits dep). So the full apollo migration
-  requires replacing **ndarray with leto** for complex-element arrays — the leto
-  integration in scope for this campaign, a large additional layer. Until then
-  apollo cannot fully drop num-complex/num-traits, and apollo-fft cannot merge
-  (the ~19 consumer crates + tests keep the workspace red).
+- **apollo → leto arrays (ndarray → leto).** apollo uses ndarray pervasively
+  (~166 files / 17 of 20 crates: `Array1/2/3::<Complex>::zeros()` etc.), so the
+  full migration replaces **ndarray with leto** — the leto integration in scope.
+  - **No `num_traits::Zero` blocker after all.** ndarray's `zeros()` needs
+    `A: num_traits::Zero` (which eunomia::Complex can't impl, orphan rule), but
+    **leto's `Array::zeros` requires only `T: Default + Clone`** and
+    eunomia::Complex *derives* `Default` (→ `0 + 0i`). So `leto::Array1::
+    <Complex>::zeros([n])` just works — the ndarray boundary dissolves once apollo
+    is on leto arrays; no eunomia num_traits bridge needed.
+  - **Real cost = leto array-API parity** for the ndarray methods apollo uses:
+    `.iter` (480), `.len` (132), `.to_owned` (64), `.dim` (52), `.view` (37),
+    `.sum`/`.mapv`/`.fold` (23 each), `.assign` (12), `.iter_mut` (8), `.row` (5).
+    Name-maps: `.len()`→`.size()`, `.dim()`→`.shape()`; `.sum()` exists in
+    `leto::reduction`. Genuine leto gaps being filled: **`mapv` + `fold` added**
+    (leto `c22a916`); still needed — `mapv_inplace`/`iter_mut` (need a mutable
+    *strided* element iterator), `to_owned` on views, `assign`, `row`/`column`.
+  - Construction-shape note: leto constructors take `[usize; N]` not ndarray's
+    tuple/usize, e.g. `Array2::zeros((r, c))` → `Array2::zeros([r, c])`.
+  - Sequencing: grow leto's array API to parity (clean mergeable enablers, like
+    `mapv`/`fold`) → then the per-file ndarray→leto swap across apollo. Until the
+    whole workspace is on leto + eunomia, apollo-fft can't merge (the ~19 consumer
+    crates + tests keep it red).
 
 - **E-011 [arch]** **apollo FIRST (critical-path upstream).** ~250 num_complex
   files across ~20 crates (apollo-{fft,czt,dctdst,dht,frft,fwht,gft,hilbert,mellin,
