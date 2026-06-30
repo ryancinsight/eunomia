@@ -129,6 +129,40 @@ impl<T: FloatElement + Neg<Output = T>> Complex<T> {
         }
     }
 
+    /// `self` raised to an integer power by **exact** exponentiation-by-squaring.
+    ///
+    /// Uses only complex multiplication (and one reciprocal for negative `n`),
+    /// so — unlike [`powf`](Self::powf) — it incurs no `ln`/`exp`/trig round-trip
+    /// and is exact up to the floating-point error of the multiplies. `powi(0)`
+    /// is `1 + 0i`.
+    #[inline]
+    pub fn powi(self, n: i32) -> Self {
+        let one = Self {
+            re: <T as NumericElement>::ONE,
+            im: <T as NumericElement>::ZERO,
+        };
+        if n == 0 {
+            return one;
+        }
+        let mut exp = n.unsigned_abs();
+        let mut base = self;
+        let mut acc = one;
+        while exp > 0 {
+            if exp & 1 == 1 {
+                acc = acc * base;
+            }
+            exp >>= 1;
+            if exp > 0 {
+                base = base * base;
+            }
+        }
+        if n < 0 {
+            one / acc
+        } else {
+            acc
+        }
+    }
+
     /// Complex sine.
     #[inline]
     pub fn sin(self) -> Self {
@@ -184,6 +218,28 @@ mod tests {
         let q = a / b;
         assert!((q.re - 0.1).abs() < 1e-12 && (q.im - 0.7).abs() < 1e-12);
         assert_eq!(-a, Complex::new(-1.0, -2.0));
+    }
+
+    #[test]
+    fn powi_is_exact_repeated_multiplication() {
+        let z = Complex::new(1.0_f64, 1.0);
+        // (1+i)^2 = 2i, (1+i)^4 = -4
+        assert_eq!(z.powi(2), Complex::new(0.0, 2.0));
+        assert_eq!(z.powi(4), Complex::new(-4.0, 0.0));
+        // powi(0) = 1, powi(1) = self
+        assert_eq!(z.powi(0), Complex::new(1.0, 0.0));
+        assert_eq!(z.powi(1), z);
+        // matches naive repeated multiplication
+        let w = Complex::new(0.5_f64, -1.3);
+        let mut acc = Complex::new(1.0, 0.0);
+        for _ in 0..7 {
+            acc = acc * w;
+        }
+        let p = w.powi(7);
+        assert!((p.re - acc.re).abs() < 1e-12 && (p.im - acc.im).abs() < 1e-12);
+        // negative power is the reciprocal: z^-2 · z^2 = 1
+        let prod = w.powi(-3) * w.powi(3);
+        assert!((prod.re - 1.0).abs() < 1e-12 && prod.im.abs() < 1e-12);
     }
 
     #[test]
