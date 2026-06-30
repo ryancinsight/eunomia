@@ -12,6 +12,7 @@
 mod consts;
 mod float;
 mod ops;
+mod reduce;
 
 /// A complex number `re + im·i`.
 ///
