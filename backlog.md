@@ -119,13 +119,23 @@ for the remaining ~19 apollo crates):
 - **E-012 [arch]** **ritk** — UNBLOCKED ONLY AFTER apollo-fft (E-011). Then a clean
   ~10-file swap of ritk-filter (`num_complex::Complex` → `eunomia::Complex`,
   drop the `num-complex` bytemuck dep). Trial run done + reverted; resume post-apollo.
-- **E-012b [arch]** **CFDrs** — DOUBLE-BLOCKED. (1) Sparse linalg: 200+ uses of
-  `nalgebra_sparse::{CsrMatrix,CooMatrix}` with **no leto equivalent** — needs a new
-  atlas-native sparse-linalg crate (CSR/COO storage + SpMV + sparse solvers) before
-  nalgebra can be dropped; this is its own large [arch] prerequisite. (2) Spectral
-  paths via apollo (E-011). Dense linalg IS covered (leto-ops cholesky/LU/QR/SVD/
-  eigen/schur). File the sparse-crate prerequisite as a blocking sub-item before
-  CFDrs enters WIP.
+- **E-012b [arch]** **CFDrs.** Sparse-linalg blocker **largely RESOLVED** (earlier
+  "needs a whole new sparse crate" was wrong). **Sparse linear algebra lives in
+  leto-ops (CPU) + hephaestus (GPU), hermes-SIMD-backed** — the same layering as
+  the dense linalg, NOT a separate crate. `leto-ops::application::sparse` already
+  had `CsrMatrix` + `spmv` + `spmm`; **`CooMatrix` (assembly/triplet format with
+  duplicate-accumulating `to_csr`) added** (leto `34e4019`), covering CFDrs's
+  `CsrMatrix`/`CooMatrix` usage. Crucially, CFDrs implements its **own** iterative
+  solvers (`cfd-math/linear_solver/{conjugate_gradient,bicgstab,gmres,
+  preconditioners}`) over SpMV — no external sparse-solver dependency — and direct
+  `nalgebra_sparse` usage is just 2 sites (`pattern::SparsityPattern`,
+  `ops::serial`). Dense linalg is covered (leto-ops cholesky/LU/QR/SVD/eigen/schur).
+  So CFDrs's remaining migration is the mechanical swap `nalgebra_sparse::
+  {CsrMatrix,CooMatrix}` → `leto_ops::…::sparse::{CsrMatrix,CooMatrix}` + the 2
+  minor nalgebra_sparse sites, then the dense `nalgebra`→leto + `num_complex`→
+  eunomia passes (spectral via apollo, E-011). No remaining hard infra blocker.
+  Possible leto follow-ups if CFDrs needs them: GPU SpMV in hephaestus; a
+  `SparsityPattern` analogue; CSC format. (gaia-style per-site migration.)
 - **E-013 [minor]** Replace direct `num-traits` deps with `eunomia::FloatElement`/
   `NumericElement`.
   - **leto: DONE** — leto PR #6 (reduction/statistics off num_traits::Float/Zero/
