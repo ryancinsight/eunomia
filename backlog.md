@@ -124,3 +124,12 @@ ScratchElement (E-010). Each repo is its own verified pass (build + tests):
 Note: leto/hephaestus retain `num-complex` as a **dev-dependency** (nalgebra
 differential oracle returns `num_complex::Complex`) — that is correct and out of
 scope for removal.
+
+## Cleanup (redundancy removal)
+
+- **E-019 [patch]** Removed the dead `eunomia-gpu` crate: it had zero external
+  consumers and its `Vector<T,N>` was redundant with `leto::geometry::Vector`
+  (also `repr(C)`/Pod, GPU-buffer-compatible). Per the corrected architecture
+  (eunomia = datatypes; vectors/geometry = leto CPU / hephaestus GPU), the
+  GPU-vector concern does not belong in the datatype crate. eunomia is now a
+  single-crate workspace. README + diagram synced.
