@@ -107,10 +107,13 @@ for the remaining ~19 apollo crates):
   - **Real cost = leto array-API parity** for the ndarray methods apollo uses:
     `.iter` (480), `.len` (132), `.to_owned` (64), `.dim` (52), `.view` (37),
     `.sum`/`.mapv`/`.fold` (23 each), `.assign` (12), `.iter_mut` (8), `.row` (5).
-    Name-maps: `.len()`→`.size()`, `.dim()`→`.shape()`; `.sum()` exists in
-    `leto::reduction`. Genuine leto gaps being filled: **`mapv` + `fold` added**
-    (leto `c22a916`); still needed — `mapv_inplace`/`iter_mut` (need a mutable
-    *strided* element iterator), `to_owned` on views, `assign`, `row`/`column`.
+    Name-maps (apollo-side rewrites, no redundant leto aliases): `.len()`→
+    `.size()`, `.dim()`→`.shape()`, `.to_owned()`→`.to_contiguous()` (already on
+    `ArrayView`), `.sum()`→`leto::reduction`. Genuine leto gaps: **`mapv`+`fold`
+    (leto `c22a916`), `mapv_inplace`+`assign` (leto `f996308`) — DONE**; still
+    needed — `iter_mut` (general mutable *strided* element iterator; `mapv_inplace`
+    already covers in-place element transforms via the contiguous-fast/strided-
+    fallback walk), `row`/`column` (map to `index_axis`/slicing).
   - Construction-shape note: leto constructors take `[usize; N]` not ndarray's
     tuple/usize, e.g. `Array2::zeros((r, c))` → `Array2::zeros([r, c])`.
   - Sequencing: grow leto's array API to parity (clean mergeable enablers, like
