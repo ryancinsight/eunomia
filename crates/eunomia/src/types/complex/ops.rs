@@ -63,6 +63,54 @@ impl<T: Neg<Output = T>> Neg for Complex<T> {
     }
 }
 
+/// Reference-operand forwarding for the binary arithmetic operators, mirroring
+/// `num_complex` (and `std`'s `forward_ref_binop!`): `&a · &b`, `a · &b`, and
+/// `&a · b` forward to the by-value impl above. A declarative macro is used here
+/// for the same reason `std` does — twelve otherwise-identical impls (4 ops × 3
+/// reference shapes) would be pure duplication. Each forwards by cloning behind
+/// the reference, so it is exactly the by-value cost on `Copy` scalars.
+macro_rules! forward_ref_binop {
+    ($imp:ident, $method:ident) => {
+        impl<T> $imp<&Complex<T>> for &Complex<T>
+        where
+            Complex<T>: $imp<Output = Complex<T>> + Clone,
+        {
+            type Output = Complex<T>;
+            #[inline(always)]
+            fn $method(self, other: &Complex<T>) -> Complex<T> {
+                (*self).clone().$method((*other).clone())
+            }
+        }
+
+        impl<T> $imp<&Complex<T>> for Complex<T>
+        where
+            Complex<T>: $imp<Output = Complex<T>> + Clone,
+        {
+            type Output = Complex<T>;
+            #[inline(always)]
+            fn $method(self, other: &Complex<T>) -> Complex<T> {
+                self.$method((*other).clone())
+            }
+        }
+
+        impl<T> $imp<Complex<T>> for &Complex<T>
+        where
+            Complex<T>: $imp<Output = Complex<T>> + Clone,
+        {
+            type Output = Complex<T>;
+            #[inline(always)]
+            fn $method(self, other: Complex<T>) -> Complex<T> {
+                (*self).clone().$method(other)
+            }
+        }
+    };
+}
+
+forward_ref_binop!(Add, add);
+forward_ref_binop!(Sub, sub);
+forward_ref_binop!(Mul, mul);
+forward_ref_binop!(Div, div);
+
 /// Component-wise remainder.
 ///
 /// Complex numbers have no canonical `%`; this applies `Rem` field-wise. It
@@ -88,5 +136,27 @@ impl<T: PartialEq> PartialOrd for Complex<T> {
     #[inline(always)]
     fn partial_cmp(&self, _other: &Self) -> Option<core::cmp::Ordering> {
         None
+    }
+}
+
+#[cfg(test)]
+// This test deliberately exercises the by-reference operator forms this module
+// adds; `op_ref` would flag them as needless on `Copy` operands, which is the
+// exact form under test.
+#[allow(clippy::op_ref)]
+mod tests {
+    use super::Complex;
+
+    #[test]
+    fn reference_operators_match_by_value() {
+        let a = Complex::new(2.0_f64, 3.0);
+        let b = Complex::new(-1.0_f64, 4.0);
+        assert_eq!(&a + &b, a + b);
+        assert_eq!(&a - &b, a - b);
+        assert_eq!(&a * &b, a * b);
+        assert_eq!(&a / &b, a / b);
+        // mixed reference/value shapes
+        assert_eq!(a + &b, a + b);
+        assert_eq!(&a * b, a * b);
     }
 }
