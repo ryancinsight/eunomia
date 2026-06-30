@@ -2,7 +2,7 @@ mod complex;
 mod floats;
 mod ints;
 
-pub use complex::Complex;
+pub use complex::{Complex, Complex32, Complex64};
 pub use floats::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8};
 pub use ints::{I16, I32, I8};
 

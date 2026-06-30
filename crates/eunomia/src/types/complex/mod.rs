@@ -28,6 +28,14 @@ pub struct Complex<T> {
     pub im: T,
 }
 
+/// A single-precision complex number, `Complex<f32>` (mirrors
+/// `num_complex::Complex32`).
+pub type Complex32 = Complex<f32>;
+
+/// A double-precision complex number, `Complex<f64>` (mirrors
+/// `num_complex::Complex64`).
+pub type Complex64 = Complex<f64>;
+
 impl<T> Complex<T> {
     /// Construct from real and imaginary parts.
     #[inline(always)]
