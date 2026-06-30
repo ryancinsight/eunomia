@@ -36,19 +36,54 @@ Sprint target: 0.1.0 (datatype-law foundation extracted from hermes-numeric).
   `eunomia::Complex<f32>/<f64>`, parallel to its `num-complex` feature. —
   mnemosyne PR #3.
 
-## Roadmap — consumer num-complex → eunomia migration (tracked [arch], per-repo)
+## Roadmap — consumer num-complex → eunomia migration (tracked [arch])
 
 Prereqs now satisfied: full Complex surface (E-008), serde (E-009), mnemosyne
-ScratchElement (E-010). Each repo is its own verified pass (build + tests):
+ScratchElement (E-010).
 
-- **E-011 [arch]** **apollo** (~249 files; the FFT/spectral core). Steps: add
-  eunomia git-dep + path-patch; swap `num_complex::Complex` → `eunomia::Complex`,
-  `num-complex` features (bytemuck→native Pod, serde→E-009); switch the
-  `mnemosyne` dep from `features=["num-complex"]` → `["eunomia"]`; consolidate the
-  8 GPU `ComplexPod {re,im}` structs (apollo-{hilbert,mellin,qft,sdft,sft,sht,
-  stft}) onto `eunomia::Complex<f32>`. Large — likely split per-crate.
-- **E-012 [arch]** **CFDrs** (8 files) + **ritk** (12 files): swap `num_complex`
-  usages (mostly stability/spectral) to `eunomia::Complex`; add eunomia wiring.
+**DEPENDENCY ORDERING (corrected 2026-06-29 — these are NOT independent passes).**
+The consumers are chained through apollo: `num_complex::Complex` crosses crate
+boundaries in public APIs, so a downstream repo cannot drop num-complex until its
+upstream does. Verified order:
+
+  apollo (FFT/spectral core, num_complex in its public `FftPlan` API)
+     ↑ consumed by
+  ritk-filter (calls `apollo_fft::FftPlan1D::*_complex_slice_inplace(&mut [Complex<f32>])`)
+  CFDrs spectral paths
+     ↑ consumed by
+  (end consumers)
+
+Concretely: **ritk is BLOCKED on apollo.** A trial swap of ritk-filter's 10
+num_complex files to `eunomia::Complex` failed to build — `apollo_fft`'s
+`forward_complex_slice_inplace(&mut [num_complex::Complex<f32>])` mandates the
+num_complex type at the boundary. eunomia::Complex IS layout-identical
+(`#[repr(C)]` `{re,im}`, Pod), so a `bytemuck::cast_slice_mut` boundary hack
+*could* unblock ritk while keeping num-complex as a thin dep — but that does NOT
+remove the dependency, so it is rejected. apollo must migrate its public API first.
+
+- **E-011 [arch]** **apollo FIRST (critical-path upstream).** ~250 num_complex
+  files across ~20 crates (apollo-{fft,czt,dctdst,dht,frft,fwht,gft,hilbert,mellin,
+  ntt,nufft,qft,radon,sdft,sft,sht,stft,…}). apollo-fft *alone* is 121 num_complex
+  files (larger than the whole gaia migration). Per-crate sub-items; apollo-fft is
+  the first (it is what ritk needs). Each crate: add eunomia dep+patch; swap
+  `num_complex::Complex` → `eunomia::Complex` (layout-identical, mechanical bulk);
+  fix `&a * &b` ref-ops → by-value `Copy` (eunomia::Complex has no ref operator
+  impls — same orphan situation as leto Vector; candidate: add ref `Mul`/`Add` to
+  eunomia::Complex to make these bulk-mechanical); `num-complex` `bytemuck` feature
+  → native Pod, `serde` → E-009; `mnemosyne` `features=["num-complex"]` →
+  `["eunomia"]`; consolidate the GPU `ComplexPod {re,im}` structs onto
+  `eunomia::Complex<f32>`. **FFT-numerics correctness is the gate** (differential
+  vs reference transforms) — not rushable.
+- **E-012 [arch]** **ritk** — UNBLOCKED ONLY AFTER apollo-fft (E-011). Then a clean
+  ~10-file swap of ritk-filter (`num_complex::Complex` → `eunomia::Complex`,
+  drop the `num-complex` bytemuck dep). Trial run done + reverted; resume post-apollo.
+- **E-012b [arch]** **CFDrs** — DOUBLE-BLOCKED. (1) Sparse linalg: 200+ uses of
+  `nalgebra_sparse::{CsrMatrix,CooMatrix}` with **no leto equivalent** — needs a new
+  atlas-native sparse-linalg crate (CSR/COO storage + SpMV + sparse solvers) before
+  nalgebra can be dropped; this is its own large [arch] prerequisite. (2) Spectral
+  paths via apollo (E-011). Dense linalg IS covered (leto-ops cholesky/LU/QR/SVD/
+  eigen/schur). File the sparse-crate prerequisite as a blocking sub-item before
+  CFDrs enters WIP.
 - **E-013 [minor]** Replace direct `num-traits` deps with `eunomia::FloatElement`/
   `NumericElement`.
   - **leto: DONE** — leto PR #6 (reduction/statistics off num_traits::Float/Zero/
