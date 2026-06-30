@@ -21,24 +21,24 @@ the placement law in the foundation.
   rkyv archival, and SIMD-accelerated unpack.
 - **Conversion lattices** (`CastFrom`/`CastTo`) and **element traits**
   (`NumericElement`/`FloatElement`).
-- **GPU datatype vocabulary** (`eunomia-gpu`) — `Vector<T, N>` (`Vec2`/`Vec3`/
-  `Vec4`) device-buffer element types in std430/tightly-packed layout.
+- **Scalar field traits** — `RealField`/`ComplexField` (the `nalgebra` scalar
+  field analogues), so generic numeric code runs over `f32`/`f64` and `Complex`.
 
-It owns **no** computation kernels, allocation, scheduling, or backend code —
-those belong to hermes (SIMD), mnemosyne (allocation), moirai (execution), and
-the domain crates.
+It owns **no** computation kernels, allocation, scheduling, or backend code, and
+**no vector/matrix/geometry types** — those are linear algebra and live in leto
+(CPU) / hephaestus (GPU). The other layers belong to hermes (SIMD), mnemosyne
+(allocation), moirai (execution), and the domain crates.
 
-## Crates
+## Crate
 
 | Crate | Role |
 | --- | --- |
-| `eunomia` | Core datatype vocabulary: scalars, complex, packed formats, casts, element traits. `#![no_std]`-capable. |
-| `eunomia-gpu` | GPU datatype vocabulary: `repr(C)`/`Pod` vector element types over the eunomia scalars, for device storage/vertex buffers. |
+| `eunomia` | The datatype vocabulary: scalars, complex, packed formats, casts, element + scalar-field traits. `#![no_std]`-capable. |
 
 ## Position in the Atlas stack
 
 ```text
-eunomia        datatype law (scalars, complex, packed, gpu vectors)   ← this repo
+eunomia        datatype law (scalars, complex, packed, field traits)   ← this repo
 themis         placement law (NUMA, tier, worker locality)
    ↑ consumed by
 hermes         SIMD execution over eunomia types
