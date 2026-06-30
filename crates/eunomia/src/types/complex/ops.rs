@@ -89,6 +89,60 @@ impl<T: Div<Output = T> + Clone> Div<T> for Complex<T> {
     }
 }
 
+/// Add a real scalar to the real part: `(re + im·i) + s = (re + s) + im·i`.
+impl<T: Add<Output = T>> Add<T> for Complex<T> {
+    type Output = Self;
+    #[inline(always)]
+    fn add(self, rhs: T) -> Self {
+        Self {
+            re: self.re + rhs,
+            im: self.im,
+        }
+    }
+}
+
+/// Subtract a real scalar from the real part.
+impl<T: Sub<Output = T>> Sub<T> for Complex<T> {
+    type Output = Self;
+    #[inline(always)]
+    fn sub(self, rhs: T) -> Self {
+        Self {
+            re: self.re - rhs,
+            im: self.im,
+        }
+    }
+}
+
+/// Compound assignment by a real scalar (`*= s`, `/= s`, `+= s`, `-= s`),
+/// forwarding to the by-value scalar operators above (num_complex parity).
+impl<T: Mul<Output = T> + Clone + Copy> MulAssign<T> for Complex<T> {
+    #[inline(always)]
+    fn mul_assign(&mut self, rhs: T) {
+        *self = *self * rhs;
+    }
+}
+
+impl<T: Div<Output = T> + Clone + Copy> DivAssign<T> for Complex<T> {
+    #[inline(always)]
+    fn div_assign(&mut self, rhs: T) {
+        *self = *self / rhs;
+    }
+}
+
+impl<T: Add<Output = T> + Copy> AddAssign<T> for Complex<T> {
+    #[inline(always)]
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs;
+    }
+}
+
+impl<T: Sub<Output = T> + Copy> SubAssign<T> for Complex<T> {
+    #[inline(always)]
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs;
+    }
+}
+
 /// Compound-assignment operators, forwarding to the by-value binary impls (the
 /// `num_complex::Complex` `*Assign` surface). Each is available exactly when its
 /// by-value counterpart is.
@@ -215,6 +269,23 @@ impl<T: PartialEq> PartialOrd for Complex<T> {
 #[allow(clippy::op_ref)]
 mod tests {
     use super::Complex;
+
+    #[test]
+    fn scalar_real_ops_and_compound_assign() {
+        // add/sub a real scalar (real part only)
+        assert_eq!(Complex::new(2.0_f64, 3.0) + 5.0, Complex::new(7.0, 3.0));
+        assert_eq!(Complex::new(2.0_f64, 3.0) - 1.0, Complex::new(1.0, 3.0));
+        // scalar compound assignment
+        let mut z = Complex::new(2.0_f64, -4.0);
+        z *= 3.0;
+        assert_eq!(z, Complex::new(6.0, -12.0));
+        z /= 2.0;
+        assert_eq!(z, Complex::new(3.0, -6.0));
+        z += 1.0;
+        assert_eq!(z, Complex::new(4.0, -6.0));
+        z -= 4.0;
+        assert_eq!(z, Complex::new(0.0, -6.0));
+    }
 
     #[test]
     fn scalar_and_assign_operators() {
