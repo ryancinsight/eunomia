@@ -2,7 +2,9 @@
 //! complex product/quotient Mul/Div, and the order-less PartialOrd).
 
 use super::Complex;
-use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use core::ops::{
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, Sub, SubAssign,
+};
 
 impl<T: Add<Output = T>> Add for Complex<T> {
     type Output = Self;
@@ -60,6 +62,73 @@ impl<T: Neg<Output = T>> Neg for Complex<T> {
             re: -self.re,
             im: -self.im,
         }
+    }
+}
+
+/// Multiply by a real scalar: `(re + im·i)·s = re·s + (im·s)·i`.
+impl<T: Mul<Output = T> + Clone> Mul<T> for Complex<T> {
+    type Output = Self;
+    #[inline(always)]
+    fn mul(self, rhs: T) -> Self {
+        Self {
+            re: self.re * rhs.clone(),
+            im: self.im * rhs,
+        }
+    }
+}
+
+/// Divide by a real scalar.
+impl<T: Div<Output = T> + Clone> Div<T> for Complex<T> {
+    type Output = Self;
+    #[inline(always)]
+    fn div(self, rhs: T) -> Self {
+        Self {
+            re: self.re / rhs.clone(),
+            im: self.im / rhs,
+        }
+    }
+}
+
+/// Compound-assignment operators, forwarding to the by-value binary impls (the
+/// `num_complex::Complex` `*Assign` surface). Each is available exactly when its
+/// by-value counterpart is.
+impl<T> AddAssign for Complex<T>
+where
+    Complex<T>: Add<Output = Complex<T>> + Copy,
+{
+    #[inline(always)]
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl<T> SubAssign for Complex<T>
+where
+    Complex<T>: Sub<Output = Complex<T>> + Copy,
+{
+    #[inline(always)]
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
+impl<T> MulAssign for Complex<T>
+where
+    Complex<T>: Mul<Output = Complex<T>> + Copy,
+{
+    #[inline(always)]
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+
+impl<T> DivAssign for Complex<T>
+where
+    Complex<T>: Div<Output = Complex<T>> + Copy,
+{
+    #[inline(always)]
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
     }
 }
 
@@ -146,6 +215,24 @@ impl<T: PartialEq> PartialOrd for Complex<T> {
 #[allow(clippy::op_ref)]
 mod tests {
     use super::Complex;
+
+    #[test]
+    fn scalar_and_assign_operators() {
+        // scalar multiply / divide
+        let z = Complex::new(2.0_f64, -4.0);
+        assert_eq!(z * 3.0, Complex::new(6.0, -12.0));
+        assert_eq!(z / 2.0, Complex::new(1.0, -2.0));
+        // compound assignment forwards to the binary op
+        let mut a = Complex::new(1.0_f64, 1.0);
+        a += Complex::new(2.0, 3.0);
+        assert_eq!(a, Complex::new(3.0, 4.0));
+        a -= Complex::new(1.0, 1.0);
+        assert_eq!(a, Complex::new(2.0, 3.0));
+        a *= Complex::new(0.0, 1.0); // multiply by i: (2+3i)·i = -3+2i
+        assert_eq!(a, Complex::new(-3.0, 2.0));
+        a /= Complex::new(0.0, 1.0); // divide by i: back to 2+3i
+        assert_eq!(a, Complex::new(2.0, 3.0));
+    }
 
     #[test]
     fn reference_operators_match_by_value() {
