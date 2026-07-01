@@ -11,6 +11,8 @@
 
 mod consts;
 mod float;
+#[cfg(feature = "numpy")]
+mod numpy_element;
 mod ops;
 mod reduce;
 
