@@ -100,6 +100,19 @@ impl FloatElement for f64 {
             libm::copysign(1.0, self)
         }
     }
+    // Native double-precision special functions (override the f32-routed defaults).
+    #[inline]
+    fn erf(self) -> Self {
+        libm::erf(self)
+    }
+    #[inline]
+    fn erfc(self) -> Self {
+        libm::erfc(self)
+    }
+    #[inline]
+    fn lgamma(self) -> Self {
+        libm::lgamma(self)
+    }
 }
 
 impl FloatElement for half::f16 {

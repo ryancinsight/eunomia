@@ -131,4 +131,25 @@ pub trait FloatElement: private::Sealed + NumericElement {
         }
         acc
     }
+
+    /// Error function `erf(self) = 2/√π ∫₀ˢᵉˡᶠ e^(-t²) dt`.
+    ///
+    /// Default routes through `f32`; native-precision types override.
+    #[inline]
+    fn erf(self) -> Self {
+        Self::from_f32(libm::erff(self.to_f32()))
+    }
+
+    /// Complementary error function `erfc(self) = 1 - erf(self)`, computed without
+    /// the cancellation error of `1 - erf` for large `self`.
+    #[inline]
+    fn erfc(self) -> Self {
+        Self::from_f32(libm::erfcf(self.to_f32()))
+    }
+
+    /// Natural logarithm of the absolute value of the gamma function, `ln|Γ(self)|`.
+    #[inline]
+    fn lgamma(self) -> Self {
+        Self::from_f32(libm::lgammaf(self.to_f32()))
+    }
 }
