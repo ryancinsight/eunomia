@@ -18,10 +18,8 @@ numpy = { version = "0.23", optional = true }
 pyo3 = { version = "0.23", optional = true }
 
 [features]
-default = ["std", "parallel", "mnemosyne-memory"]
+default = ["std"]
 std = []
-parallel = []
-mnemosyne-memory = []
 rkyv = ["dep:rkyv", "rkyv/size_32"]
 serde = ["dep:serde"]
 # NumPy interop: `unsafe impl numpy::Element for Complex<f32|f64>` so the SSOT
