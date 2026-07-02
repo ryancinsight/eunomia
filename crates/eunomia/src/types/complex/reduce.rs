@@ -45,9 +45,15 @@ mod tests {
             Complex::new(2.0, -1.0),
             Complex::new(0.0, 3.0),
         ];
-        assert_eq!(v.iter().copied().sum::<Complex<f64>>(), Complex::new(3.0, 3.0));
+        assert_eq!(
+            v.iter().copied().sum::<Complex<f64>>(),
+            Complex::new(3.0, 3.0)
+        );
         assert_eq!(v.iter().sum::<Complex<f64>>(), Complex::new(3.0, 3.0));
         // product: (1+i)(2-i) = 3+i; (3+i)(3i) = -3+9i
-        assert_eq!(v.iter().copied().product::<Complex<f64>>(), Complex::new(-3.0, 9.0));
+        assert_eq!(
+            v.iter().copied().product::<Complex<f64>>(),
+            Complex::new(-3.0, 9.0)
+        );
     }
 }

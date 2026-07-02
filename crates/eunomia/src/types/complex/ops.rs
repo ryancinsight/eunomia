@@ -2,9 +2,7 @@
 //! complex product/quotient Mul/Div, and the order-less PartialOrd).
 
 use super::Complex;
-use core::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, Sub, SubAssign,
-};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, Sub, SubAssign};
 
 impl<T: Add<Output = T>> Add for Complex<T> {
     type Output = Self;

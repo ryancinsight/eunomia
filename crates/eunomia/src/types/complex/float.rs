@@ -149,7 +149,7 @@ impl<T: FloatElement + Neg<Output = T>> Complex<T> {
         let mut acc = one;
         while exp > 0 {
             if exp & 1 == 1 {
-                acc = acc * base;
+                acc *= base;
             }
             exp >>= 1;
             if exp > 0 {
@@ -233,7 +233,7 @@ mod tests {
         let w = Complex::new(0.5_f64, -1.3);
         let mut acc = Complex::new(1.0, 0.0);
         for _ in 0..7 {
-            acc = acc * w;
+            acc *= w;
         }
         let p = w.powi(7);
         assert!((p.re - acc.re).abs() < 1e-12 && (p.im - acc.im).abs() < 1e-12);
