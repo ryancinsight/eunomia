@@ -14,6 +14,8 @@ bytemuck = { workspace = true }
 libm = { version = "0.2.8", default-features = false }
 rkyv = { workspace = true, optional = true }
 serde = { version = "1", optional = true, default-features = false, features = ["derive"] }
+numpy = { version = "0.23", optional = true }
+pyo3 = { version = "0.23", optional = true }
 
 [features]
 default = ["std", "parallel", "mnemosyne-memory"]
@@ -22,3 +24,6 @@ parallel = []
 mnemosyne-memory = []
 rkyv = ["dep:rkyv", "rkyv/size_32"]
 serde = ["dep:serde"]
+# NumPy interop: `unsafe impl numpy::Element for Complex<f32|f64>` so the SSOT
+# complex type is usable directly as a rust-numpy array element (Python bindings).
+numpy = ["dep:numpy", "dep:pyo3", "std"]
