@@ -209,3 +209,4 @@ impl_numeric_element_unsigned!(u8, 1, u8::MIN, u8::MAX);
 impl_numeric_element_unsigned!(u16, 2, u16::MIN, u16::MAX);
 impl_numeric_element_unsigned!(u32, 4, u32::MIN, u32::MAX);
 impl_numeric_element_unsigned!(u64, 8, u64::MIN, u64::MAX);
+impl_numeric_element_unsigned!(usize, core::mem::size_of::<usize>(), usize::MIN, usize::MAX);

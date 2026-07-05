@@ -4,6 +4,16 @@
 use super::{private, CastFrom};
 
 /// Core numeric element trait. The main extension point for monomorphized operations across all precisions.
+///
+/// # Source constructors
+///
+/// [`from_f64`](super::FloatElement::from_f64) lives on `FloatElement` (precision-correct for
+/// half-precision types via `half::f{16,bf16}::from_f64`). Integer callers
+/// use the literal `v as Self` truncating cast natively. There is no generic
+/// `from_usize` on `NumericElement` for the same reason — the per-type route
+/// is selected explicitly so callers express precision-correct construction
+/// (literal cast for ints, `FloatElement::from_f64(v as f64)` round-trip for
+/// floats).
 pub trait NumericElement:
     private::Sealed
     + Copy

@@ -27,6 +27,8 @@ impl_cast_primitive_between!(i32, u8);
 impl_cast_primitive_between!(i32, u16);
 impl_cast_primitive_between!(i32, u32);
 impl_cast_primitive_between!(i32, u64);
+impl_cast_primitive_between!(i32, usize);
+impl_cast_primitive_between!(i32, isize);
 
 impl_cast_primitive_between!(i64, i64);
 impl_cast_primitive_between!(i64, i8);

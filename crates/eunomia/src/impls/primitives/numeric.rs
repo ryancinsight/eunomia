@@ -1,6 +1,7 @@
 //! `NumericElement` impls for primitive floats and signed/unsigned integers.
 
-use crate::traits::NumericElement;
+use crate::traits::{private, CastFrom, NumericElement};
+use crate::types::Complex;
 
 impl NumericElement for f32 {
     const ZERO: Self = 0.0_f32;
@@ -366,3 +367,122 @@ impl_numeric_element_signed!(i8, 1);
 impl_numeric_element_signed!(i16, 2);
 impl_numeric_element_signed!(i32, 4);
 impl_numeric_element_signed!(i64, 8);
+impl_numeric_element_signed!(isize, core::mem::size_of::<isize>());
+
+impl<T> NumericElement for Complex<T>
+where
+    T: NumericElement + CastFrom<i32> + core::ops::Neg<Output = T>,
+{
+    const ZERO: Self = Self::new(<T as NumericElement>::ZERO, <T as NumericElement>::ZERO);
+    const ONE: Self = Self::new(<T as NumericElement>::ONE, <T as NumericElement>::ZERO);
+    const NAN: Self = Self::new(<T as NumericElement>::NAN, <T as NumericElement>::ZERO);
+    const INFINITY: Self = Self::new(<T as NumericElement>::INFINITY, <T as NumericElement>::ZERO);
+    const BYTE_WIDTH: usize = 2 * <T as NumericElement>::BYTE_WIDTH;
+    const ALL_ONES: Self = Self::new(
+        <T as NumericElement>::ALL_ONES,
+        <T as NumericElement>::ALL_ONES,
+    );
+    const SIGN_MASK: Self = Self::new(
+        <T as NumericElement>::SIGN_MASK,
+        <T as NumericElement>::ZERO,
+    );
+    const MIN_VALUE: Self = Self::new(
+        <T as NumericElement>::MIN_VALUE,
+        <T as NumericElement>::ZERO,
+    );
+    const MAX_VALUE: Self = Self::new(
+        <T as NumericElement>::MAX_VALUE,
+        <T as NumericElement>::ZERO,
+    );
+
+    #[inline(always)]
+    fn abs(self) -> Self {
+        Self::new(
+            (self.re * self.re + self.im * self.im).sqrt(),
+            <T as NumericElement>::ZERO,
+        )
+    }
+
+    #[inline(always)]
+    fn scalar_fmadd(self, b: Self, c: Self) -> Self {
+        self * b + c
+    }
+
+    #[inline(always)]
+    fn sqrt(self) -> Self {
+        let mag2 = self.re * self.re + self.im * self.im;
+        let half =
+            <T as NumericElement>::ONE / (<T as NumericElement>::ONE + <T as NumericElement>::ONE);
+        let u = ((mag2 + self.re) * half).sqrt();
+        let mut v = ((mag2 - self.re) * half).sqrt();
+        if self.im < <T as NumericElement>::ZERO {
+            v = -v;
+        }
+        Self::new(u, v)
+    }
+
+    #[inline(always)]
+    fn is_finite(self) -> bool {
+        self.re.is_finite() && self.im.is_finite()
+    }
+
+    #[inline(always)]
+    fn is_nan(self) -> bool {
+        self.re.is_nan() || self.im.is_nan()
+    }
+
+    #[inline(always)]
+    fn to_f64(self) -> f64 {
+        self.re.to_f64()
+    }
+
+    #[inline(always)]
+    fn bitand(self, rhs: Self) -> Self {
+        Self::new(self.re.bitand(rhs.re), self.im.bitand(rhs.im))
+    }
+
+    #[inline(always)]
+    fn bitor(self, rhs: Self) -> Self {
+        Self::new(self.re.bitor(rhs.re), self.im.bitor(rhs.im))
+    }
+
+    #[inline(always)]
+    fn bitxor(self, rhs: Self) -> Self {
+        Self::new(self.re.bitxor(rhs.re), self.im.bitxor(rhs.im))
+    }
+
+    #[inline(always)]
+    fn count_ones(self) -> u32 {
+        self.re.count_ones() + self.im.count_ones()
+    }
+
+    #[inline(always)]
+    fn min_scalar(self, other: Self) -> Self {
+        if self.re < other.re || (self.re == other.re && self.im <= other.im) {
+            self
+        } else {
+            other
+        }
+    }
+
+    #[inline(always)]
+    fn max_scalar(self, other: Self) -> Self {
+        if self.re > other.re || (self.re == other.re && self.im >= other.im) {
+            self
+        } else {
+            other
+        }
+    }
+}
+
+impl<T> CastFrom<i32> for Complex<T>
+where
+    T: NumericElement,
+{
+    #[inline(always)]
+    fn cast_from(val: i32) -> Self {
+        Self::new(T::cast_from(val), <T as NumericElement>::ZERO)
+    }
+}
+
+impl<T> private::Sealed for Complex<T> where T: private::Sealed {}

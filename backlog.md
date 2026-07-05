@@ -35,6 +35,13 @@ Sprint target: 0.1.0 (datatype-law foundation extracted from hermes-numeric).
 - **E-010 [minor]** mnemosyne-arena `eunomia` feature: `ScratchElement` for
   `eunomia::Complex<f32>/<f64>`, parallel to its `num-complex` feature. —
   mnemosyne PR #3.
+- **E-011 [minor]** Platform-sized primitive numeric elements: `isize` and
+  `usize` now implement `NumericElement` through the same sealed primitive SSOT
+  as fixed-width integers, with the required `CastFrom<i32>` edge and
+  pointer-width metadata tests. Driver: Leto scalar SSOT migration (CR-4) can
+  keep platform-sized scalar support without Leto-local aliases. Evidence:
+  `cargo check -p eunomia`, `cargo clippy -p eunomia --all-targets -- -D warnings`,
+  and `cargo nextest run -p eunomia` pass.
 
 ## Roadmap — consumer num-complex → eunomia migration (tracked [arch])
 
