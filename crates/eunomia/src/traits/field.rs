@@ -136,4 +136,26 @@ pub trait ComplexField:
     fn sin(self) -> Self;
     /// Cosine.
     fn cos(self) -> Self;
+
+    /// Additive identity: `0 + 0i` for a complex field, `0` for a real field.
+    /// Default body routes through `NumericElement::ZERO` via `from_real`.
+    /// Per ADR 0006 \u00a71 (CR-EUNOMIA-COMPLEX): no per-implementor override is
+    /// sound because the real blanket impl returns `re` from
+    /// `from_real(re)` and the `Complex<T>` blanket impl returns
+    /// `Complex::new(re, <T as NumericElement>::ZERO)`; both round-trip
+    /// identically through `Self::from_real(<Self::RealPart as NumericElement>::ZERO)`.
+    #[inline]
+    #[must_use]
+    fn zero() -> Self {
+        Self::from_real(<Self::RealPart as NumericElement>::ZERO)
+    }
+
+    /// Multiplicative identity: `1 + 0i` for a complex field, `1` for a real field.
+    /// Default body routes through `NumericElement::ONE` via `from_real`.
+    /// See [`zero`](Self::zero) for the routing rationale.
+    #[inline]
+    #[must_use]
+    fn one() -> Self {
+        Self::from_real(<Self::RealPart as NumericElement>::ONE)
+    }
 }

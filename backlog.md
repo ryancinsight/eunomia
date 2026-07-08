@@ -234,6 +234,18 @@ for the remaining ~19 apollo crates):
   f32-routed → widen-narrow defect). — eunomia PR #5.
 - **E-016 [minor]** Completed `FloatElement` to num-traits `Float` parity:
   floor/ceil/round/trunc/signum + exact `powi`. — eunomia PR #6.
+- **E-020 [minor]** Added `FloatElement::acos` with libm-backed reduced-
+  precision defaults and native f64 primitive/wrapper overrides. Driver: CFDrs
+  Murray's-law bifurcation migration needs inverse-cosine geometry without
+  reintroducing nalgebra/num-traits scalar bounds or fake generic casts.
+  Evidence: `rustup run nightly cargo fmt -- crates/eunomia/src/traits/float.rs
+  crates/eunomia/src/impls/primitives/float.rs
+  crates/eunomia/src/impls/wrappers/float.rs`, `rustup run nightly cargo check
+  -p eunomia --lib`, `rustup run nightly cargo clippy -p eunomia --lib -- -D
+  warnings`, focused `rustup run nightly cargo nextest run -p eunomia -E
+  'test(f64_wrapper_transcendentals_are_native_precision) |
+  test(rounding_and_powi_surface)'` (2/2), and downstream CFDrs
+  `rustup run nightly cargo check -p cfd-1d --tests`.
 
 Note: leto/hephaestus retain `num-complex` as a **dev-dependency** (nalgebra
 differential oracle returns `num_complex::Complex`) — that is correct and out of

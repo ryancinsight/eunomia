@@ -65,6 +65,10 @@ impl FloatElement for F64 {
         F64(libm::cos(self.0))
     }
     #[inline]
+    fn acos(self) -> Self {
+        F64(libm::acos(self.0))
+    }
+    #[inline]
     fn tan(self) -> Self {
         F64(libm::tan(self.0))
     }
@@ -152,6 +156,7 @@ mod tests {
         assert!((F64(1.0).exp().0 - core::f64::consts::E).abs() < 1e-15);
         assert!((F64(0.1).ln().0 - 0.1_f64.ln()).abs() < 1e-15);
         assert!((F64(0.7).sin().0 - 0.7_f64.sin()).abs() < 1e-15);
+        assert!((F64(0.25).acos().0 - 0.25_f64.acos()).abs() < 1e-15);
         assert!((F64(2.0).powf(F64(10.0)).0 - 1024.0).abs() < 1e-12);
     }
 
@@ -163,6 +168,7 @@ mod tests {
         assert_eq!(FloatElement::ceil(2.2_f64), 3.0);
         assert_eq!(FloatElement::round(2.5_f64), 3.0);
         assert_eq!(FloatElement::trunc(-2.7_f64), -2.0);
+        assert!((FloatElement::acos(0.25_f64) - 0.25_f64.acos()).abs() < 1e-15);
         // signum: ±1 with the sign (num_traits / std semantics), NaN→NaN.
         assert_eq!(FloatElement::signum(-3.5_f64), -1.0);
         assert_eq!(FloatElement::signum(0.0_f64), 1.0);

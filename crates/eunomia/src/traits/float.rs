@@ -39,6 +39,11 @@ pub trait FloatElement: private::Sealed + NumericElement {
     fn cos(self) -> Self {
         Self::from_f32(libm::cosf(self.to_f32()))
     }
+    /// Inverse cosine (radians).
+    #[inline]
+    fn acos(self) -> Self {
+        Self::from_f32(libm::acosf(self.to_f32()))
+    }
     /// Tangent (radians).
     #[inline]
     fn tan(self) -> Self {
@@ -151,5 +156,44 @@ pub trait FloatElement: private::Sealed + NumericElement {
     #[inline]
     fn lgamma(self) -> Self {
         Self::from_f32(libm::lgammaf(self.to_f32()))
+    }
+
+    /// Machine epsilon (`nalgebra::RealField::default_epsilon` compatibility alias).
+    ///
+    /// Returns the smallest positive value `ε` such that `1.0 + ε != 1.0`.
+    /// Prefer `<T as eunomia::RealField>::EPSILON` in new code.
+    #[inline]
+    fn default_epsilon() -> Self
+    where
+        Self: crate::RealField,
+    {
+        <Self as crate::RealField>::EPSILON
+    }
+
+    /// Returns `π` as this float type (nalgebra compatibility alias for `RealField::PI`).
+    #[inline]
+    fn pi() -> Self
+    where
+        Self: crate::RealField,
+    {
+        <Self as crate::RealField>::PI
+    }
+
+    /// Componentwise maximum (method form; prefer `NumericElement::max_scalar` in new code).
+    #[inline]
+    fn max(self, other: Self) -> Self {
+        <Self as NumericElement>::max_scalar(self, other)
+    }
+
+    /// Componentwise minimum (method form; prefer `NumericElement::min_scalar` in new code).
+    #[inline]
+    fn min(self, other: Self) -> Self {
+        <Self as NumericElement>::min_scalar(self, other)
+    }
+
+    /// L2 (Euclidean) norm — for scalars this is the absolute value.
+    #[inline]
+    fn norm(self) -> Self {
+        <Self as NumericElement>::abs(self)
     }
 }

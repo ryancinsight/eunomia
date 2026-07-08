@@ -49,6 +49,10 @@ impl FloatElement for f64 {
         libm::cos(self)
     }
     #[inline]
+    fn acos(self) -> Self {
+        libm::acos(self)
+    }
+    #[inline]
     fn tan(self) -> Self {
         libm::tan(self)
     }

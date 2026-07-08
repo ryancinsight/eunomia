@@ -178,7 +178,7 @@ impl<T: RealField> ComplexField for Complex<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::{ComplexField, RealField};
+    use crate::traits::{ComplexField, NumericElement, RealField};
     use crate::types::Complex;
 
     #[test]
@@ -219,5 +219,94 @@ mod tests {
         }
         assert_eq!(norm_sq(z), 25.0);
         assert_eq!(norm_sq(2.0_f64), 4.0);
+    }
+
+    /// Cross-type default-equivalence: `Complex::<f64>::default()` MUST
+    /// resolve to `{ re: 0.0, im: 0.0 }`. Pins the `derive(Default)`
+    /// resolution at `crates/eunomia/src/types/complex/mod.rs:32-35`.
+    /// Drift here means a sentinel-default sneaked into the `Default`
+    /// derivation — that's exactly the silent-drift class this fixture exists
+    /// to catch (CR-EUNOMIA-COMPLEX, ADR 0006 "Why not the alternatives").
+    #[test]
+    fn eunomia_complex64_default_is_zero() {
+        let z = Complex::<f64>::default();
+        assert_eq!(z.re, 0.0_f64);
+        assert_eq!(z.im, 0.0_f64);
+        assert_eq!(z, Complex::<f64>::new(0.0, 0.0));
+    }
+
+    /// f32 parity companion for the default-equivalence pin.
+    #[test]
+    fn eunomia_complex32_default_is_zero() {
+        let z = Complex::<f32>::default();
+        assert_eq!(z.re, 0.0_f32);
+        assert_eq!(z.im, 0.0_f32);
+        assert_eq!(z, Complex::<f32>::new(0.0, 0.0));
+    }
+
+    /// Pinned `modulus` of `Complex::<f64>::default()` returns `0.0`
+    /// (NOT NaN). If `Complex::default()` is ever rewritten to a sentinel,
+    /// this fails loudly: the post-ADR §1 `ComplexField::zero()` default
+    /// MUST conform with this contract.
+    #[test]
+    fn eunomia_complex64_default_has_zero_modulus() {
+        let z = Complex::<f64>::default();
+        assert_eq!(<Complex::<f64> as ComplexField>::modulus(z), 0.0_f64,);
+        let m = <Complex<f64> as ComplexField>::modulus(z);
+        assert!(!m.is_nan(), "modulus of `default()` is unexpectedly NaN");
+    }
+
+    // ───── Post-ADR-0006 §1 fixtures (frozen via `#[cfg(any())]`) ────────────
+    // Compile ONLY once ADR-0006 §1 ships (additive `ComplexField::zero()`
+    // + `ComplexField::one()` defaults on `crate::traits::field::ComplexField`).
+    // Activating these tests is a one-liner: replace `#[cfg(any())]` with
+    // `#[cfg(test)]`. Their job is to lock §1's contract against later drift.
+
+    /// `<f64 as ComplexField>::zero() == 0.0` — the degenerate-real case.#[cfg(test)]
+    #[test]
+    fn complex_field_zero_over_real_scalar_f64() {
+        assert_eq!(<f64 as ComplexField>::zero(), 0.0_f64);
+        assert_eq!(<f32 as ComplexField>::zero(), 0.0_f32);
+    }
+
+    /// `<f64 as ComplexField>::one() == 1.0` — the degenerate-real case.#[cfg(test)]
+    #[test]
+    fn complex_field_one_over_real_scalar_f64() {
+        assert_eq!(<f64 as ComplexField>::one(), 1.0_f64);
+        assert_eq!(<f32 as ComplexField>::one(), 1.0_f32);
+    }
+
+    /// `<Complex<f64> as ComplexField>::zero() == Complex::new(0.0, 0.0)`.#[cfg(test)]
+    #[test]
+    fn complex_field_zero_over_complex_via_default() {
+        let z = <Complex<f64> as ComplexField>::zero();
+        assert_eq!(z, Complex::<f64>::new(0.0, 0.0));
+        let z32 = <Complex<f32> as ComplexField>::zero();
+        assert_eq!(z32, Complex::<f32>::new(0.0, 0.0));
+    }
+
+    /// `<Complex<f64> as ComplexField>::one() == Complex::new(1.0, 0.0)`.#[cfg(test)]
+    #[test]
+    fn complex_field_one_over_complex_via_default() {
+        let z = <Complex<f64> as ComplexField>::one();
+        assert_eq!(z, Complex::<f64>::new(1.0, 0.0));
+        let z32 = <Complex<f32> as ComplexField>::one();
+        assert_eq!(z32, Complex::<f32>::new(1.0, 0.0));
+    }
+
+    /// `ComplexField::zero()` body MUST equal `from_real(<RealPart as
+    /// NumericElement>::ZERO)`. This is the body ADR-0006 §1 prescribes.
+    /// If anyone hand-rolls an override divergent from the additive default,
+    /// this fixture surfaces it.#[cfg(test)]
+    #[test]
+    fn complex_field_zero_routes_through_numeric_element_zero() {
+        assert_eq!(
+            <Complex<f64> as ComplexField>::zero(),
+            <Complex<f64> as ComplexField>::from_real(<f64 as NumericElement>::ZERO),
+        );
+        assert_eq!(
+            <Complex<f32> as ComplexField>::one(),
+            <Complex<f32> as ComplexField>::from_real(<f32 as NumericElement>::ONE),
+        );
     }
 }
