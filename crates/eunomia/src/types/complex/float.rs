@@ -181,6 +181,18 @@ impl<T: FloatElement + Neg<Output = T>> Complex<T> {
         }
     }
 
+    /// Returns `true` if both `re` and `im` are finite (neither NaN nor ±∞).
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        self.re.is_finite() && self.im.is_finite()
+    }
+
+    /// Returns `true` if either `re` or `im` is NaN.
+    #[inline]
+    pub fn is_nan(self) -> bool {
+        self.re.is_nan() || self.im.is_nan()
+    }
+
     /// Complex hyperbolic tangent.
     #[inline]
     pub fn tanh(self) -> Self {
@@ -264,5 +276,19 @@ mod tests {
         // from_polar(2, π/2) = 0 + 2i
         let p = Complex::from_polar(2.0_f64, core::f64::consts::FRAC_PI_2);
         assert!(p.re.abs() < 1e-12 && (p.im - 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn is_finite_and_is_nan_cover_each_component() {
+        assert!(Complex::new(1.0_f64, 2.0).is_finite());
+        assert!(!Complex::new(f64::INFINITY, 0.0).is_finite());
+        assert!(!Complex::new(0.0, f64::NEG_INFINITY).is_finite());
+        assert!(!Complex::new(f64::NAN, 0.0).is_finite());
+
+        assert!(!Complex::new(1.0_f64, 2.0).is_nan());
+        assert!(Complex::new(f64::NAN, 0.0).is_nan());
+        assert!(Complex::new(0.0_f64, f64::NAN).is_nan());
+        // infinity alone is not NaN
+        assert!(!Complex::new(f64::INFINITY, 0.0).is_nan());
     }
 }

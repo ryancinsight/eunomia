@@ -48,8 +48,36 @@ impl<T> Complex<T> {
     }
 }
 
+impl From<f32> for Complex32 {
+    #[inline(always)]
+    fn from(value: f32) -> Self {
+        Self::new(value, 0.0)
+    }
+}
+
+impl From<f64> for Complex64 {
+    #[inline(always)]
+    fn from(value: f64) -> Self {
+        Self::new(value, 0.0)
+    }
+}
+
 impl<T: core::fmt::Display> core::fmt::Display for Complex<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}+{}i", self.re, self.im)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Complex32, Complex64};
+
+    #[test]
+    fn from_real_scalar_sets_zero_imaginary() {
+        let a: Complex32 = 2.5_f32.into();
+        assert_eq!(a, Complex32::new(2.5, 0.0));
+
+        let b: Complex64 = (-1.25_f64).into();
+        assert_eq!(b, Complex64::new(-1.25, 0.0));
     }
 }

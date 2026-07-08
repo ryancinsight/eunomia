@@ -260,6 +260,49 @@ impl<T: PartialEq> PartialOrd for Complex<T> {
     }
 }
 
+macro_rules! scalar_left_ops {
+    ($scalar:ty) => {
+        impl Add<Complex<$scalar>> for $scalar {
+            type Output = Complex<$scalar>;
+
+            #[inline(always)]
+            fn add(self, rhs: Complex<$scalar>) -> Self::Output {
+                Complex::new(self + rhs.re, rhs.im)
+            }
+        }
+
+        impl Sub<Complex<$scalar>> for $scalar {
+            type Output = Complex<$scalar>;
+
+            #[inline(always)]
+            fn sub(self, rhs: Complex<$scalar>) -> Self::Output {
+                Complex::new(self - rhs.re, -rhs.im)
+            }
+        }
+
+        impl Mul<Complex<$scalar>> for $scalar {
+            type Output = Complex<$scalar>;
+
+            #[inline(always)]
+            fn mul(self, rhs: Complex<$scalar>) -> Self::Output {
+                Complex::new(self * rhs.re, self * rhs.im)
+            }
+        }
+
+        impl Div<Complex<$scalar>> for $scalar {
+            type Output = Complex<$scalar>;
+
+            #[inline(always)]
+            fn div(self, rhs: Complex<$scalar>) -> Self::Output {
+                Complex::new(self, 0.0) / rhs
+            }
+        }
+    };
+}
+
+scalar_left_ops!(f32);
+scalar_left_ops!(f64);
+
 #[cfg(test)]
 // This test deliberately exercises the by-reference operator forms this module
 // adds; `op_ref` would flag them as needless on `Copy` operands, which is the
@@ -314,5 +357,24 @@ mod tests {
         // mixed reference/value shapes
         assert_eq!(a + &b, a + b);
         assert_eq!(&a * b, a * b);
+    }
+
+    #[test]
+    fn scalar_left_ops_match_right_ops_by_commutativity() {
+        let z = Complex::new(2.0_f64, -3.0);
+        let s = 4.0_f64;
+        // addition and multiplication commute with the existing scalar-right impls
+        assert_eq!(s + z, z + s);
+        assert_eq!(s * z, z * s);
+        // subtraction/division are the scalar treated as a zero-imaginary complex
+        assert_eq!(s - z, Complex::new(s, 0.0) - z);
+        assert_eq!(s / z, Complex::new(s, 0.0) / z);
+
+        let zf = Complex::new(1.5_f32, 2.5);
+        let sf = 3.0_f32;
+        assert_eq!(sf + zf, zf + sf);
+        assert_eq!(sf * zf, zf * sf);
+        assert_eq!(sf - zf, Complex::new(sf, 0.0) - zf);
+        assert_eq!(sf / zf, Complex::new(sf, 0.0) / zf);
     }
 }
