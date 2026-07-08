@@ -35,14 +35,17 @@ pub fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
         }
         return;
     }
-    let len = packed.len();
-    let n = len.min(unpacked.len());
-    for i in 0..n {
-        let b = packed[i].0 as u16;
-        let sign = (b & 0x80) << 8;
-        let rest = (b & 0x7f) << 5;
-        let bias_diff = if rest == 0 { 0 } else { 112 << 7 };
-        unpacked[i] = Bf16(half::bf16::from_bits(sign | (rest + bias_diff)));
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        let len = packed.len();
+        let n = len.min(unpacked.len());
+        for i in 0..n {
+            let b = packed[i].0 as u16;
+            let sign = (b & 0x80) << 8;
+            let rest = (b & 0x7f) << 5;
+            let bias_diff = if rest == 0 { 0 } else { 112 << 7 };
+            unpacked[i] = Bf16(half::bf16::from_bits(sign | (rest + bias_diff)));
+        }
     }
 }
 
@@ -71,11 +74,14 @@ pub fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
         }
         return;
     }
-    let len = packed.len();
-    let n = len.min(unpacked.len());
-    for i in 0..n {
-        let b = packed[i].0;
-        unpacked[i] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b)));
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        let len = packed.len();
+        let n = len.min(unpacked.len());
+        for i in 0..n {
+            let b = packed[i].0;
+            unpacked[i] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b)));
+        }
     }
 }
 
@@ -104,14 +110,17 @@ pub fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
         }
         return;
     }
-    let len = packed.len();
-    let n = len.min(unpacked.len() / 2);
-    for i in 0..n {
-        let byte = packed[i];
-        let b1 = byte & 0x0f;
-        let b2 = (byte >> 4) & 0x0f;
-        unpacked[2 * i] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b1)));
-        unpacked[2 * i + 1] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b2)));
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        let len = packed.len();
+        let n = len.min(unpacked.len() / 2);
+        for i in 0..n {
+            let byte = packed[i];
+            let b1 = byte & 0x0f;
+            let b2 = (byte >> 4) & 0x0f;
+            unpacked[2 * i] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b1)));
+            unpacked[2 * i + 1] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b2)));
+        }
     }
 }
 
@@ -140,9 +149,12 @@ pub fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
         }
         return;
     }
-    let len = packed.len().min(unpacked.len());
-    for i in 0..len {
-        unpacked[i] = F32(packed[i].to_f32());
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        let len = packed.len().min(unpacked.len());
+        for i in 0..len {
+            unpacked[i] = F32(packed[i].to_f32());
+        }
     }
 }
 
@@ -171,14 +183,17 @@ pub fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
         }
         return;
     }
-    let len = packed.len();
-    let n = len.min(unpacked.len() / 2);
-    for i in 0..n {
-        let byte = packed[i];
-        let b1 = byte & 0x0f;
-        let b2 = (byte >> 4) & 0x0f;
-        unpacked[2 * i] = F32(F4(b1).to_f32());
-        unpacked[2 * i + 1] = F32(F4(b2).to_f32());
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        let len = packed.len();
+        let n = len.min(unpacked.len() / 2);
+        for i in 0..n {
+            let byte = packed[i];
+            let b1 = byte & 0x0f;
+            let b2 = (byte >> 4) & 0x0f;
+            unpacked[2 * i] = F32(F4(b1).to_f32());
+            unpacked[2 * i + 1] = F32(F4(b2).to_f32());
+        }
     }
 }
 
@@ -207,17 +222,20 @@ pub fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
         }
         return;
     }
-    static TABLE_BITS: [u32; 256] = {
-        let mut t = [0u32; 256];
-        let mut idx = 0;
-        while idx < 256 {
-            t[idx] = f8_to_f32_bits(idx as u8);
-            idx += 1;
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        static TABLE_BITS: [u32; 256] = {
+            let mut t = [0u32; 256];
+            let mut idx = 0;
+            while idx < 256 {
+                t[idx] = f8_to_f32_bits(idx as u8);
+                idx += 1;
+            }
+            t
+        };
+        let len = packed.len().min(unpacked.len());
+        for i in 0..len {
+            unpacked[i] = F32(f32::from_bits(TABLE_BITS[packed[i].0 as usize]));
         }
-        t
-    };
-    let len = packed.len().min(unpacked.len());
-    for i in 0..len {
-        unpacked[i] = F32(f32::from_bits(TABLE_BITS[packed[i].0 as usize]));
     }
 }
