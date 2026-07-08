@@ -8,6 +8,7 @@ use super::arch::{has_avx2, has_avx512bw, has_avx512f};
 #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 use super::unsafe_intrinsics;
 
+#[cfg(not(target_arch = "aarch64"))]
 use super::conv::{bf4_to_bf16_bits, f8_to_f32_bits};
 
 /// Unpacks Bf8 elements to Bf16.
