@@ -114,11 +114,13 @@ impl_cast_primitive_float_int!(f32, u8);
 impl_cast_primitive_float_int!(f32, u16);
 impl_cast_primitive_float_int!(f32, u32);
 impl_cast_primitive_float_int!(f32, u64);
+impl_cast_primitive_float_int!(f32, usize);
 impl_cast_primitive_float_int!(f64, i64);
 impl_cast_primitive_float_int!(f64, u8);
 impl_cast_primitive_float_int!(f64, u16);
 impl_cast_primitive_float_int!(f64, u32);
 impl_cast_primitive_float_int!(f64, u64);
+impl_cast_primitive_float_int!(f64, usize);
 
 // Implement CastFrom for half types
 impl CastFrom<half::f16> for half::f16 {
@@ -193,6 +195,12 @@ impl CastFrom<half::f16> for u64 {
         val.to_f32() as u64
     }
 }
+impl CastFrom<half::f16> for usize {
+    #[inline(always)]
+    fn cast_from(val: half::f16) -> Self {
+        val.to_f32() as usize
+    }
+}
 
 impl CastFrom<half::bf16> for half::f16 {
     #[inline(always)]
@@ -264,6 +272,12 @@ impl CastFrom<half::bf16> for u64 {
     #[inline(always)]
     fn cast_from(val: half::bf16) -> Self {
         val.to_f32() as u64
+    }
+}
+impl CastFrom<half::bf16> for usize {
+    #[inline(always)]
+    fn cast_from(val: half::bf16) -> Self {
+        val.to_f32() as usize
     }
 }
 
@@ -350,6 +364,26 @@ impl_cast_float_wrapper_primitives!(Bf8);
 impl_cast_float_wrapper_primitives!(Bf4);
 impl_cast_float_wrapper_primitives!(F8);
 impl_cast_float_wrapper_primitives!(F4);
+
+macro_rules! impl_cast_float_wrapper_to_index {
+    ($wrap:ident) => {
+        impl CastFrom<$wrap> for usize {
+            #[inline(always)]
+            fn cast_from(val: $wrap) -> Self {
+                val.to_f64() as usize
+            }
+        }
+    };
+}
+
+impl_cast_float_wrapper_to_index!(F16);
+impl_cast_float_wrapper_to_index!(F32);
+impl_cast_float_wrapper_to_index!(F64);
+impl_cast_float_wrapper_to_index!(Bf16);
+impl_cast_float_wrapper_to_index!(Bf8);
+impl_cast_float_wrapper_to_index!(Bf4);
+impl_cast_float_wrapper_to_index!(F8);
+impl_cast_float_wrapper_to_index!(F4);
 
 macro_rules! impl_cast_int_wrapper_primitives {
     ($wrap:ident, $inner:ty) => {

@@ -1,6 +1,10 @@
 //! Generic scalar [`CastFrom`]/[`CastTo`] conversion helpers.
 
 /// Helper trait for generic casting between SIMD scalar types.
+///
+/// Primitive numeric implementations follow Rust's `as` conversion semantics.
+/// In particular, float-to-integer conversions truncate toward zero and
+/// saturate values outside the destination range.
 pub trait CastFrom<T>: Copy {
     /// Cast from type `T` to `Self`.
     fn cast_from(val: T) -> Self;

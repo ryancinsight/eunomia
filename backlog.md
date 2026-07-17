@@ -4,6 +4,11 @@ Sprint target: 0.1.0 (datatype-law foundation extracted from hermes-numeric).
 
 ## Done
 
+- **E-012 [minor]** Added provider-owned float-to-`usize` `CastFrom` edges for
+  native indexing consumers. Every primitive and wrapped `FloatElement` family
+  now uses the canonical cast trait. Warning-denied all-feature Clippy passes;
+  focused cast Nextest passes 2/2 and full Eunomia Nextest passes 44/44.
+  Driver: RITK native interpolation migration.
 - **E-001 [arch]** Scaffold eunomia workspace; migrate `hermes-numeric` content
   verbatim → `crates/eunomia` (scalars, complex, packed, casts, ops, traits).
   Builds + all tests pass standalone. — ADR 0001.
