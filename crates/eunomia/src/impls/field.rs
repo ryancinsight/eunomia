@@ -256,27 +256,25 @@ mod tests {
         assert!(!m.is_nan(), "modulus of `default()` is unexpectedly NaN");
     }
 
-    // ───── Post-ADR-0006 §1 fixtures (frozen via `#[cfg(any())]`) ────────────
-    // Compile ONLY once ADR-0006 §1 ships (additive `ComplexField::zero()`
-    // + `ComplexField::one()` defaults on `crate::traits::field::ComplexField`).
-    // Activating these tests is a one-liner: replace `#[cfg(any())]` with
-    // `#[cfg(test)]`. Their job is to lock §1's contract against later drift.
+    // ADR-0006 §1: `ComplexField::zero()`/`one()` route through
+    // `from_real(<RealPart as NumericElement>::ZERO/ONE)`. These fixtures lock
+    // that contract against later drift.
 
-    /// `<f64 as ComplexField>::zero() == 0.0` — the degenerate-real case.#[cfg(test)]
+    /// `<f64 as ComplexField>::zero() == 0.0` — the degenerate-real case.
     #[test]
     fn complex_field_zero_over_real_scalar_f64() {
         assert_eq!(<f64 as ComplexField>::zero(), 0.0_f64);
         assert_eq!(<f32 as ComplexField>::zero(), 0.0_f32);
     }
 
-    /// `<f64 as ComplexField>::one() == 1.0` — the degenerate-real case.#[cfg(test)]
+    /// `<f64 as ComplexField>::one() == 1.0` — the degenerate-real case.
     #[test]
     fn complex_field_one_over_real_scalar_f64() {
         assert_eq!(<f64 as ComplexField>::one(), 1.0_f64);
         assert_eq!(<f32 as ComplexField>::one(), 1.0_f32);
     }
 
-    /// `<Complex<f64> as ComplexField>::zero() == Complex::new(0.0, 0.0)`.#[cfg(test)]
+    /// `<Complex<f64> as ComplexField>::zero() == Complex::new(0.0, 0.0)`.
     #[test]
     fn complex_field_zero_over_complex_via_default() {
         let z = <Complex<f64> as ComplexField>::zero();
@@ -285,7 +283,7 @@ mod tests {
         assert_eq!(z32, Complex::<f32>::new(0.0, 0.0));
     }
 
-    /// `<Complex<f64> as ComplexField>::one() == Complex::new(1.0, 0.0)`.#[cfg(test)]
+    /// `<Complex<f64> as ComplexField>::one() == Complex::new(1.0, 0.0)`.
     #[test]
     fn complex_field_one_over_complex_via_default() {
         let z = <Complex<f64> as ComplexField>::one();
@@ -297,7 +295,7 @@ mod tests {
     /// `ComplexField::zero()` body MUST equal `from_real(<RealPart as
     /// NumericElement>::ZERO)`. This is the body ADR-0006 §1 prescribes.
     /// If anyone hand-rolls an override divergent from the additive default,
-    /// this fixture surfaces it.#[cfg(test)]
+    /// this fixture surfaces it.
     #[test]
     fn complex_field_zero_routes_through_numeric_element_zero() {
         assert_eq!(

@@ -11,7 +11,9 @@ pub(super) fn has_avx512bw() -> bool {
         }
         #[cfg(not(feature = "std"))]
         {
-            cfg!(target_feature = "avx512bw")
+            // Match the `std` runtime check and the intrinsics' `#[target_feature]`
+            // requirement: `avx512vl` is needed for the 128/256-bit-width ops.
+            cfg!(target_feature = "avx512bw") && cfg!(target_feature = "avx512vl")
         }
     }
     #[cfg(not(target_arch = "x86_64"))]
@@ -31,7 +33,8 @@ pub(super) fn has_avx512f() -> bool {
         }
         #[cfg(not(feature = "std"))]
         {
-            cfg!(target_feature = "avx512f")
+            // `avx512vl` mirrors the `std` check and the intrinsics' requirement.
+            cfg!(target_feature = "avx512f") && cfg!(target_feature = "avx512vl")
         }
     }
     #[cfg(not(target_arch = "x86_64"))]
