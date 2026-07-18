@@ -33,9 +33,7 @@ pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
         i += 16;
     }
     for j in i..len {
-        unpacked[j] = Bf16(half::bf16::from_bits(widen_high_word::<5, 2>(u32::from(
-            packed[j].0,
-        ))));
+        unpacked[j] = Bf16(widen_high_word::<5, 2>(u32::from(packed[j].0)));
     }
 }
 
@@ -89,9 +87,7 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     }
     for j in i..len {
         let b = packed[j].0;
-        unpacked[j] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-            b as u32,
-        )));
+        unpacked[j] = Bf16(widen_finite_high_word::<2, 1>(b as u32));
     }
 }
 
@@ -158,12 +154,8 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
 
     for j in i..n {
         let byte = packed[j];
-        unpacked[2 * j] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-            (byte & 0x0F) as u32,
-        )));
-        unpacked[2 * j + 1] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-            ((byte >> 4) & 0x0F) as u32,
-        )));
+        unpacked[2 * j] = Bf16(widen_finite_high_word::<2, 1>((byte & 0x0F) as u32));
+        unpacked[2 * j + 1] = Bf16(widen_finite_high_word::<2, 1>(((byte >> 4) & 0x0F) as u32));
     }
 }
 

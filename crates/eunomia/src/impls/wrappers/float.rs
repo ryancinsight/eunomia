@@ -23,12 +23,7 @@ macro_rules! impl_float_element {
     };
 }
 
-impl_float_element!(
-    F16,
-    |val| F16(half::f16::from_f32(val)),
-    |val| F16(half::f16::from_f64(val)),
-    |x: F16| x.0.to_f32()
-);
+impl_float_element!(F16, F16::from_f32, F16::from_f64, F16::to_f32);
 impl_float_element!(F32, F32, |val| F32(val as f32), |x: F32| x.0);
 // F64 wraps native `f64`, so it gets an explicit impl with native
 // double-precision transcendentals — the macro's f32-routed default would
@@ -121,12 +116,7 @@ impl FloatElement for F64 {
         }
     }
 }
-impl_float_element!(
-    Bf16,
-    |val| Bf16(half::bf16::from_f32(val)),
-    |val| Bf16(half::bf16::from_f64(val)),
-    |x: Bf16| x.0.to_f32()
-);
+impl_float_element!(Bf16, Bf16::from_f32, Bf16::from_f64, Bf16::to_f32);
 impl_float_element!(
     Bf8,
     Bf8::from_f32,

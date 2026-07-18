@@ -47,9 +47,7 @@ pub fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
         let len = packed.len();
         let n = len.min(unpacked.len());
         for i in 0..n {
-            unpacked[i] = Bf16(half::bf16::from_bits(widen_high_word::<5, 2>(u32::from(
-                packed[i].0,
-            ))));
+            unpacked[i] = Bf16(widen_high_word::<5, 2>(u32::from(packed[i].0)));
         }
     }
 }
@@ -91,9 +89,7 @@ pub fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
         let n = len.min(unpacked.len());
         for i in 0..n {
             let b = packed[i].0;
-            unpacked[i] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-                b as u32,
-            )));
+            unpacked[i] = Bf16(widen_finite_high_word::<2, 1>(b as u32));
         }
     }
 }
@@ -137,12 +133,8 @@ pub fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
             let byte = packed[i];
             let b1 = byte & 0x0f;
             let b2 = (byte >> 4) & 0x0f;
-            unpacked[2 * i] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-                b1 as u32,
-            )));
-            unpacked[2 * i + 1] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-                b2 as u32,
-            )));
+            unpacked[2 * i] = Bf16(widen_finite_high_word::<2, 1>(b1 as u32));
+            unpacked[2 * i + 1] = Bf16(widen_finite_high_word::<2, 1>(b2 as u32));
         }
     }
 }

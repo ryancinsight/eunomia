@@ -44,12 +44,22 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   kernel special-value **policy parameter**, added when coeus/hephaestus
   quantization needs them. Dep: E-023 + a driving consumer. Acceptance: OCP
   reference vectors match; existing IEEE-style types unchanged. ADR 0003 D3.
-- **E-025 [arch]** Re-back `F16`/`Bf16` on native `u16` via E-022; demote `half`
-  to dev-oracle + optional `half-interop` feature. Co-evolution unit: eunomia +
-  hermes (≥1 consumer constructs `Bf16(half::bf16::…)`) → leto → coeus/apollo.
-  Dep: E-022. Acceptance: `half` off eunomia's hard deps; consumer chain green;
-  hardware F16C/fp16 conversion ladder (per `packed/unpack` dispatch pattern) or
-  filed as its own item.
+- **E-025 [arch/major] — eunomia re-back done; consumer chain + full half-drop remain**
+  `F16`/`Bf16` are now native `u16`-backed (breaking `.0` field change): conversions
+  route through the E-022 kernel (bit-exact vs `half`, proven exhaustively over all
+  2¹⁶ patterns + an f32 narrow sweep), `PartialEq`/`PartialOrd` are manual
+  **float-semantic** (not bitwise — preserving `half`'s ±0/NaN/ordering), and the
+  whole wrapper + packed path (scalar + AVX2/AVX-512/NEON + slice) is half-free.
+  `half` is now confined to the raw `half::f16`/`bf16` trait impls (for consumers
+  still on raw half) + the differential-oracle tests. Completed as a **takeover** of
+  a concurrent peer's packed-side WIP (dispatch/intrinsics) combined with my
+  wrapper-side re-back; I also fixed the aarch64 NEON path the peer had not
+  converted. Evidence: fmt / clippy-D / nextest 76/76 / doctest / rustdoc / no_std
+  clean; aarch64 NEON correct-by-construction (cross-compile blocked by a missing
+  C toolchain, unrelated).
+  **Remaining (E-025b/c):** migrate hermes → leto → coeus/apollo off raw
+  `half::f16` → `eunomia::F16` (~900 sites; hermes needs a pin-bump first), then
+  remove the raw-half impls and drop `half` entirely.
 - **E-026 [arch] — vocabulary done; gating deferred** Native `layout` module
   (G-A2): `Zeroable`/`Pod` unsafe markers (per-impl `// SAFETY:`, layout pinned by
   the existing `types` `const _` asserts) + the used safe casts (`bytes_of`(+mut),

@@ -184,7 +184,7 @@ fn exact_high_word(value: f32) -> u16 {
 fn assert_bf16_bits_equal(left: &[Bf16], right: &[Bf16]) {
     assert_eq!(left.len(), right.len());
     for (left, right) in left.iter().zip(right) {
-        assert_eq!(left.0.to_bits(), right.0.to_bits());
+        assert_eq!(left.0, right.0);
     }
 }
 
@@ -194,7 +194,7 @@ fn packed_dispatch_matches_scalar_conversion_for_every_encoding() {
     let mut unpacked_bf8 = vec![Bf16::default(); bf8.len()];
     unpack_bf8_to_bf16(&bf8, &mut unpacked_bf8);
     for (source, result) in bf8.iter().zip(&unpacked_bf8) {
-        assert_eq!(result.0.to_bits(), exact_high_word(source.to_f32()));
+        assert_eq!(result.0, exact_high_word(source.to_f32()));
     }
 
     #[cfg(target_arch = "x86_64")]
@@ -222,7 +222,7 @@ fn packed_dispatch_matches_scalar_conversion_for_every_encoding() {
     let mut unpacked_bf4 = vec![Bf16::default(); bf4.len()];
     unpack_bf4_to_bf16(&bf4, &mut unpacked_bf4);
     for (source, result) in bf4.iter().zip(&unpacked_bf4) {
-        assert_eq!(result.0.to_bits(), exact_high_word(source.to_f32()));
+        assert_eq!(result.0, exact_high_word(source.to_f32()));
     }
 
     let f8: Vec<_> = (u8::MIN..=u8::MAX).map(F8).collect();
@@ -247,11 +247,11 @@ fn packed_dispatch_matches_scalar_conversion_for_every_encoding() {
     for (index, byte) in packed.iter().copied().enumerate() {
         let (low_bf4, high_bf4) = Bf4::unpack_pair(byte);
         assert_eq!(
-            unpacked_bf4_pairs[index * 2].0.to_bits(),
+            unpacked_bf4_pairs[index * 2].0,
             exact_high_word(low_bf4.to_f32())
         );
         assert_eq!(
-            unpacked_bf4_pairs[index * 2 + 1].0.to_bits(),
+            unpacked_bf4_pairs[index * 2 + 1].0,
             exact_high_word(high_bf4.to_f32())
         );
 
