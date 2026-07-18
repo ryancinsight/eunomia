@@ -5,18 +5,34 @@
 //! One const-parameterized pair of functions converts between `f32` and any
 //! reduced binary floating-point format described by its exponent width `E` and
 //! mantissa width `M`. The format layout is `[sign(1) | exp(E) | mant(M)]` with
-//! exponent bias `2^(E-1) - 1` and the **top exponent reserved for
-//! infinity/NaN** — the IEEE 754 convention shared by `binary16` (`E=5, M=10`)
-//! and `bfloat16` (`E=8, M=7`). Narrowing rounds to nearest, ties to even,
-//! matching IEEE 754 and the `half` reference this displaces.
+//! exponent bias `2^(E-1) - 1`. A monomorphized special-value policy selects
+//! either IEEE infinity/NaN encodings or a finite-only format that reserves the
+//! entire top exponent for NaN and saturates overflow. Narrowing rounds to
+//! nearest, ties to even, matching IEEE 754 and the `half` reference this
+//! displaces.
 //!
-//! The kernel monomorphizes per `(E, M)` to code identical to a hand-written
-//! per-format conversion (const generics, no runtime branch on the widths), so
-//! every format shares one implementation at zero cost.
+//! The widths and policy are compile-time parameters, so each format
+//! monomorphizes without runtime width or policy dispatch while sharing one
+//! implementation.
 //!
-//! Sub-byte formats whose special-value encoding differs from IEEE (OCP MXFP
-//! `FP8`/`FP4` have no infinity) are a follow-up: their policy becomes an
-//! explicit parameter of this kernel (see backlog E-024), not a second copy.
+//! The policy is internal until a distinct externally required format family
+//! needs public selection (backlog E-024).
+
+trait SpecialValues {
+    const HAS_INFINITY: bool;
+}
+
+struct Ieee;
+
+impl SpecialValues for Ieee {
+    const HAS_INFINITY: bool = true;
+}
+
+struct Finite;
+
+impl SpecialValues for Finite {
+    const HAS_INFINITY: bool = false;
+}
 
 /// `f32` mantissa field width (IEEE 754 binary32).
 const F32_MANT_BITS: u32 = 23;
@@ -61,6 +77,44 @@ const fn round_to_nearest_even(value: u32, drop: u32) -> u32 {
 #[inline]
 #[must_use]
 pub const fn widen<const E: u32, const M: u32>(bits: u32) -> u32 {
+    widen_with::<Ieee, E, M>(bits)
+}
+
+/// Widen a finite-only format that reserves its top exponent for NaN.
+#[inline]
+#[must_use]
+pub(crate) const fn widen_finite<const E: u32, const M: u32>(bits: u32) -> u32 {
+    widen_with::<Finite, E, M>(bits)
+}
+
+/// Widen an IEEE reduced format and return the exact high 16 bits.
+#[inline]
+#[must_use]
+pub(crate) const fn widen_high_word<const E: u32, const M: u32>(bits: u32) -> u16 {
+    high_word::<M>(widen::<E, M>(bits))
+}
+
+/// Widen a finite-only reduced format and return the exact high 16 bits.
+///
+/// This is the storage representation of the result for any destination format
+/// that shares binary32's exponent and retains at most seven mantissa bits.
+#[inline]
+#[must_use]
+pub(crate) const fn widen_finite_high_word<const E: u32, const M: u32>(bits: u32) -> u16 {
+    high_word::<M>(widen_finite::<E, M>(bits))
+}
+
+const fn high_word<const M: u32>(bits: u32) -> u16 {
+    assert!(
+        M <= 7,
+        "high-word widening requires at most seven mantissa bits"
+    );
+    // The shift proves the discarded low word is zero for the admitted source
+    // widths; narrowing to u16 intentionally retains the remaining high word.
+    (bits >> 16) as u16
+}
+
+const fn widen_with<P: SpecialValues, const E: u32, const M: u32>(bits: u32) -> u32 {
     let sign = (bits >> (E + M)) & 1;
     let exp = (bits >> M) & ((1 << E) - 1);
     let mant = bits & ((1 << M) - 1);
@@ -69,12 +123,18 @@ pub const fn widen<const E: u32, const M: u32>(bits: u32) -> u32 {
     let mant_align = F32_MANT_BITS - M;
 
     if exp == (1 << E) - 1 {
-        // Reserved top exponent: infinity (`mant == 0`) or NaN.
-        if mant == 0 {
+        if P::HAS_INFINITY && mant == 0 {
             f32_sign | (F32_EXP_ALL_ONES << F32_MANT_BITS)
         } else {
-            // Left-align the NaN payload; `mant != 0` keeps the result a NaN.
-            f32_sign | (F32_EXP_ALL_ONES << F32_MANT_BITS) | (mant << mant_align)
+            // A zero-width mantissa or a finite-only top exponent can carry no
+            // payload, so force the canonical quiet-NaN bit.
+            let payload = mant << mant_align;
+            let payload = if payload == 0 {
+                1 << (F32_MANT_BITS - 1)
+            } else {
+                payload
+            };
+            f32_sign | (F32_EXP_ALL_ONES << F32_MANT_BITS) | payload
         }
     } else if exp == 0 {
         if mant == 0 {
@@ -127,6 +187,17 @@ pub const fn widen<const E: u32, const M: u32>(bits: u32) -> u32 {
 #[inline]
 #[must_use]
 pub const fn narrow<const E: u32, const M: u32>(f32_bits: u32) -> u32 {
+    narrow_with::<Ieee, E, M>(f32_bits)
+}
+
+/// Narrow into a finite-only format that reserves its top exponent for NaN.
+#[inline]
+#[must_use]
+pub(crate) const fn narrow_finite<const E: u32, const M: u32>(f32_bits: u32) -> u32 {
+    narrow_with::<Finite, E, M>(f32_bits)
+}
+
+const fn narrow_with<P: SpecialValues, const E: u32, const M: u32>(f32_bits: u32) -> u32 {
     let sign = (f32_bits >> 31) & 1;
     let f32_exp = ((f32_bits >> F32_MANT_BITS) & F32_EXP_ALL_ONES) as i32;
     let f32_mant = f32_bits & ((1 << F32_MANT_BITS) - 1);
@@ -134,11 +205,19 @@ pub const fn narrow<const E: u32, const M: u32>(f32_bits: u32) -> u32 {
     let exp_all_ones: u32 = (1 << E) - 1;
     let out_sign = sign << (E + M);
     let mant_align = F32_MANT_BITS - M;
+    let max_finite = out_sign | ((exp_all_ones - 1) << M) | ((1 << M) - 1);
 
-    // Infinity / NaN pass-through.
+    // Infinity / NaN mapping follows the selected format contract.
     if f32_exp == F32_EXP_ALL_ONES as i32 {
         if f32_mant == 0 {
-            return out_sign | (exp_all_ones << M); // infinity
+            return if P::HAS_INFINITY {
+                out_sign | (exp_all_ones << M)
+            } else {
+                max_finite
+            };
+        }
+        if !P::HAS_INFINITY {
+            return out_sign | (exp_all_ones << M) | ((1 << M) - 1);
         }
         // Right-align the payload; force a nonzero mantissa so a NaN never
         // collapses into the infinity encoding.
@@ -163,7 +242,11 @@ pub const fn narrow<const E: u32, const M: u32>(f32_bits: u32) -> u32 {
     let out_exp = unbiased + bias;
 
     if out_exp >= exp_all_ones as i32 {
-        return out_sign | (exp_all_ones << M); // overflow to infinity
+        return if P::HAS_INFINITY {
+            out_sign | (exp_all_ones << M)
+        } else {
+            max_finite
+        };
     }
 
     if out_exp <= 0 {
@@ -183,5 +266,10 @@ pub const fn narrow<const E: u32, const M: u32>(f32_bits: u32) -> u32 {
     // implicit `2^M` and adding the exponent field lets a carry ripple into the
     // exponent (and, at the top, into the infinity encoding) automatically.
     let reduced_sig = round_to_nearest_even(significand, mant_align);
-    out_sign | (((out_exp as u32) << M) + (reduced_sig - (1 << M)))
+    let encoded = out_sign | (((out_exp as u32) << M) + (reduced_sig - (1 << M)));
+    if !P::HAS_INFINITY && ((encoded >> M) & exp_all_ones) == exp_all_ones {
+        max_finite
+    } else {
+        encoded
+    }
 }

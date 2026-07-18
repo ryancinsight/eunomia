@@ -36,12 +36,12 @@ conventions). See ADR 0003 / gap_audit §Byte-layout for the full workstream
 
 ## E-023 [minor] — canonical sub-byte conversion (Owner: Codex)
 
-- [ ] Pin the existing E5M2, E2M1, E4M3, and E3M0 conventions with analytical
+- [x] Pin the existing E5M2, E2M1, E4M3, and E3M0 conventions with analytical
   known-value, special-value, round-trip, and ties-to-even tests.
-- [ ] Generalize the native conversion kernel over the finite-only
+- [x] Generalize the native conversion kernel over the finite-only
   reserved-top-exponent policy without duplicating the arithmetic.
-- [ ] Replace all four hand-written type conversions and packed conversion
+- [x] Replace all four hand-written type conversions and packed conversion
   tables with the canonical kernel.
-- [ ] Correct sub-byte numeric constants to match their declared layouts.
-- [ ] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
+- [x] Correct sub-byte numeric constants to match their declared layouts.
+- [x] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
   semver, and downstream Leto/Hephaestus checks.

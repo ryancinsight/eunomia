@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-use super::super::conv::{bf4_to_bf16_bits, f4_to_f32_bits, f8_to_f32_bits};
+use crate::convert::{widen_finite, widen_finite_high_word, widen_high_word};
 use crate::types::{Bf16, Bf4, Bf8, F32, F4, F8};
 use core::arch::x86_64::*;
 
@@ -8,34 +7,29 @@ pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     let len = packed.len().min(unpacked.len());
     let mut i = 0;
 
-    while i + 32 <= len {
-        let ptr = packed.as_ptr().add(i) as *const __m256i;
-        let v_in = _mm256_loadu_si256(ptr);
-        let v_u16 = _mm512_cvtepu8_epi16(v_in);
+    static TABLE: [i32; 256] = {
+        let mut table = [0i32; 256];
+        let mut index = 0;
+        while index < table.len() {
+            table[index] = widen_high_word::<5, 2>(index as u32) as i32;
+            index += 1;
+        }
+        table
+    };
 
-        let sign = _mm512_slli_epi16(_mm512_and_si512(v_u16, _mm512_set1_epi16(0x80)), 8);
-        let rest = _mm512_slli_epi16(_mm512_and_si512(v_u16, _mm512_set1_epi16(0x7f)), 5);
-
-        let is_zero_mask = _mm512_cmpeq_epi16_mask(rest, _mm512_setzero_si512());
-        let is_not_zero_mask = !is_zero_mask;
-
-        let rest_biased =
-            _mm512_mask_add_epi16(rest, is_not_zero_mask, rest, _mm512_set1_epi16(112 << 7));
-
-        let result = _mm512_or_si512(sign, rest_biased);
-
-        let out_ptr = unpacked.as_mut_ptr().add(i) as *mut __m512i;
-        _mm512_storeu_si512(out_ptr, result);
-
-        i += 32;
+    while i + 16 <= len {
+        let input = _mm_loadu_si128(packed.as_ptr().add(i) as *const __m128i);
+        let indices = _mm512_cvtepu8_epi32(input);
+        let gathered = _mm512_i32gather_epi32(indices, TABLE.as_ptr(), 4);
+        let result = _mm512_cvtepi32_epi16(gathered);
+        _mm256_storeu_si256(unpacked.as_mut_ptr().add(i) as *mut __m256i, result);
+        i += 16;
     }
 
     for j in i..len {
-        let b = packed[j].0 as u16;
-        let sign = (b & 0x80) << 8;
-        let rest = (b & 0x7f) << 5;
-        let bias_diff = if rest == 0 { 0 } else { 112 << 7 };
-        unpacked[j] = Bf16(half::bf16::from_bits(sign | (rest + bias_diff)));
+        unpacked[j] = Bf16(half::bf16::from_bits(widen_high_word::<5, 2>(u32::from(
+            packed[j].0,
+        ))));
     }
 }
 
@@ -48,7 +42,7 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
         let mut t = [0u16; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = bf4_to_bf16_bits(idx as u8);
+            t[idx] = widen_finite_high_word::<2, 1>(idx as u32);
             idx += 1;
         }
         t
@@ -104,7 +98,9 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
 
     for j in i..len {
         let b = packed[j].0;
-        unpacked[j] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b)));
+        unpacked[j] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
+            b as u32,
+        )));
     }
 }
 
@@ -118,7 +114,7 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
         let mut t = [0u16; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = bf4_to_bf16_bits(idx as u8);
+            t[idx] = widen_finite_high_word::<2, 1>(idx as u32);
             idx += 1;
         }
         t
@@ -173,7 +169,7 @@ pub unsafe fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
         let mut t = [0u32; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = f4_to_f32_bits(idx as u8);
+            t[idx] = widen_finite::<3, 0>(idx as u32);
             idx += 1;
         }
         t
@@ -209,7 +205,7 @@ pub unsafe fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
         let mut t = [0u32; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = f4_to_f32_bits(idx as u8);
+            t[idx] = widen_finite::<3, 0>(idx as u32);
             idx += 1;
         }
         t
@@ -264,7 +260,7 @@ pub unsafe fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
         let mut t = [0u32; 256];
         let mut idx = 0;
         while idx < 256 {
-            t[idx] = f8_to_f32_bits(idx as u8);
+            t[idx] = widen_finite::<4, 3>(idx as u32);
             idx += 1;
         }
         t

@@ -16,7 +16,7 @@ stable **1.95.0** pin (no `#![feature]` gates; SIMD via stable `#[target_feature
 | Concern | State | Backing |
 | --- | --- | --- |
 | `Complex<T>`, `F32`/`F64`/`I8`/`I16`/`I32` | Native | `#[repr(C/transparent)]` + `const _` layout asserts |
-| `F8`(E4M3)/`Bf8`(E5M2)/`F4`(E3M0)/`Bf4`(E2M1) | **Native** but truncating, four hand-rolled copies | `u8`, `types/floats.rs` |
+| `F8`(E4M3)/`Bf8`(E5M2)/`F4`(E3M0)/`Bf4`(E2M1) | **Native** with canonical RNE conversion | `u8`, `convert` kernel (E-023) |
 | `F16`/`Bf16` | **Delegated** | wrappers over `half::f16`/`half::bf16` |
 | f16/bf16 ↔ f32 conversion | **Delegated → now native** | `half` → `convert::{narrow,widen}` (E-022, done) |
 | `Pod`/`Zeroable` markers | **Delegated** | `unsafe impl bytemuck::…` (`types/mod.rs`) |
@@ -45,10 +45,10 @@ boundary); **`half` is fully replaceable** (no external lock-in, RNE oracle).
 
 Correctness — **G-C1** `packed/unpack/arch.rs:34` no_std `has_avx512f` tests
 `"avx512bw"` (copy-paste) + both no_std AVX-512 branches drop `avx512vl` (E-028).
-**G-C2** sub-byte `from_f32` truncates, not round-to-nearest-even → quantization
-bias (E-023). **G-C3** sub-byte special-value convention unpinned + non-OCP
-(`F4`=E3M0 matches no hardware format); material for GPU quantization (E-023 pin /
-E-024 OCP). **G-C4** 18 dispatch `unsafe` blocks + 18 intrinsic `unsafe fn` + the
+**G-C2 (resolved E-023)** sub-byte narrowing now uses round-to-nearest-even.
+**G-C3 (pinned E-023)** Bf8 is IEEE E5M2; F8/Bf4/F4 are finite-only with the top
+exponent reserved for NaN. OCP types remain gated on a consumer (E-024).
+**G-C4** 18 dispatch `unsafe` blocks + 18 intrinsic `unsafe fn` + the
 sole `transmute` (`avx512.rs:56`) + 22 `unsafe impl bytemuck::…` carry no
 `// SAFETY:` (crate-wide `#![allow(clippy::missing_safety_doc)]`) (E-029).
 **G-C5** `impls/field.rs` "frozen" tests' `#[cfg(any())]` gate landed inside a
@@ -56,12 +56,13 @@ doc-comment → tests are live (E-029).
 
 Architecture — **G-A1** `half` is a removable hard runtime dep (E-025).
 **G-A2** no eunomia byte-layout vocabulary; own markers + used cast fns at
-checked tier + bytemuck bridge (E-026/E-027). **G-A3** four hand-rolled sub-byte
-conversions collapse onto the E-022 kernel (E-023).
+checked tier + bytemuck bridge (E-026/E-027). **G-A3 (resolved E-023)** all
+sub-byte scalar and packed-table conversions use the E-022 kernel.
 
-Tests/docs — **G-T1** zero tests for sub-byte conversions (E-023). **G-T2**
+Tests/docs — **G-T1 (resolved E-023)** analytical and exhaustive sub-byte
+conversion tests now pin all four formats. **G-T2**
 `neon::unpack_f8_to_f32` is scalar, not vectorized (E-030). **G-D1**
-`impls/wrappers/numeric.rs:217` mislabels Bf8 "1.4.3" (is E5M2) (E-029).
+`impls/wrappers/numeric.rs:217` mislabelled Bf8 "1.4.3"; corrected by E-023.
 
 Non-gaps (verified, do not chase): `TransmuteFrom` not adoptable; `zerocopy` not
 a migration target (sole stack use is out-of-scope consus `IntoBytes::as_bytes`);
@@ -88,11 +89,29 @@ only; not yet a direct eunomia consumer); coeus ~115/~75; kwavers ~99/0; apollo
   decision), pinned known-value + ties-to-even cases. `fmt`/`clippy -D warnings`/
   `nextest` 52/52 / doctest / rustdoc clean. Additive `pub mod convert` — [minor].
 
+### E-023 (canonical sub-byte conversion) — delivered
+
+- E5M2 instantiates the IEEE policy; finite-only E2M1/E4M3/E3M0 instantiate the
+  reserved-top-exponent policy. Both policies monomorphize the same arithmetic.
+- The four scalar conversion bodies and the separate packed-table conversion
+  module are deleted. Exact widening, finite-encoding round trips,
+  special-value mappings, ties-to-even boundaries, and every packed scalar/ISA
+  dispatch encoding are value-tested.
+- The cutover corrects E5M2/E2M1 subnormal scales, E2M1 finite limits, and the
+  four-bit negative-limit sign encodings.
+- Evidence: no-default/all-feature checks, warning-denied all-target/all-feature
+  Clippy, Nextest 60/60, doctest 1/1, rustdoc, and semver checks pass. A
+  temporary integration workspace path-patched Leto, Hephaestus Core, and
+  Hephaestus WGPU to Eunomia 0.4.0 and passed `cargo check`. An AArch64
+  dependency-free compile harness includes the actual kernel and NEON module,
+  verifying the changed cross-ISA source at compile time; execution evidence is
+  x86-64.
+
 ### Residual risk (byte-layout / reduced-precision)
 
-- **R1** Native RNE proven bit-exact vs `half` for f16/bf16 (E-022 done). The
-  sub-byte formats have **no external oracle** — E-023 must pin conventions with
-  reference values + round-trip, not a differential.
+- **R1** Native RNE is bit-exact vs `half` for f16/bf16 (E-022). Sub-byte
+  formats have no external oracle; E-023 therefore pins them with analytical
+  reference values, exhaustive finite-encoding round trips, and rounding laws.
 - **R2** OCP-vs-IEEE sub-byte convention (G-C3) is a product decision with GPU-
   quantization impact; settle before E-024 migrates formats onto the kernel.
 - **R3** Re-backing `F16`/`Bf16` storage (`half::f16` → `u16`, E-025) is breaking;

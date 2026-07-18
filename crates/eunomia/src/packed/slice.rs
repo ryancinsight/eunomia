@@ -1,4 +1,7 @@
-use crate::types::{Bf16, Bf4, F32, F4};
+use crate::{
+    convert::widen_finite_high_word,
+    types::{Bf16, Bf4, F32, F4},
+};
 
 /// Trait for 4-bit types that can be packed two per byte.
 pub trait Packable4: Copy + 'static {
@@ -32,8 +35,8 @@ impl Packable4 for Bf4 {
     }
     #[inline(always)]
     fn unpack_single(element: Self) -> Bf16 {
-        Bf16(half::bf16::from_bits(super::unpack::bf4_to_bf16_bits(
-            element.0,
+        Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
+            element.0 as u32,
         )))
     }
 }
