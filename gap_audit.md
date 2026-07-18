@@ -2,8 +2,9 @@
 
 ## Residual risk
 
-- E-021 is in progress. Eunomia still directly depends on `num-traits` for
-  foreign `Zero`/`One` implementations.
+- E-021 is in progress only at the downstream delivery boundary. Eunomia no
+  longer directly depends on `num-traits`; all-feature builds still contain it
+  transitively through the optional external NumPy stack.
 - Hephaestus still exposes `num_complex::Complex<f32>` in production eigenvalue
   buffer APIs and copies those values into `numpy::Complex32` at the Python
   boundary.
@@ -13,6 +14,13 @@
 
 ## Evidence
 
-- Source scan and `cargo tree -i` on 2026-07-18 establish the dependency and
-  public-API ownership above. This is source and dependency-graph evidence, not
-  yet compile or runtime verification.
+- Compile-time assertions pin both complex layouts and the selected NumPy
+  `Element` implementations.
+- `cargo check` passes with no default features and all features.
+- Warning-denied all-target/all-feature Clippy passes.
+- Nextest passes 45/45; the provider-contract suite covers ABI round-trips,
+  native/generic identities, and NumPy trait identity.
+- Doctests and warning-denied rustdoc pass. `cargo semver-checks` reports no
+  detected incompatibility against `origin/main`; the release remains 0.2.0
+  because removing foreign trait implementations is a documented pre-1.0
+  breaking contract.

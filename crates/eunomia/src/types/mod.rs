@@ -11,6 +11,18 @@ pub use ints::{I16, I32, I8};
 unsafe impl<T: bytemuck::Zeroable> bytemuck::Zeroable for Complex<T> {}
 unsafe impl<T: bytemuck::Pod> bytemuck::Pod for Complex<T> {}
 
+const _: () = {
+    assert!(core::mem::size_of::<Complex32>() == 2 * core::mem::size_of::<f32>());
+    assert!(core::mem::align_of::<Complex32>() == core::mem::align_of::<f32>());
+    assert!(core::mem::offset_of!(Complex32, re) == 0);
+    assert!(core::mem::offset_of!(Complex32, im) == core::mem::size_of::<f32>());
+
+    assert!(core::mem::size_of::<Complex64>() == 2 * core::mem::size_of::<f64>());
+    assert!(core::mem::align_of::<Complex64>() == core::mem::align_of::<f64>());
+    assert!(core::mem::offset_of!(Complex64, re) == 0);
+    assert!(core::mem::offset_of!(Complex64, im) == core::mem::size_of::<f64>());
+};
+
 // Bytemuck implementations
 unsafe impl bytemuck::Zeroable for F16 {}
 unsafe impl bytemuck::Pod for F16 {}

@@ -2,7 +2,7 @@
 
 All notable changes to Eunomia are documented here.
 
-## [Unreleased]
+## [0.2.0] - 2026-07-18
 
 ### Breaking
 
@@ -13,3 +13,9 @@ All notable changes to Eunomia are documented here.
 
 - Use `Complex::ZERO` and `Complex::ONE`, or the generic
   `ComplexField::zero()` and `ComplexField::one()` identities.
+
+### Changed
+
+- Pin `Complex32` and `Complex64` size, alignment, and field offsets at compile
+  time for GPU and FFI consumers.
+- Align the optional NumPy/PyO3 element boundary with version 0.29.
