@@ -50,8 +50,9 @@ leto           array substrate (cache-tiled over hermes/eunomia)
 coeus / hephaestus / apollo / …   domain
 ```
 
-Dependency direction is strictly inward: eunomia depends on nothing Atlas-local
-(only `half`, `bytemuck`, `libm`, optional `rkyv`).
+Dependency direction is strictly inward: eunomia depends on nothing Atlas-local.
+Its core uses `half`, `bytemuck`, and `libm`; `rkyv`, `serde`, and the
+NumPy/PyO3 0.29 element boundary are optional.
 
 ## Provenance
 
