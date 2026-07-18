@@ -12,6 +12,63 @@ Sprint target: 0.2.0 (native complex provider cutover).
   Acceptance: all-feature and no-default-feature gates pass; Hephaestus can use
   `eunomia::Complex` directly in device buffers and Python NumPy results.
 
+## Byte-layout & reduced-precision (E-022…E-030)
+
+Workstream: own native reduced-precision conversion + a byte-layout vocabulary;
+retire the `half` runtime dep; bridge (not replace) bytemuck. Owner: Claude.
+Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
+`traits/` — disjoint from E-021 (complex/numpy). ADR 0003; gap_audit
+§Byte-layout / reduced-precision. Dependency order: E-022 → {E-023, E-025, E-026}
+→ {E-024, E-027}; E-028/E-029/E-030 independent.
+
+- **E-022 [minor] — review** Native `binary16`/`bfloat16` conversion kernel.
+  `convert::{narrow, widen}`: one generic const-parameterized IEEE narrow/widen
+  (`<const E, const M>`, round-to-nearest-ties-to-even, subnormals, inf/NaN,
+  f32-subnormal). Acceptance (met): bit-exact vs `half` — exhaustive widen (2¹⁶,
+  both formats) + exhaustive finite round-trip + ~4.2M rounding sweep + pinned
+  ties-to-even; fmt/clippy-D/nextest(52/52)/doctest/rustdoc clean. Additive
+  `pub mod convert`. (Uncommitted; awaiting user commit approval.)
+- **E-023 [minor]** Fold `F8`/`Bf8`/`F4`/`Bf4` conversions onto the E-022 kernel
+  (generalize the kernel's special-value handling as needed), deleting the four
+  hand-rolled `types/floats.rs` copies and the truncation defect (G-C2/G-A3);
+  pin each format's convention in Rustdoc + add reference-value & round-trip
+  tests (no external oracle — G-C3/G-T1). Dep: E-022. Acceptance: value-semantic
+  reference tests per format; kernel is the single conversion home; RNE replaces
+  truncation with a documented derivation.
+- **E-024 [arch]** OCP-MXFP `FP8`(E4M3)/`FP4`(E2M1) formats (no infinity) via a
+  kernel special-value **policy parameter**, added when coeus/hephaestus
+  quantization needs them. Dep: E-023 + a driving consumer. Acceptance: OCP
+  reference vectors match; existing IEEE-style types unchanged. ADR 0003 D3.
+- **E-025 [arch]** Re-back `F16`/`Bf16` on native `u16` via E-022; demote `half`
+  to dev-oracle + optional `half-interop` feature. Co-evolution unit: eunomia +
+  hermes (≥1 consumer constructs `Bf16(half::bf16::…)`) → leto → coeus/apollo.
+  Dep: E-022. Acceptance: `half` off eunomia's hard deps; consumer chain green;
+  hardware F16C/fp16 conversion ladder (per `packed/unpack` dispatch pattern) or
+  filed as its own item.
+- **E-026 [arch]** eunomia byte-layout vocabulary: `Zeroable`/`Pod` markers +
+  the used safe casts (`cast_slice`(+mut), `bytes_of`, `from_bytes`, unaligned
+  read) at zerocopy's checked tier (`const _` asserts + per-impl `// SAFETY:`);
+  default `bytemuck-interop` feature blanket-bridging eunomia ↔ `bytemuck::Pod`
+  for the wgpu/metal/cuda contract (G-A2). Target the pinned bytemuck 1.14
+  surface (R4). Acceptance: eunomia types usable via both vocabularies; no new
+  external hard dep; scope bounded to used surface (no derive macro).
+- **E-027 [arch]** Migrate consumer GPU-ABI structs (hephaestus ~130, coeus
+  ~115, …) onto the E-026 vocabulary while preserving the `bytemuck::Pod` wgpu
+  contract via the bridge; add eunomia as a direct hephaestus dep. Dep: E-026.
+- **E-028 [patch]** Fix `packed/unpack/arch.rs:34` no_std `has_avx512f`
+  (`"avx512bw"` → `"avx512f"`) and restore the `avx512vl` guard both no_std
+  AVX-512 branches drop (G-C1). Acceptance: no_std AVX-512 dispatch selects the
+  correct ISA; add a `cfg`-gated detection test.
+- **E-029 [patch]** Unsafe/doc discipline: add `// SAFETY:` to the 18 dispatch
+  blocks, 18 intrinsic `unsafe fn`, the `avx512.rs:56` `transmute`, and the 22
+  scalar `unsafe impl bytemuck::…`; remove `#![allow(clippy::missing_safety_doc)]`;
+  fix `impls/field.rs` `#[cfg(any())]`-in-doc-comment (G-C5); correct the Bf8
+  "1.4.3" doc mislabel (G-D1). Acceptance: no blanket safety-doc allow; each
+  unsafe site documents its invariant.
+- **E-030 [patch]** Vectorize `neon::unpack_f8_to_f32` (currently scalar in the
+  intrinsics module — G-T2). Acceptance: NEON path differential-equal to scalar;
+  `cargo bloat`/bench note.
+
 ## Done
 
 - **E-012 [minor]** Added provider-owned float-to-`usize` `CastFrom` edges for

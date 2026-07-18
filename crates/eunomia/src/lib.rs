@@ -7,6 +7,7 @@
 extern crate alloc;
 
 mod casts;
+pub mod convert;
 mod impls;
 mod ops;
 mod packed;
