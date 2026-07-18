@@ -4,6 +4,8 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-18
+
 ### Added
 
 - E-022: `convert` module — `convert::{narrow, widen}`, a generic

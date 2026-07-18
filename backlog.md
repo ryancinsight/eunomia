@@ -1,8 +1,8 @@
 # Eunomia backlog
 
-Sprint target: 0.2.0 (native complex provider cutover).
+Sprint target: 0.3.0 (native reduced-precision conversion).
 
-## In progress
+## Recently completed
 
 - **E-021 [arch]** Remove Eunomia's direct `num-traits` dependency and foreign
   `Zero`/`One` implementations, pin the native `Complex32`/`Complex64` ABI at
@@ -11,6 +11,7 @@ Sprint target: 0.2.0 (native complex provider cutover).
   layout modules, provider-contract tests, ADR 0002, and PM artifacts.
   Acceptance: all-feature and no-default-feature gates pass; Hephaestus can use
   `eunomia::Complex` directly in device buffers and Python NumPy results.
+  Delivered by Eunomia PR #36, Hephaestus PR #48, and Leto PR #42.
 
 ## Byte-layout & reduced-precision (E-022…E-030)
 
@@ -21,13 +22,13 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
 §Byte-layout / reduced-precision. Dependency order: E-022 → {E-023, E-025, E-026}
 → {E-024, E-027}; E-028/E-029/E-030 independent.
 
-- **E-022 [minor] — review** Native `binary16`/`bfloat16` conversion kernel.
+- **E-022 [minor] — done** Native `binary16`/`bfloat16` conversion kernel.
   `convert::{narrow, widen}`: one generic const-parameterized IEEE narrow/widen
   (`<const E, const M>`, round-to-nearest-ties-to-even, subnormals, inf/NaN,
   f32-subnormal). Acceptance (met): bit-exact vs `half` — exhaustive widen (2¹⁶,
   both formats) + exhaustive finite round-trip + ~4.2M rounding sweep + pinned
   ties-to-even; fmt/clippy-D/nextest(52/52)/doctest/rustdoc clean. Additive
-  `pub mod convert`. (Uncommitted; awaiting user commit approval.)
+  `pub mod convert`. Merged by PR #37 (`6f431f2d`).
 - **E-023 [minor]** Fold `F8`/`Bf8`/`F4`/`Bf4` conversions onto the E-022 kernel
   (generalize the kernel's special-value handling as needed), deleting the four
   hand-rolled `types/floats.rs` copies and the truncation defect (G-C2/G-A3);
@@ -319,9 +320,10 @@ for the remaining ~19 apollo crates):
   test(rounding_and_powi_surface)'` (2/2), and downstream CFDrs
   `rustup run nightly cargo check -p cfd-1d --tests`.
 
-Note: leto/hephaestus retain `num-complex` as a **dev-dependency** (nalgebra
-differential oracle returns `num_complex::Complex`) — that is correct and out of
-scope for removal.
+Note: Leto and Hephaestus no longer declare `num-complex`. Leto retains
+`nalgebra` and `ndarray` only as external test/benchmark oracles, so their
+transitive `num-complex` edges are excluded from the production graph and
+tracked for independent-oracle retirement in Leto.
 
 ## Cleanup (redundancy removal)
 
