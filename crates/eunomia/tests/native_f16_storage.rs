@@ -95,3 +95,49 @@ fn partial_ord_is_float_semantic_not_bitwise() {
     let pos = Bf16::from_f32(2.0);
     assert!(neg < pos);
 }
+
+#[test]
+fn f16_bulk_slice_conversion_matches_half_and_scalar() {
+    // Widen every `f16` pattern (F16C path on an F16C host) vs the `half` oracle.
+    let all: Vec<F16> = (0u16..=u16::MAX).map(F16).collect();
+    let mut widened = vec![0.0f32; all.len()];
+    F16::widen_slice(&all, &mut widened);
+    for (bits, &out) in widened.iter().enumerate() {
+        let reference = half::f16::from_bits(bits as u16).to_f32();
+        if reference.is_nan() {
+            assert!(out.is_nan(), "widen_slice[{bits:#06x}]");
+        } else {
+            assert_eq!(
+                out.to_bits(),
+                reference.to_bits(),
+                "widen_slice[{bits:#06x}]"
+            );
+        }
+    }
+
+    // Narrow a rounding-relevant `f32` sweep vs `half` and the scalar path. The
+    // trailing specials make the length a non-multiple of 8, exercising the
+    // vector kernel's scalar remainder.
+    let mut sweep: Vec<f32> = Vec::new();
+    for exp in 0u32..=0xFF {
+        for top in 0u32..(1 << 8) {
+            sweep.push(f32::from_bits((exp << 23) | (top << 15)));
+            sweep.push(f32::from_bits((1 << 31) | (exp << 23) | (top << 15)));
+        }
+    }
+    sweep.push(f32::INFINITY);
+    sweep.push(f32::NEG_INFINITY);
+    sweep.push(f32::from_bits(0x0000_0001)); // smallest positive subnormal
+
+    let mut narrowed = vec![F16::default(); sweep.len()];
+    F16::narrow_slice(&sweep, &mut narrowed);
+    for (&x, out) in sweep.iter().zip(&narrowed) {
+        if x.is_nan() {
+            assert_eq!(out.0 & 0x7C00, 0x7C00);
+            assert_ne!(out.0 & 0x03FF, 0);
+        } else {
+            assert_eq!(out.0, half::f16::from_f32(x).to_bits(), "narrow_slice({x})");
+            assert_eq!(out.0, F16::from_f32(x).0, "narrow_slice vs scalar ({x})");
+        }
+    }
+}

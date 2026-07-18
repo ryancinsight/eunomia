@@ -17,6 +17,10 @@ All notable changes to Eunomia are documented here.
 
 ### Added
 
+- E-031: F16C-accelerated bulk `f16`↔`f32` conversion (`F16::widen_slice` /
+  `F16::narrow_slice`) — ~38–49× faster than the scalar kernel on x86-64 with
+  F16C (bit-exact vs `half`), scalar fallback elsewhere. Adds eunomia's first
+  criterion benchmark suite (`benches/conversions.rs`) with committed baselines.
 - E-026: native `layout` byte-layout vocabulary — `Pod`/`Zeroable` unsafe marker
   traits and the safe reinterpretation surface (`bytes_of`, `cast_slice`,
   `from_bytes`, `pod_read_unaligned`, fallible `try_*` variants, `PodCastError`),

@@ -93,6 +93,16 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
 - **E-030 [patch]** Vectorize `neon::unpack_f8_to_f32` (currently scalar in the
   intrinsics module — G-T2). Acceptance: NEON path differential-equal to scalar;
   `cargo bloat`/bench note.
+- **E-031 [minor] — done** F16C-accelerated bulk `f16`↔`f32` conversion + eunomia's
+  first criterion benchmark suite (the E-025 "hardware conversion ladder"
+  follow-up). `F16::widen_slice`/`narrow_slice` dispatch to `vcvtph2ps`/`vcvtps2ph`
+  (8 lanes/instruction, round-to-nearest-even) on x86-64 F16C, scalar-kernel
+  fallback elsewhere — bit-exact vs `half` (exhaustive widen + rounding sweep,
+  scalar remainder covered). Measured (4096 elems, F16C host): **widen ~38×**
+  (2305 ns → 61 ns), **narrow ~49×** (3723 ns → 75 ns) vs the scalar loop;
+  `benches/conversions.rs` commits the baselines to gate regressions. Dogfoods
+  the E-026 `layout::cast_slice` for the transparent `F16`↔`u16` reinterpret.
+  Consumer: bulk `f16` processing in hermes/leto once migrated (E-025b).
 
 ## Done
 
