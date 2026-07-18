@@ -93,27 +93,25 @@ macro_rules! impl_numeric_element {
 
 impl_numeric_element!(
     F16,
-    F16(half::f16::ZERO),
-    F16(half::f16::ONE),
-    F16(half::f16::NAN),
-    F16(half::f16::INFINITY),
-    F16(half::f16::NEG_INFINITY),
-    F16(half::f16::INFINITY),
+    F16::ZERO,
+    F16::ONE,
+    F16::NAN,
+    F16::INFINITY,
+    F16::NEG_INFINITY,
+    F16::INFINITY,
     2,
-    F16(half::f16::from_bits(0xFFFF)),
-    F16(half::f16::from_bits(0x8000)), // sign bit
-    |x: F16| x.0.to_f32() as f64,
-    |x: F16, b: F16, c: F16| F16(half::f16::from_f32(
-        x.0.to_f32().scalar_fmadd(b.0.to_f32(), c.0.to_f32())
-    )),
-    |x: F16| F16(half::f16::from_f32(x.0.to_f32().abs())),
-    |x: F16| F16(half::f16::from_f32(x.0.to_f32().sqrt())),
-    |x: F16| x.0.is_finite(),
-    |x: F16| x.0.is_nan(),
-    |x: F16, y: F16| F16(half::f16::from_bits(x.0.to_bits() & y.0.to_bits())),
-    |x: F16, y: F16| F16(half::f16::from_bits(x.0.to_bits() | y.0.to_bits())),
-    |x: F16, y: F16| F16(half::f16::from_bits(x.0.to_bits() ^ y.0.to_bits())),
-    |x: F16| x.0.to_bits().count_ones()
+    F16(0xFFFF),
+    F16(0x8000), // sign bit
+    |x: F16| x.to_f32() as f64,
+    |x: F16, b: F16, c: F16| F16::from_f32(x.to_f32().scalar_fmadd(b.to_f32(), c.to_f32())),
+    |x: F16| F16::from_f32(x.to_f32().abs()),
+    |x: F16| F16::from_f32(x.to_f32().sqrt()),
+    |x: F16| x.is_finite(),
+    |x: F16| x.is_nan(),
+    |x: F16, y: F16| F16(x.0 & y.0),
+    |x: F16, y: F16| F16(x.0 | y.0),
+    |x: F16, y: F16| F16(x.0 ^ y.0),
+    |x: F16| x.0.count_ones()
 );
 
 impl_numeric_element!(
@@ -164,27 +162,25 @@ impl_numeric_element!(
 
 impl_numeric_element!(
     Bf16,
-    Bf16(half::bf16::ZERO),
-    Bf16(half::bf16::ONE),
-    Bf16(half::bf16::NAN),
-    Bf16(half::bf16::INFINITY),
-    Bf16(half::bf16::NEG_INFINITY),
-    Bf16(half::bf16::INFINITY),
+    Bf16::ZERO,
+    Bf16::ONE,
+    Bf16::NAN,
+    Bf16::INFINITY,
+    Bf16::NEG_INFINITY,
+    Bf16::INFINITY,
     2,
-    Bf16(half::bf16::from_bits(0xFFFF)),
-    Bf16(half::bf16::from_bits(0x8000)), // sign bit
-    |x: Bf16| x.0.to_f32() as f64,
-    |x: Bf16, b: Bf16, c: Bf16| Bf16(half::bf16::from_f32(
-        x.0.to_f32().scalar_fmadd(b.0.to_f32(), c.0.to_f32())
-    )),
-    |x: Bf16| Bf16(half::bf16::from_f32(x.0.to_f32().abs())),
-    |x: Bf16| Bf16(half::bf16::from_f32(x.0.to_f32().sqrt())),
-    |x: Bf16| x.0.is_finite(),
-    |x: Bf16| x.0.is_nan(),
-    |x: Bf16, y: Bf16| Bf16(half::bf16::from_bits(x.0.to_bits() & y.0.to_bits())),
-    |x: Bf16, y: Bf16| Bf16(half::bf16::from_bits(x.0.to_bits() | y.0.to_bits())),
-    |x: Bf16, y: Bf16| Bf16(half::bf16::from_bits(x.0.to_bits() ^ y.0.to_bits())),
-    |x: Bf16| x.0.to_bits().count_ones()
+    Bf16(0xFFFF),
+    Bf16(0x8000), // sign bit
+    |x: Bf16| x.to_f32() as f64,
+    |x: Bf16, b: Bf16, c: Bf16| Bf16::from_f32(x.to_f32().scalar_fmadd(b.to_f32(), c.to_f32())),
+    |x: Bf16| Bf16::from_f32(x.to_f32().abs()),
+    |x: Bf16| Bf16::from_f32(x.to_f32().sqrt()),
+    |x: Bf16| x.is_finite(),
+    |x: Bf16| x.is_nan(),
+    |x: Bf16, y: Bf16| Bf16(x.0 & y.0),
+    |x: Bf16, y: Bf16| Bf16(x.0 | y.0),
+    |x: Bf16, y: Bf16| Bf16(x.0 ^ y.0),
+    |x: Bf16| x.0.count_ones()
 );
 
 macro_rules! impl_numeric_for_byte_float {

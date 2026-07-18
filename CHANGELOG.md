@@ -4,6 +4,17 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Breaking
+
+- E-025: `F16` and `Bf16` are now native `u16`-backed (`pub struct F16(pub u16)`)
+  instead of wrapping `half::f16`/`half::bf16`. Conversions route through the
+  native `convert` kernel (bit-exact vs `half`); `PartialEq`/`PartialOrd` are
+  float-semantic (±0 equal, NaN unordered), not the `u16` bitwise derive. The
+  wrapper and packed-unpack paths no longer use `half` — it remains only for the
+  raw `half::f16`/`bf16` trait impls (consumers still on raw half) and the
+  differential-oracle tests. Consumers constructing/reading `F16(_).0` as a
+  `half::f16` must migrate to the native surface (`F16::from_f32`, `F16(bits)`).
+
 ### Added
 
 - E-026: native `layout` byte-layout vocabulary — `Pod`/`Zeroable` unsafe marker

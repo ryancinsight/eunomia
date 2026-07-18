@@ -31,9 +31,7 @@ pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     }
 
     for j in i..len {
-        unpacked[j] = Bf16(half::bf16::from_bits(widen_high_word::<5, 2>(u32::from(
-            packed[j].0,
-        ))));
+        unpacked[j] = Bf16(widen_high_word::<5, 2>(u32::from(packed[j].0)));
     }
 }
 
@@ -108,9 +106,7 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
 
     for j in i..len {
         let b = packed[j].0;
-        unpacked[j] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-            b as u32,
-        )));
+        unpacked[j] = Bf16(widen_finite_high_word::<2, 1>(b as u32));
     }
 }
 
@@ -159,10 +155,10 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
     }
 
     static TABLE: [Bf16; 16] = {
-        let mut t = [Bf16(half::bf16::ZERO); 16];
+        let mut t = [Bf16(0); 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = Bf16(half::bf16::from_bits(TABLE_BITS[idx]));
+            t[idx] = Bf16(TABLE_BITS[idx]);
             idx += 1;
         }
         t

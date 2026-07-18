@@ -35,9 +35,7 @@ impl Packable4 for Bf4 {
     }
     #[inline(always)]
     fn unpack_single(element: Self) -> Bf16 {
-        Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
-            element.0 as u32,
-        )))
+        Bf16(widen_finite_high_word::<2, 1>(element.0 as u32))
     }
 }
 
