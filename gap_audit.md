@@ -104,27 +104,29 @@ only; not yet a direct eunomia consumer); coeus ~115/~75; kwavers ~99/0; apollo
 
 ---
 
-## E-021 (complex provider cutover) — residual risk
+## E-021 (complex provider cutover) — delivered
 
-- E-021 is in progress only at the downstream delivery boundary. Eunomia no
-  longer directly depends on `num-traits`; all-feature builds still contain it
-  transitively through the optional external NumPy stack.
-- Hephaestus still exposes `num_complex::Complex<f32>` in production eigenvalue
-  buffer APIs and copies those values into `numpy::Complex32` at the Python
-  boundary.
-- Leto production APIs already use `eunomia::Complex`; any remaining
-  `num-complex` graph edge must be classified as a differential-test or Python
-  interop dependency before removal.
+- Eunomia PR #36 (`34d0cc8`) removes the direct `num-traits` dependency and
+  publishes the native complex identity, ABI, and NumPy contracts.
+- Hephaestus PR #48 (`82bb3a7`) removes direct `num-complex` ownership from its
+  manifests and production sources. Device eigenvalue buffers and Python NumPy
+  results now use Eunomia complex values without an intermediate vector copy.
+- Leto PR #42 (`cf47686`) removes the root `num-complex` dependency and direct
+  source use. Its production graph contains no `num-complex`, `nalgebra`, or
+  `ndarray`; `nalgebra` and `ndarray` remain test/benchmark oracles with their
+  retirement tracked in Leto.
 
-## Evidence
+### Evidence
 
 - Compile-time assertions pin both complex layouts and the selected NumPy
   `Element` implementations.
-- `cargo check` passes with no default features and all features.
-- Warning-denied all-target/all-feature Clippy passes.
-- Nextest passes 45/45; the provider-contract suite covers ABI round-trips,
-  native/generic identities, and NumPy trait identity.
-- Doctests and warning-denied rustdoc pass. `cargo semver-checks` reports no
-  detected incompatibility against `origin/main`; the release remains 0.2.0
-  because removing foreign trait implementations is a documented pre-1.0
-  breaking contract.
+- Eunomia passes no-default/all-feature checks, warning-denied all-target and
+  all-feature Clippy, Nextest 53/53, doctests, rustdoc, and semver checks. The
+  provider-contract suite covers ABI round-trips, native/generic identities,
+  and NumPy trait identity.
+- Hephaestus passes affected all-target/all-feature checks and Clippy, Nextest
+  264/264 on real devices, the supported minimal feature set, doctests,
+  rustdoc, semver checks, and the installed PyO3 NumPy eigenvalue test.
+- Leto passes warning-denied all-target/all-feature Clippy, Nextest 305/305,
+  doctests 8/8, rustdoc, and semver checks. Manifest/source and production-graph
+  residue scans confirm the dependency boundary.

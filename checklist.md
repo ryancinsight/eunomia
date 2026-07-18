@@ -1,8 +1,8 @@
 # Eunomia checklist
 
-Target version: 0.2.0
+Target version: 0.3.0
 
-Sprint phase: Execution
+Sprint phase: Closure
 
 ## E-021 [arch] — native complex provider cutover
 
@@ -15,7 +15,9 @@ Sprint phase: Execution
 - [x] Align the optional NumPy/PyO3 boundary with version 0.29.
 - [x] Pass format, warning-denied Clippy, Nextest, doctest, rustdoc, feature,
   and semver gates.
-- [ ] Publish Eunomia first, then update and verify Leto and Hephaestus.
+- [x] Publish Eunomia first, then update and verify Leto and Hephaestus:
+  Eunomia PR #36 (`34d0cc8`), Hephaestus PR #48 (`82bb3a7`), and Leto PR
+  #42 (`cf47686`) are merged into their remote defaults.
 
 ## E-022 [minor] — native binary16/bfloat16 conversion kernel (Owner: Claude)
 
@@ -30,4 +32,4 @@ conventions). See ADR 0003 / gap_audit §Byte-layout for the full workstream
 - [x] Differential-verify bit-exact vs `half`: exhaustive widen (2¹⁶ × 2),
   exhaustive finite round-trip, ~4.2M rounding sweep, pinned ties-to-even.
 - [x] Pass fmt, clippy `-D warnings`, nextest (52/52), doctest, rustdoc.
-- [ ] Commit + PR (awaiting user approval — working-tree change, not committed).
+- [x] Commit and merge PR #37 (`6f431f2d`) into `main`.
