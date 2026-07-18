@@ -214,7 +214,7 @@ macro_rules! impl_numeric_for_byte_float {
     };
 }
 
-// Bf8: 1.4.3 format — sign bit is bit 7 (0x80)
+// Bf8: E5M2 format — sign bit is bit 7 (0x80)
 impl_numeric_for_byte_float!(
     Bf8,
     Bf8(0),
@@ -231,9 +231,9 @@ impl_numeric_for_byte_float!(
     Bf4(0),
     Bf4(0x02),
     Bf4(0x07),
-    Bf4(0x06),
-    Bf4(0x86),
-    Bf4(0x06),
+    Bf4(0x05),
+    Bf4(0x0D),
+    Bf4(0x05),
     Bf4(0x08)
 );
 // F8: 1.4.3 format — sign bit is bit 7 (0x80)
@@ -254,7 +254,7 @@ impl_numeric_for_byte_float!(
     F4(0x03),
     F4(0x07),
     F4(0x06),
-    F4(0x86),
+    F4(0x0E),
     F4(0x06),
     F4(0x08)
 );

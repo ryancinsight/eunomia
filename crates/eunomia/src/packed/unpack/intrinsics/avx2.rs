@@ -1,49 +1,38 @@
-#![allow(dead_code)]
-use super::super::conv::{bf4_to_bf16_bits, f4_to_f32_bits, f8_to_f32_bits};
+use crate::convert::{widen_finite, widen_finite_high_word, widen_high_word};
 use crate::types::{Bf16, Bf4, Bf8, F32, F4, F8};
 
 #[target_feature(enable = "avx2")]
 pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
+    use core::arch::x86_64::*;
+
     let len = packed.len().min(unpacked.len());
     let mut i = 0;
+
+    static TABLE: [i32; 256] = {
+        let mut table = [0i32; 256];
+        let mut index = 0;
+        while index < table.len() {
+            table[index] = widen_high_word::<5, 2>(index as u32) as i32;
+            index += 1;
+        }
+        table
+    };
+
     while i + 16 <= len {
-        let ptr = packed.as_ptr().add(i) as *const core::arch::x86_64::__m128i;
-        let v_in = core::arch::x86_64::_mm_loadu_si128(ptr);
-        let v_u16 = core::arch::x86_64::_mm256_cvtepu8_epi16(v_in);
-        let sign = core::arch::x86_64::_mm256_slli_epi16(
-            core::arch::x86_64::_mm256_and_si256(
-                v_u16,
-                core::arch::x86_64::_mm256_set1_epi16(0x80),
-            ),
-            8,
-        );
-        let rest = core::arch::x86_64::_mm256_slli_epi16(
-            core::arch::x86_64::_mm256_and_si256(
-                v_u16,
-                core::arch::x86_64::_mm256_set1_epi16(0x7f),
-            ),
-            5,
-        );
-        let is_zero = core::arch::x86_64::_mm256_cmpeq_epi16(
-            rest,
-            core::arch::x86_64::_mm256_setzero_si256(),
-        );
-        let bias_diff = core::arch::x86_64::_mm256_andnot_si256(
-            is_zero,
-            core::arch::x86_64::_mm256_set1_epi16(112 << 7),
-        );
-        let rest_biased = core::arch::x86_64::_mm256_add_epi16(rest, bias_diff);
-        let result = core::arch::x86_64::_mm256_or_si256(sign, rest_biased);
-        let out_ptr = unpacked.as_mut_ptr().add(i) as *mut core::arch::x86_64::__m256i;
-        core::arch::x86_64::_mm256_storeu_si256(out_ptr, result);
+        let input = _mm_loadu_si128(packed.as_ptr().add(i) as *const __m128i);
+        let lower_indices = _mm256_cvtepu8_epi32(input);
+        let upper_indices = _mm256_cvtepu8_epi32(_mm_srli_si128(input, 8));
+        let lower = _mm256_i32gather_epi32(TABLE.as_ptr(), lower_indices, 4);
+        let upper = _mm256_i32gather_epi32(TABLE.as_ptr(), upper_indices, 4);
+        let packed_words = _mm256_packus_epi32(lower, upper);
+        let ordered = _mm256_permute4x64_epi64(packed_words, 0xD8);
+        _mm256_storeu_si256(unpacked.as_mut_ptr().add(i) as *mut __m256i, ordered);
         i += 16;
     }
     for j in i..len {
-        let b = packed[j].0 as u16;
-        let sign = (b & 0x80) << 8;
-        let rest = (b & 0x7f) << 5;
-        let bias_diff = if rest == 0 { 0 } else { 112 << 7 };
-        unpacked[j] = Bf16(half::bf16::from_bits(sign | (rest + bias_diff)));
+        unpacked[j] = Bf16(half::bf16::from_bits(widen_high_word::<5, 2>(u32::from(
+            packed[j].0,
+        ))));
     }
 }
 
@@ -57,7 +46,7 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
         let mut t = [0u8; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = (bf4_to_bf16_bits(idx as u8) & 0xFF) as u8;
+            t[idx] = (widen_finite_high_word::<2, 1>(idx as u32) & 0xFF) as u8;
             idx += 1;
         }
         t
@@ -66,7 +55,7 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
         let mut t = [0u8; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = (bf4_to_bf16_bits(idx as u8) >> 8) as u8;
+            t[idx] = (widen_finite_high_word::<2, 1>(idx as u32) >> 8) as u8;
             idx += 1;
         }
         t
@@ -94,7 +83,9 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     }
     for j in i..len {
         let b = packed[j].0;
-        unpacked[j] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(b)));
+        unpacked[j] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
+            b as u32,
+        )));
     }
 }
 
@@ -109,7 +100,7 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
         let mut t = [0u8; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = (bf4_to_bf16_bits(idx as u8) & 0xFF) as u8;
+            t[idx] = (widen_finite_high_word::<2, 1>(idx as u32) & 0xFF) as u8;
             idx += 1;
         }
         t
@@ -118,7 +109,7 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
         let mut t = [0u8; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = (bf4_to_bf16_bits(idx as u8) >> 8) as u8;
+            t[idx] = (widen_finite_high_word::<2, 1>(idx as u32) >> 8) as u8;
             idx += 1;
         }
         t
@@ -158,8 +149,12 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
 
     for j in i..n {
         let byte = packed[j];
-        unpacked[2 * j] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits(byte & 0x0F)));
-        unpacked[2 * j + 1] = Bf16(half::bf16::from_bits(bf4_to_bf16_bits((byte >> 4) & 0x0F)));
+        unpacked[2 * j] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
+            (byte & 0x0F) as u32,
+        )));
+        unpacked[2 * j + 1] = Bf16(half::bf16::from_bits(widen_finite_high_word::<2, 1>(
+            ((byte >> 4) & 0x0F) as u32,
+        )));
     }
 }
 
@@ -172,7 +167,7 @@ pub unsafe fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
         let mut t = [0u32; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = f4_to_f32_bits(idx as u8);
+            t[idx] = widen_finite::<3, 0>(idx as u32);
             idx += 1;
         }
         t
@@ -210,7 +205,7 @@ pub unsafe fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
         let mut t = [0u32; 16];
         let mut idx = 0;
         while idx < 16 {
-            t[idx] = f4_to_f32_bits(idx as u8);
+            t[idx] = widen_finite::<3, 0>(idx as u32);
             idx += 1;
         }
         t
@@ -274,7 +269,7 @@ pub unsafe fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
         let mut t = [0u32; 256];
         let mut idx = 0;
         while idx < 256 {
-            t[idx] = f8_to_f32_bits(idx as u8);
+            t[idx] = widen_finite::<4, 3>(idx as u32);
             idx += 1;
         }
         t

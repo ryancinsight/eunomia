@@ -4,6 +4,20 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-18
+
+### Changed
+
+- E-023 routes E5M2, E2M1, E4M3, and E3M0 through the native conversion kernel.
+  Narrowing now rounds to nearest with ties to even; finite-only formats
+  saturate infinity and overflow at their signed maximum finite value.
+
+### Fixed
+
+- Correct E5M2 and E2M1 subnormal scales, E2M1 finite limits, and the sign bits
+  of the four-bit minimum-value constants.
+- Remove the duplicate scalar and packed-table conversion implementations.
+
 ## [0.3.0] - 2026-07-18
 
 ### Added

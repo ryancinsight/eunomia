@@ -1,6 +1,6 @@
 # ADR 0003: Native byte-layout & reduced-precision vocabulary
 
-- Status: Accepted (implementation staged; slice 1 landed)
+- Status: Accepted (conversion slices 1 and 2 landed)
 - Date: 2026-07-18
 - Class: [arch] (grows eunomia's owned surface; shrinks external deps; ripples to
   every reduced-precision / GPU-byte consumer)
@@ -59,13 +59,14 @@ A default `bytemuck-interop` feature blanket-bridges eunomia markers ↔
 — **no derive macro and no OCP/checked-transmute surface is built speculatively.**
 
 **D3 — Pin the sub-byte special-value convention explicitly; add OCP-MXFP as a
-distinct format family only when a consumer needs it.** The existing
-`F8`(E4M3)/`Bf8`(E5M2)/`F4`(E3M0)/`Bf4`(E2M1) keep their current *IEEE-style,
-reserved-top-exponent, no-infinity* convention, now **documented and
-reference-tested**. OCP-MXFP FP8/FP4 (no infinity; the emerging GPU-quantization
-standard, which eunomia's `F4`=E3M0 matches no format of) is added as new types
-selected through the kernel's special-value policy parameter **when coeus/
-hephaestus quantization requires it** — not before.
+distinct format family only when a consumer needs it.** `Bf8` (E5M2) uses the
+IEEE infinity/NaN convention. `F8` (E4M3), `Bf4` (E2M1), and `F4` (E3M0) are
+finite-only: the whole top exponent is reserved for NaN, and narrowing
+saturates infinity or overflow to the signed maximum finite value. These
+contracts are documented and reference-tested. OCP-MXFP FP8/FP4 (no infinity;
+the emerging GPU-quantization standard, which Eunomia's `F4`=E3M0 matches no
+format of) is added as new types selected through a public special-value policy
+parameter **when Coeus/Hephaestus quantization requires it** — not before.
 
 **D4 — `TransmuteFrom` and `zerocopy` are reference tier only**, not
 dependencies: `TransmuteFrom` is an internal, nightly-gated audit aid at most;
@@ -103,6 +104,15 @@ D2's checked tier emulates on stable.
   ~4.2M-case rounding sweep across every exponent/round/guard/sticky decision,
   and pinned known-value/ties-to-even cases. `fmt`/`clippy -D warnings`/`nextest`
   (52/52)/doctest/rustdoc all clean; purely additive `pub mod convert` ([minor]).
+- **Verified (slice 2):** E5M2, E2M1, E4M3, and E3M0 now instantiate the same
+  kernel through monomorphized IEEE or finite-only policies. Analytical
+  known-value, special-value, exhaustive finite-encoding round-trip, and
+  ties-to-even tests pin the four contracts. Exhaustive packed-dispatch
+  differential tests pin runtime-selected table wiring and directly exercise
+  AVX2/AVX-512 when the host reports those capabilities. The cutover also
+  corrects the E5M2/E2M1 subnormal scales and four-bit finite-limit/sign
+  constants. A dependency-free AArch64 compile harness includes the actual
+  kernel and NEON module, providing compile-time verification of that ISA path.
 - Follow-ups tracked as [backlog.md](../../backlog.md) E-022…E-030.
 
 [#129097]: https://github.com/rust-lang/rust/issues/129097

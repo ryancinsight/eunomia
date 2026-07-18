@@ -14,7 +14,8 @@ the placement law in the foundation.
 
 - **Scalar wrapper types** — `F16`, `Bf16`, `F32`, `F64`, `I8`/`I16`/`I32`, and
   sub-byte `F4`/`F8`/`Bf4`/`Bf8` — with `bytemuck::Pod`/`Zeroable` and exact
-  layout guarantees.
+  layout guarantees. One native conversion kernel provides exact widening and
+  round-to-nearest, ties-to-even narrowing across every reduced format.
 - **`Complex<T>`** — the native `re + im·i` vocabulary type replacing the
   third-party `num_complex::Complex` across the stack.
 - **Packed sub-byte formats** — `Packed4`/`PackedBf4`/`PackedF4` storage, COW,

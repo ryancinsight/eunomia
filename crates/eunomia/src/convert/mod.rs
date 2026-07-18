@@ -25,3 +25,4 @@
 mod kernel;
 
 pub use kernel::{narrow, widen};
+pub(crate) use kernel::{narrow_finite, widen_finite, widen_finite_high_word, widen_high_word};
