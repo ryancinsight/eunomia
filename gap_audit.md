@@ -67,9 +67,11 @@ conversion tests now pin all four formats. **G-T2**
 **Resolved:** G-C1 via E-028 (arch.rs no_std `avx512vl` guard); G-C4/G-C5 via
 E-029 (unsafe SAFETY across the packed SIMD path + scalar `bytemuck` impls;
 field.rs doc cruft); G-C2/G-C3/G-A3/G-D1 via E-023 (sub-byte fold onto the kernel:
-RNE + pinned conventions + one generic home). Still open: G-A1 (drop `half`,
-E-025), G-A2 (byte-layout vocabulary, E-026/E-027), G-T2 (vectorize
-`neon::unpack_f8_to_f32`, E-030).
+RNE + pinned conventions + one generic home); G-A2 byte-layout vocabulary
+delivered via E-026 (native `layout` module; `bytemuck`-gating deferred to the
+E-027 consumer co-evolution). Still open: G-A1 (drop `half`, E-025), G-T2
+(vectorize `neon::unpack_f8_to_f32`, E-030), and E-027 (consumer bytemuck→eunomia
+migration).
 
 Non-gaps (verified, do not chase): `TransmuteFrom` not adoptable; `zerocopy` not
 a migration target (sole stack use is out-of-scope consus `IntoBytes::as_bytes`);

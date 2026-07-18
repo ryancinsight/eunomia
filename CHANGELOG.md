@@ -4,6 +4,15 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- E-026: native `layout` byte-layout vocabulary — `Pod`/`Zeroable` unsafe marker
+  traits and the safe reinterpretation surface (`bytes_of`, `cast_slice`,
+  `from_bytes`, `pod_read_unaligned`, fallible `try_*` variants, `PodCastError`),
+  owned natively rather than borrowed from `bytemuck`. Impl'd for the primitives,
+  scalar wrappers, and `Complex<T>`; `core`-only. The existing `bytemuck::Pod`
+  impls are retained, so eunomia types satisfy both vocabularies.
+
 ### Fixed
 
 - E-028: restore the `avx512vl` guard in `packed/unpack/arch.rs`'s no_std
