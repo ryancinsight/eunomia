@@ -25,3 +25,12 @@ serde = ["dep:serde"]
 # NumPy interop: `unsafe impl numpy::Element for Complex<f32|f64>` so the SSOT
 # complex type is usable directly as a rust-numpy array element (Python bindings).
 numpy = ["dep:numpy", "dep:pyo3", "std"]
+
+[dev-dependencies]
+criterion = "0.5"
+
+# Reduced-precision conversion throughput: F16C-accelerated bulk paths vs the
+# scalar kernel, and the SIMD packed-unpack dispatch. Baselines gate regressions.
+[[bench]]
+name = "conversions"
+harness = false

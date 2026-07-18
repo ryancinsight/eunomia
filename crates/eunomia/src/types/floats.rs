@@ -89,6 +89,22 @@ impl F16 {
     pub fn is_nan(self) -> bool {
         (self.0 & 0x7C00) == 0x7C00 && (self.0 & 0x03FF) != 0
     }
+
+    /// Widen a slice of `F16` into `f32` — F16C-accelerated on x86-64, scalar
+    /// elsewhere. Writes `min(src.len(), dst.len())` elements.
+    #[inline]
+    pub fn widen_slice(src: &[Self], dst: &mut [f32]) {
+        // `F16` is `#[repr(transparent)]` over `u16`, so the reinterpret is a
+        // layout no-op (same size and alignment).
+        crate::convert::widen_f16(crate::layout::cast_slice::<Self, u16>(src), dst);
+    }
+
+    /// Narrow a slice of `f32` into `F16`, rounding to nearest with ties to even
+    /// — F16C-accelerated on x86-64. Writes `min(src.len(), dst.len())` elements.
+    #[inline]
+    pub fn narrow_slice(src: &[f32], dst: &mut [Self]) {
+        crate::convert::narrow_f16(src, crate::layout::cast_slice_mut::<Self, u16>(dst));
+    }
 }
 
 impl PartialEq for F16 {

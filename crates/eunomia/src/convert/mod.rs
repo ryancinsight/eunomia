@@ -22,7 +22,9 @@
 //! assert_eq!(f32::from_bits(widen::<5, 10>(one_f16)), 1.0);
 //! ```
 
+mod bulk;
 mod kernel;
 
+pub(crate) use bulk::{narrow_f16, widen_f16};
 pub use kernel::{narrow, widen};
 pub(crate) use kernel::{narrow_finite, widen_finite, widen_finite_high_word, widen_high_word};
