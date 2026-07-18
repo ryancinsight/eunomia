@@ -1,6 +1,110 @@
 # Eunomia gap audit
 
-## Residual risk
+## Byte-layout / transmutation / reduced-precision (E-022…E-030)
+
+Audit of eunomia's datatype surface against `bytemuck`, `zerocopy`, `half`, and
+the std `core::mem::TransmuteFrom` trait — what eunomia should own natively to
+shrink its dependency surface and consolidate the stack's byte/precision
+vocabulary. Method: full read of eunomia internals + web-grounded capability
+matrix + stack-wide consumer sweep (12 repos). Decision:
+[ADR 0003](docs/adr/0003-native-byte-layout-and-reduced-precision.md). Baseline:
+stable **1.95.0** pin (no `#![feature]` gates; SIMD via stable `#[target_feature]`
++ `is_x86_feature_detected!`).
+
+### Owns vs delegates
+
+| Concern | State | Backing |
+| --- | --- | --- |
+| `Complex<T>`, `F32`/`F64`/`I8`/`I16`/`I32` | Native | `#[repr(C/transparent)]` + `const _` layout asserts |
+| `F8`(E4M3)/`Bf8`(E5M2)/`F4`(E3M0)/`Bf4`(E2M1) | **Native** but truncating, four hand-rolled copies | `u8`, `types/floats.rs` |
+| `F16`/`Bf16` | **Delegated** | wrappers over `half::f16`/`half::bf16` |
+| f16/bf16 ↔ f32 conversion | **Delegated → now native** | `half` → `convert::{narrow,widen}` (E-022, done) |
+| `Pod`/`Zeroable` markers | **Delegated** | `unsafe impl bytemuck::…` (`types/mod.rs`) |
+| `cast_slice`/`bytes_of`/`from_bytes` / `*_ne_bytes` / `from_raw_parts` | **None** | eunomia supplies markers only; 1 `transmute` total |
+
+### Capability matrix (BM bytemuck 1.14 · ZC zerocopy 0.8 · HF half 2.3 · TF std TransmuteFrom · EU eunomia)
+
+| Capability | BM | ZC | HF | TF | EU |
+| --- | --- | --- | --- | --- | --- |
+| Compile-time layout check | ✗ silent-UB marker | ✓ derive+`KnownLayout` | — | ✓ compiler-proven | partial (`const _`) |
+| Unaligned read | ✓ | ✓ | — | ~ | ✗ |
+| Runtime-checked transmute | ✓ `CheckedBitPattern` | ✓ `TryFromBytes` | — | ✗ | ✗ |
+| Slice reinterpret | ✓ `cast_slice` | ✓ DST/`Ref` | ~ `HalfFloatSliceExt` | ~ Sized | ✗ |
+| Sub-byte floats (f8/f4) | ✗ | ✗ | ✗ | ✗ | **✓ only provider** |
+| f16/bf16 hardware conversion | ✗ | ✗ | ✓ F16C/fp16 | ✗ | ✗ (E-025 follow-up) |
+| Derive-checked safety | partial | ✓ | — | ✓ | ✗ |
+| no_std | ✓ | ✓ | ✓ | ✓ nightly | ✓ |
+
+Safety-model spectrum: bytemuck (`unsafe` marker, silent UB) → zerocopy (derive
+compile-checked) → std `TransmuteFrom` (compiler-proven, but nightly/unstable/
+[unsound #129097]). **`TransmuteFrom` is not adoptable** (stable pin);
+**bytemuck cannot be dropped** (wgpu/metal/cuda fix `Pod` at the buffer
+boundary); **`half` is fully replaceable** (no external lock-in, RNE oracle).
+
+### Gaps
+
+Correctness — **G-C1** `packed/unpack/arch.rs:34` no_std `has_avx512f` tests
+`"avx512bw"` (copy-paste) + both no_std AVX-512 branches drop `avx512vl` (E-028).
+**G-C2** sub-byte `from_f32` truncates, not round-to-nearest-even → quantization
+bias (E-023). **G-C3** sub-byte special-value convention unpinned + non-OCP
+(`F4`=E3M0 matches no hardware format); material for GPU quantization (E-023 pin /
+E-024 OCP). **G-C4** 18 dispatch `unsafe` blocks + 18 intrinsic `unsafe fn` + the
+sole `transmute` (`avx512.rs:56`) + 22 `unsafe impl bytemuck::…` carry no
+`// SAFETY:` (crate-wide `#![allow(clippy::missing_safety_doc)]`) (E-029).
+**G-C5** `impls/field.rs` "frozen" tests' `#[cfg(any())]` gate landed inside a
+doc-comment → tests are live (E-029).
+
+Architecture — **G-A1** `half` is a removable hard runtime dep (E-025).
+**G-A2** no eunomia byte-layout vocabulary; own markers + used cast fns at
+checked tier + bytemuck bridge (E-026/E-027). **G-A3** four hand-rolled sub-byte
+conversions collapse onto the E-022 kernel (E-023).
+
+Tests/docs — **G-T1** zero tests for sub-byte conversions (E-023). **G-T2**
+`neon::unpack_f8_to_f32` is scalar, not vectorized (E-030). **G-D1**
+`impls/wrappers/numeric.rs:217` mislabels Bf8 "1.4.3" (is E5M2) (E-029).
+
+Non-gaps (verified, do not chase): `TransmuteFrom` not adoptable; `zerocopy` not
+a migration target (sole stack use is out-of-scope consus `IntoBytes::as_bytes`);
+bytemuck bridged not dropped.
+
+### Consumer blast radius (source sites; `/target/` excluded)
+
+`bytemuck` (~530) is **entirely internal GPU-ABI** (Pod-derive uniforms,
+`bytes_of` upload, `cast_slice` readback) — no cross-crate public `Pod` type, so
+the bridge is mechanical. `half` public gates chain **eunomia → hermes**
+(`SimdKernel<f16>`, deepest) **→ leto-ops** (`Scalar`/`RealScalar` → `Array<f16>`)
+**→ coeus** (`Tensor<f16>`) / **apollo-fft** (`pub fn forward_f16`). Raw
+type-punning clients (a proper transmute vocabulary's users): coeus (3), hermes
+(~6), moirai (4). Migration ranking: hephaestus ~130 bytemuck / 0 half (bridge
+only; not yet a direct eunomia consumer); coeus ~115/~75; kwavers ~99/0; apollo
+~38/~470; hermes ~6/~340 (deepest half). leto declares bytemuck but never uses it.
+
+### E-022 (native f16/bf16 kernel) — delivered
+
+- `convert::{narrow, widen}`: one generic const-parameterized IEEE narrow/widen
+  kernel (RNE ties-to-even, subnormals, inf/NaN, f32-subnormal path).
+- Evidence: bit-exact vs `half` — exhaustive widen (all 2¹⁶, f16+bf16), exhaustive
+  finite round-trip, ~4.2M-case rounding sweep (every exponent/round/guard/sticky
+  decision), pinned known-value + ties-to-even cases. `fmt`/`clippy -D warnings`/
+  `nextest` 52/52 / doctest / rustdoc clean. Additive `pub mod convert` — [minor].
+
+### Residual risk (byte-layout / reduced-precision)
+
+- **R1** Native RNE proven bit-exact vs `half` for f16/bf16 (E-022 done). The
+  sub-byte formats have **no external oracle** — E-023 must pin conventions with
+  reference values + round-trip, not a differential.
+- **R2** OCP-vs-IEEE sub-byte convention (G-C3) is a product decision with GPU-
+  quantization impact; settle before E-024 migrates formats onto the kernel.
+- **R3** Re-backing `F16`/`Bf16` storage (`half::f16` → `u16`, E-025) is breaking;
+  ≥1 consumer constructs `Bf16(half::bf16::…)` (hermes test) → co-evolution unit.
+- **R4** bytemuck 1.14 (pin) predates several 1.25 helpers; the E-026 bridge must
+  target the 1.14 surface.
+- **R5** eunomia is consumed by 9 repos (git, some pinned/patched); every API
+  change triggers the pin-discipline integration sweep.
+
+---
+
+## E-021 (complex provider cutover) — residual risk
 
 - E-021 is in progress only at the downstream delivery boundary. Eunomia no
   longer directly depends on `num-traits`; all-feature builds still contain it

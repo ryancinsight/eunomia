@@ -2,6 +2,16 @@
 
 All notable changes to Eunomia are documented here.
 
+## [Unreleased]
+
+### Added
+
+- E-022: `convert` module — `convert::{narrow, widen}`, a generic
+  const-parameterized (`<const E, const M>`) IEEE-754 narrowing/widening kernel
+  (round-to-nearest-ties-to-even, subnormals, infinity/NaN, `f32`-subnormal
+  handling). The native conversion SSOT replacing `half`'s `f16`/`bf16`
+  conversions; verified bit-exact against `half`. See ADR 0003.
+
 ## [0.2.0] - 2026-07-18
 
 ### Breaking
