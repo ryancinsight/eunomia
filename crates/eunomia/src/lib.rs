@@ -9,6 +9,7 @@ extern crate alloc;
 mod casts;
 pub mod convert;
 mod impls;
+pub mod layout;
 mod ops;
 mod packed;
 mod traits;
@@ -16,6 +17,9 @@ mod types;
 
 // Re-export core traits
 pub use traits::{CastFrom, CastTo, ComplexField, FloatElement, NumericElement, RealField};
+
+// Re-export byte-layout markers (the reinterpretation fns live under `layout`)
+pub use layout::{Pod, Zeroable};
 
 // Re-export wrapper types
 pub use types::{

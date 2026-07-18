@@ -50,13 +50,19 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   Dep: E-022. Acceptance: `half` off eunomia's hard deps; consumer chain green;
   hardware F16C/fp16 conversion ladder (per `packed/unpack` dispatch pattern) or
   filed as its own item.
-- **E-026 [arch]** eunomia byte-layout vocabulary: `Zeroable`/`Pod` markers +
-  the used safe casts (`cast_slice`(+mut), `bytes_of`, `from_bytes`, unaligned
-  read) at zerocopy's checked tier (`const _` asserts + per-impl `// SAFETY:`);
-  default `bytemuck-interop` feature blanket-bridging eunomia ↔ `bytemuck::Pod`
-  for the wgpu/metal/cuda contract (G-A2). Target the pinned bytemuck 1.14
-  surface (R4). Acceptance: eunomia types usable via both vocabularies; no new
-  external hard dep; scope bounded to used surface (no derive macro).
+- **E-026 [arch] — vocabulary done; gating deferred** Native `layout` module
+  (G-A2): `Zeroable`/`Pod` unsafe markers (per-impl `// SAFETY:`, layout pinned by
+  the existing `types` `const _` asserts) + the used safe casts (`bytes_of`(+mut),
+  `cast_slice`(+mut), `from_bytes`, `try_*` fallible variants + `PodCastError`,
+  `pod_read_unaligned`). Impl'd for the primitives, scalar wrappers, and
+  `Complex<T>`; `core`-only (no_std). Additive — the existing `bytemuck::Pod`
+  impls are untouched, so eunomia types satisfy **both** vocabularies. 11
+  value-semantic tests; fmt/clippy-D/nextest 70/70/doctest/rustdoc clean.
+  **Deferred (co-evolution, pairs with E-027):** making `bytemuck` an optional
+  (default-on) feature and gating its impls is NOT purely additive —
+  `default-features = false` consumers (e.g. hephaestus GPU buffers) rely on
+  `eunomia::Complex: bytemuck::Pod`, so it requires consumer verification, not a
+  solo eunomia commit.
 - **E-027 [arch]** Migrate consumer GPU-ABI structs (hephaestus ~130, coeus
   ~115, …) onto the E-026 vocabulary while preserving the `bytemuck::Pod` wgpu
   contract via the bridge; add eunomia as a direct hephaestus dep. Dep: E-026.
