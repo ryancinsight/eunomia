@@ -29,7 +29,9 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   both formats) + exhaustive finite round-trip + ~4.2M rounding sweep + pinned
   ties-to-even; fmt/clippy-D/nextest(52/52)/doctest/rustdoc clean. Additive
   `pub mod convert`. Merged by PR #37 (`6f431f2d`).
-- **E-023 [minor]** Fold `F8`/`Bf8`/`F4`/`Bf4` conversions onto the E-022 kernel
+- **E-023 [minor] — in-progress; owner: Codex; scope: conversion kernel,
+  sub-byte types/tests, packed conversion tables, numeric constants, and PM
+  artifacts.** Fold `F8`/`Bf8`/`F4`/`Bf4` conversions onto the E-022 kernel
   (generalize the kernel's special-value handling as needed), deleting the four
   hand-rolled `types/floats.rs` copies and the truncation defect (G-C2/G-A3);
   pin each format's convention in Rustdoc + add reference-value & round-trip

@@ -1,8 +1,8 @@
 # Eunomia checklist
 
-Target version: 0.3.0
+Target version: 0.4.0
 
-Sprint phase: Closure
+Sprint phase: Execution
 
 ## E-021 [arch] — native complex provider cutover
 
@@ -33,3 +33,15 @@ conventions). See ADR 0003 / gap_audit §Byte-layout for the full workstream
   exhaustive finite round-trip, ~4.2M rounding sweep, pinned ties-to-even.
 - [x] Pass fmt, clippy `-D warnings`, nextest (52/52), doctest, rustdoc.
 - [x] Commit and merge PR #37 (`6f431f2d`) into `main`.
+
+## E-023 [minor] — canonical sub-byte conversion (Owner: Codex)
+
+- [ ] Pin the existing E5M2, E2M1, E4M3, and E3M0 conventions with analytical
+  known-value, special-value, round-trip, and ties-to-even tests.
+- [ ] Generalize the native conversion kernel over the finite-only
+  reserved-top-exponent policy without duplicating the arithmetic.
+- [ ] Replace all four hand-written type conversions and packed conversion
+  tables with the canonical kernel.
+- [ ] Correct sub-byte numeric constants to match their declared layouts.
+- [ ] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
+  semver, and downstream Leto/Hephaestus checks.
