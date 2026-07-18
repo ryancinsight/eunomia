@@ -266,3 +266,26 @@ fn packed_dispatch_matches_scalar_conversion_for_every_encoding() {
         );
     }
 }
+
+/// Exhaustively verify the branchless AVX2 `f8 -> f32` decode (E-031) against the
+/// scalar kernel for every byte — including subnormals and NaN payloads — so the
+/// path is validated even on an AVX-512 host where the dispatcher would skip it.
+#[cfg(target_arch = "x86_64")]
+#[test]
+fn avx2_f8_unpack_bit_matches_scalar_for_every_byte() {
+    if !std::arch::is_x86_feature_detected!("avx2") {
+        return;
+    }
+    let src: Vec<F8> = (u8::MIN..=u8::MAX).map(F8).collect();
+    let mut out = vec![F32::default(); src.len()];
+    // SAFETY: AVX2 is detected above and both slices have equal length.
+    unsafe { eunomia::unsafe_intrinsics::avx2::unpack_f8_to_f32(&src, &mut out) };
+    for (source, result) in src.iter().zip(&out) {
+        assert_eq!(
+            result.0.to_bits(),
+            source.to_f32().to_bits(),
+            "avx2 f8 {:#04x}",
+            source.0
+        );
+    }
+}

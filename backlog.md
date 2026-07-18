@@ -103,6 +103,16 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   `benches/conversions.rs` commits the baselines to gate regressions. Dogfoods
   the E-026 `layout::cast_slice` for the transparent `F16`↔`u16` reinterpret.
   Consumer: bulk `f16` processing in hermes/leto once migrated (E-025b).
+- **E-032 [patch] — investigated, no change (finding recorded)** AVX2
+  `unpack_f8_to_f32` optimization: the E-031 benchmark flagged it at ~7 Gelem/s
+  (gather-bound hypothesis). A branchless SIMD E4M3 decode (`significand × 2^scale`,
+  flush-to-zero-safe, bit-exact incl. NaN payloads) was implemented and measured
+  **~27% slower** (684 ns vs 537 ns, p < 0.05) than the `_mm256_i32gather_ps` LUT
+  on this µarch — the hot 1 KB LUT gather out-throughputs the ~20-op ALU dependency
+  chain. **Hypothesis refuted; the gather is retained** (no regression shipped).
+  Kept the deliverable: an exhaustive direct `avx2::unpack_f8_to_f32` differential
+  test (all 256 bytes vs the scalar kernel, valid on AVX-512 hosts too). **Do not
+  re-attempt the branchless-compute path for f8→f32.**
 
 ## Done
 
