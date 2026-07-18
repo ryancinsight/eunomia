@@ -23,7 +23,11 @@ const _: () = {
     assert!(core::mem::offset_of!(Complex64, im) == core::mem::size_of::<f64>());
 };
 
-// Bytemuck implementations
+// SAFETY: every wrapper is `#[repr(transparent)]` over a type that is itself
+// `Pod`/`Zeroable` — `f32`/`f64`/`i8`/`i16`/`i32`, `half::f16`/`half::bf16`, or a
+// `u8` for the sub-byte formats (all 256 patterns are valid encodings). None
+// carry padding or invalid bit patterns, and the `const _` block below pins each
+// type's size and alignment.
 unsafe impl bytemuck::Zeroable for F16 {}
 unsafe impl bytemuck::Pod for F16 {}
 unsafe impl bytemuck::Zeroable for F32 {}

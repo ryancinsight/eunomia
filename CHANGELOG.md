@@ -4,6 +4,19 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- E-028: restore the `avx512vl` guard in `packed/unpack/arch.rs`'s no_std
+  AVX-512 feature detection, matching the `std` check and the intrinsics'
+  `#[target_feature]` requirement.
+
+### Changed
+
+- E-029: remove the blanket `#![allow(clippy::missing_safety_doc)]` and document
+  every unsafe site in the packed/unpack SIMD path (`# Safety` docs on the 18
+  intrinsic functions, `// SAFETY:` on the 18 dispatch blocks and the `avx512`
+  table `transmute`) and the scalar `bytemuck` marker impls.
+
 ## [0.4.0] - 2026-07-18
 
 ### Changed

@@ -60,16 +60,20 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
 - **E-027 [arch]** Migrate consumer GPU-ABI structs (hephaestus ~130, coeus
   ~115, …) onto the E-026 vocabulary while preserving the `bytemuck::Pod` wgpu
   contract via the bridge; add eunomia as a direct hephaestus dep. Dep: E-026.
-- **E-028 [patch]** Fix `packed/unpack/arch.rs:34` no_std `has_avx512f`
-  (`"avx512bw"` → `"avx512f"`) and restore the `avx512vl` guard both no_std
-  AVX-512 branches drop (G-C1). Acceptance: no_std AVX-512 dispatch selects the
-  correct ISA; add a `cfg`-gated detection test.
-- **E-029 [patch]** Unsafe/doc discipline: add `// SAFETY:` to the 18 dispatch
-  blocks, 18 intrinsic `unsafe fn`, the `avx512.rs:56` `transmute`, and the 22
-  scalar `unsafe impl bytemuck::…`; remove `#![allow(clippy::missing_safety_doc)]`;
-  fix `impls/field.rs` `#[cfg(any())]`-in-doc-comment (G-C5); correct the Bf8
-  "1.4.3" doc mislabel (G-D1). Acceptance: no blanket safety-doc allow; each
-  unsafe site documents its invariant.
+- **E-028 [patch] — done** Fixed `packed/unpack/arch.rs` no_std AVX-512 detection
+  (G-C1). The `"avx512bw"`→`"avx512f"` copy-paste was already corrected under
+  E-023; restored the `avx512vl` guard both no_std branches dropped, matching the
+  `std` runtime check and the intrinsics' `#[target_feature]`. No unit test — the
+  no_std path is not exercised on the std toolchain; correct-by-construction
+  against the std/intrinsic requirements.
+- **E-029 [patch] — done** Unsafe/doc discipline: removed the blanket
+  `#![allow(clippy::missing_safety_doc)]`; added `# Safety` docs to the 18 intrinsic
+  `unsafe fn` (avx2/avx512/neon), and `// SAFETY:` to the 18 dispatch blocks, the
+  `avx512` table `transmute`, and the 22 scalar `unsafe impl bytemuck::…` (one
+  block-level rationale). Removed the `#[cfg(test)]`-in-doc-comment cruft + stale
+  "frozen" note in `impls/field.rs` (G-C5). Bf8 "1.4.3" mislabel (G-D1) was already
+  corrected under E-023. Evidence: clippy `-D warnings` with `missing_safety_doc`
+  enforced; fmt / nextest 59/59 / doctest / rustdoc clean.
 - **E-030 [patch]** Vectorize `neon::unpack_f8_to_f32` (currently scalar in the
   intrinsics module — G-T2). Acceptance: NEON path differential-equal to scalar;
   `cargo bloat`/bench note.

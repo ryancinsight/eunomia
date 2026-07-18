@@ -2,6 +2,9 @@ use crate::convert::{widen_finite, widen_finite_high_word, widen_high_word};
 use crate::types::{Bf16, Bf4, Bf8, F32, F4, F8};
 use core::arch::aarch64::*;
 
+/// # Safety
+/// Must run on `aarch64`, where NEON is baseline. Reads and writes stay within
+/// the shorter of the two slices.
 #[inline]
 pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     let len = packed.len().min(unpacked.len());
@@ -61,6 +64,9 @@ pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     }
 }
 
+/// # Safety
+/// Must run on `aarch64`, where NEON is baseline. Reads and writes stay within
+/// the shorter of the two slices.
 #[inline]
 pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     let len = packed.len().min(unpacked.len());
@@ -114,6 +120,9 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     }
 }
 
+/// # Safety
+/// Must run on `aarch64`, where NEON is baseline. Reads and writes stay within
+/// the shorter of the two slices.
 #[inline]
 pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
     let len = packed.len();
@@ -184,6 +193,9 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
     }
 }
 
+/// # Safety
+/// Must run on `aarch64`, where NEON is baseline. Reads and writes stay within
+/// the shorter of the two slices.
 #[inline]
 pub unsafe fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
     let len = packed.len().min(unpacked.len());
@@ -252,6 +264,9 @@ pub unsafe fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
     }
 }
 
+/// # Safety
+/// Must run on `aarch64`, where NEON is baseline. Reads and writes stay within
+/// the shorter of the two slices.
 #[inline]
 pub unsafe fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
     let len = packed.len();
@@ -330,6 +345,9 @@ pub unsafe fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
     }
 }
 
+/// # Safety
+/// Must run on `aarch64`, where NEON is baseline. Reads and writes stay within
+/// the shorter of the two slices.
 #[inline]
 pub unsafe fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
     let len = packed.len().min(unpacked.len());

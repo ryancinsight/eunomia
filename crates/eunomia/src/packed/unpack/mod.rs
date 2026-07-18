@@ -1,7 +1,5 @@
 //! Unpacking functions for low-precision data representations.
 
-#![allow(clippy::missing_safety_doc)]
-
 mod arch;
 
 #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]

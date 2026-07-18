@@ -2,6 +2,10 @@ use crate::convert::{widen_finite, widen_finite_high_word, widen_high_word};
 use crate::types::{Bf16, Bf4, Bf8, F32, F4, F8};
 use core::arch::x86_64::*;
 
+/// # Safety
+/// Callers must ensure the running CPU supports AVX-512 F, BW, and VL (the
+/// dispatcher checks `has_avx512bw()`). Reads and writes stay within the shorter
+/// of the two slices.
 #[target_feature(enable = "avx512f,avx512bw,avx512vl")]
 pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     let len = packed.len().min(unpacked.len());
@@ -33,6 +37,10 @@ pub unsafe fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     }
 }
 
+/// # Safety
+/// Callers must ensure the running CPU supports AVX-512 F, BW, and VL (the
+/// dispatcher checks `has_avx512bw()`). Reads and writes stay within the shorter
+/// of the two slices.
 #[target_feature(enable = "avx512f,avx512bw,avx512vl")]
 pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     let len = packed.len().min(unpacked.len());
@@ -47,6 +55,8 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
         }
         t
     };
+    // SAFETY: `[i16; 32]` and `__m512i` are both 64-byte plain-old-data with no
+    // invalid bit patterns, so reinterpreting the array as the vector is sound.
     let table_zmm = core::mem::transmute::<[i16; 32], __m512i>([
         TABLE_BITS[0] as i16,
         TABLE_BITS[1] as i16,
@@ -104,6 +114,10 @@ pub unsafe fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     }
 }
 
+/// # Safety
+/// Callers must ensure the running CPU supports AVX-512 F, BW, and VL (the
+/// dispatcher checks `has_avx512bw()`). Reads and writes stay within the shorter
+/// of the two slices.
 #[target_feature(enable = "avx512f,avx512bw,avx512vl")]
 pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
     let len = packed.len();
@@ -160,6 +174,10 @@ pub unsafe fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
     }
 }
 
+/// # Safety
+/// Callers must ensure the running CPU supports AVX-512 F and VL (the dispatcher
+/// checks `has_avx512f()`). Reads and writes stay within the shorter of the two
+/// slices.
 #[target_feature(enable = "avx512f,avx512vl")]
 pub unsafe fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
     let len = packed.len().min(unpacked.len());
@@ -195,6 +213,10 @@ pub unsafe fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
     }
 }
 
+/// # Safety
+/// Callers must ensure the running CPU supports AVX-512 F and VL (the dispatcher
+/// checks `has_avx512f()`). Reads and writes stay within the shorter of the two
+/// slices.
 #[target_feature(enable = "avx512f,avx512vl")]
 pub unsafe fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
     let len = packed.len();
@@ -251,6 +273,10 @@ pub unsafe fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
     }
 }
 
+/// # Safety
+/// Callers must ensure the running CPU supports AVX-512 F and VL (the dispatcher
+/// checks `has_avx512f()`). Reads and writes stay within the shorter of the two
+/// slices.
 #[target_feature(enable = "avx512f,avx512vl")]
 pub unsafe fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
     let len = packed.len().min(unpacked.len());

@@ -17,12 +17,16 @@ pub fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     #[cfg(target_arch = "x86_64")]
     {
         if has_avx512bw() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx512::unpack_bf8_to_bf16(packed, unpacked);
             }
             return;
         }
         if has_avx2() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx2::unpack_bf8_to_bf16(packed, unpacked);
             }
@@ -31,6 +35,8 @@ pub fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
     }
     #[cfg(target_arch = "aarch64")]
     {
+        // SAFETY: NEON is baseline on aarch64; the kernel bounds reads/writes
+        // to the slice lengths.
         unsafe {
             unsafe_intrinsics::neon::unpack_bf8_to_bf16(packed, unpacked);
         }
@@ -54,12 +60,16 @@ pub fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     #[cfg(target_arch = "x86_64")]
     {
         if has_avx512bw() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx512::unpack_bf4_to_bf16(packed, unpacked);
             }
             return;
         }
         if has_avx2() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx2::unpack_bf4_to_bf16(packed, unpacked);
             }
@@ -68,6 +78,8 @@ pub fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
     }
     #[cfg(target_arch = "aarch64")]
     {
+        // SAFETY: NEON is baseline on aarch64; the kernel bounds reads/writes
+        // to the slice lengths.
         unsafe {
             unsafe_intrinsics::neon::unpack_bf4_to_bf16(packed, unpacked);
         }
@@ -92,12 +104,16 @@ pub fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
     #[cfg(target_arch = "x86_64")]
     {
         if has_avx512bw() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx512::unpack_bf4_to_bf16_packed(packed, unpacked);
             }
             return;
         }
         if has_avx2() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx2::unpack_bf4_to_bf16_packed(packed, unpacked);
             }
@@ -106,6 +122,8 @@ pub fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
     }
     #[cfg(target_arch = "aarch64")]
     {
+        // SAFETY: NEON is baseline on aarch64; the kernel bounds reads/writes
+        // to the slice lengths.
         unsafe {
             unsafe_intrinsics::neon::unpack_bf4_to_bf16_packed(packed, unpacked);
         }
@@ -135,12 +153,16 @@ pub fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
     #[cfg(target_arch = "x86_64")]
     {
         if has_avx512f() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx512::unpack_f4_to_f32(packed, unpacked);
             }
             return;
         }
         if has_avx2() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx2::unpack_f4_to_f32(packed, unpacked);
             }
@@ -149,6 +171,8 @@ pub fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
     }
     #[cfg(target_arch = "aarch64")]
     {
+        // SAFETY: NEON is baseline on aarch64; the kernel bounds reads/writes
+        // to the slice lengths.
         unsafe {
             unsafe_intrinsics::neon::unpack_f4_to_f32(packed, unpacked);
         }
@@ -169,12 +193,16 @@ pub fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
     #[cfg(target_arch = "x86_64")]
     {
         if has_avx512f() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx512::unpack_f4_to_f32_packed(packed, unpacked);
             }
             return;
         }
         if has_avx2() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx2::unpack_f4_to_f32_packed(packed, unpacked);
             }
@@ -183,6 +211,8 @@ pub fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
     }
     #[cfg(target_arch = "aarch64")]
     {
+        // SAFETY: NEON is baseline on aarch64; the kernel bounds reads/writes
+        // to the slice lengths.
         unsafe {
             unsafe_intrinsics::neon::unpack_f4_to_f32_packed(packed, unpacked);
         }
@@ -208,12 +238,16 @@ pub fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
     #[cfg(target_arch = "x86_64")]
     {
         if has_avx512f() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx512::unpack_f8_to_f32(packed, unpacked);
             }
             return;
         }
         if has_avx2() {
+            // SAFETY: the `has_*` guard above confirms the required AVX ISA is
+            // available; the kernel bounds reads/writes to the slice lengths.
             unsafe {
                 unsafe_intrinsics::avx2::unpack_f8_to_f32(packed, unpacked);
             }
@@ -222,6 +256,8 @@ pub fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
     }
     #[cfg(target_arch = "aarch64")]
     {
+        // SAFETY: NEON is baseline on aarch64; the kernel bounds reads/writes
+        // to the slice lengths.
         unsafe {
             unsafe_intrinsics::neon::unpack_f8_to_f32(packed, unpacked);
         }
