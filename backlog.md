@@ -1,6 +1,16 @@
 # Eunomia backlog
 
-Sprint target: 0.1.0 (datatype-law foundation extracted from hermes-numeric).
+Sprint target: 0.2.0 (native complex provider cutover).
+
+## In progress
+
+- **E-021 [arch]** Remove Eunomia's direct `num-traits` dependency and foreign
+  `Zero`/`One` implementations, pin the native `Complex32`/`Complex64` ABI at
+  compile time, and align the optional NumPy element boundary with
+  NumPy/PyO3 0.29. Owner: Codex. Scope: Eunomia manifests, complex identity and
+  layout modules, provider-contract tests, ADR 0002, and PM artifacts.
+  Acceptance: all-feature and no-default-feature gates pass; Hephaestus can use
+  `eunomia::Complex` directly in device buffers and Python NumPy results.
 
 ## Done
 
