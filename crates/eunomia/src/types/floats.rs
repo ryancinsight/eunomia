@@ -58,6 +58,34 @@ impl F16 {
     /// Negative infinity.
     pub const NEG_INFINITY: Self = Self(0xFC00);
 
+    /// Construct from an IEEE 754 binary16 bit pattern without conversion.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let one = eunomia::F16::from_bits(0x3C00);
+    /// assert_eq!(one.to_f32(), 1.0);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_bits(bits: u16) -> Self {
+        Self(bits)
+    }
+
+    /// Return the unchanged IEEE 754 binary16 bit pattern.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let negative_zero = eunomia::F16::from_bits(0x8000);
+    /// assert_eq!(negative_zero.to_bits(), 0x8000);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn to_bits(self) -> u16 {
+        self.0
+    }
+
     /// Widen to `f32` (exact).
     #[inline]
     #[must_use]
@@ -138,6 +166,34 @@ impl Bf16 {
     pub const INFINITY: Self = Self(0x7F80);
     /// Negative infinity.
     pub const NEG_INFINITY: Self = Self(0xFF80);
+
+    /// Construct from a bfloat16 bit pattern without conversion.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let one = eunomia::Bf16::from_bits(0x3F80);
+    /// assert_eq!(one.to_f32(), 1.0);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_bits(bits: u16) -> Self {
+        Self(bits)
+    }
+
+    /// Return the unchanged bfloat16 bit pattern.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let payload = eunomia::Bf16::from_bits(0x7FC5);
+    /// assert_eq!(payload.to_bits(), 0x7FC5);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn to_bits(self) -> u16 {
+        self.0
+    }
 
     /// Widen to `f32` (exact).
     #[inline]

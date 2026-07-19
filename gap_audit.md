@@ -58,6 +58,10 @@ Architecture — **G-A1** `half` is a removable hard runtime dep (E-025).
 **G-A2** no eunomia byte-layout vocabulary; own markers + used cast fns at
 checked tier + bytemuck bridge (E-026/E-027). **G-A3 (resolved E-023)** all
 sub-byte scalar and packed-table conversions use the E-022 kernel.
+**G-A4 (resolved E-025b)** native `F16`/`Bf16` exposed storage only through
+their tuple field, forcing SIMD consumers to couple to representation details.
+Const `from_bits`/`to_bits` methods now own the representation-preserving
+boundary and round-trip every `u16` pattern exactly.
 
 Tests/docs — **G-T1 (resolved E-023)** analytical and exhaustive sub-byte
 conversion tests now pin all four formats. **G-T2**
@@ -78,6 +82,17 @@ migration).
 Non-gaps (verified, do not chase): `TransmuteFrom` not adoptable; `zerocopy` not
 a migration target (sole stack use is out-of-scope consus `IntoBytes::as_bytes`);
 bytemuck bridged not dropped.
+
+### E-025b (native reduced-precision bit-pattern contract) — delivered
+
+- Hermes' scalar and ISA kernels require raw lane construction/extraction, not
+  a numeric conversion. Eunomia now owns that contract through const
+  `F16::from_bits`/`to_bits` and `Bf16::from_bits`/`to_bits`.
+- Evidence: exhaustive round trips over all 65,536 patterns for both formats,
+  explicit signed-zero and NaN-payload preservation, four runnable doctests,
+  the full 81-test suite, warning-denied Clippy, no-default build, rustdoc,
+  baseline-revision semver checks, and a Hermes all-feature check using Cargo's
+  local path override.
 
 ### Consumer blast radius (source sites; `/target/` excluded)
 

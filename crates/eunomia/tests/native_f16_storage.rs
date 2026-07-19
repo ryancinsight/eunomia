@@ -5,6 +5,19 @@
 use eunomia::{Bf16, F16};
 
 #[test]
+fn native_reduced_precision_bit_patterns_round_trip_exactly() {
+    for bits in u16::MIN..=u16::MAX {
+        assert_eq!(F16::from_bits(bits).to_bits(), bits);
+        assert_eq!(Bf16::from_bits(bits).to_bits(), bits);
+    }
+
+    assert_eq!(F16::from_bits(0x8000).to_bits(), 0x8000);
+    assert_eq!(Bf16::from_bits(0x8000).to_bits(), 0x8000);
+    assert_eq!(F16::from_bits(0x7E55).to_bits(), 0x7E55);
+    assert_eq!(Bf16::from_bits(0x7FC5).to_bits(), 0x7FC5);
+}
+
+#[test]
 fn f16_widening_matches_half_exhaustively() {
     for bits in 0u16..=u16::MAX {
         let native = F16(bits).to_f32();

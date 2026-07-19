@@ -1,8 +1,19 @@
 # Eunomia checklist
 
-Target version: 0.4.0
+Target version: 0.5.0
 
 Sprint phase: Execution
+
+## E-025b [minor] — native reduced-precision bit-pattern contract (Owner: Codex)
+
+- [x] Audit Hermes' raw-half boundary and identify the missing provider-owned
+  representation contract.
+- [x] Add const `F16`/`Bf16` bit-pattern constructors and accessors with
+  value-semantic signed-zero and NaN-payload tests.
+- [x] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
+  semver, and path-overridden Hermes checks.
+- [ ] Publish Eunomia first, then migrate the bounded Hermes scalar/intrinsic
+  scope and continue dependency-ordered into Leto.
 
 ## E-021 [arch] — native complex provider cutover
 
