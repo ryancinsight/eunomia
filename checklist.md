@@ -9,12 +9,14 @@ Sprint phase: Execution
 - [x] Reconcile the live consumer graph: Hermes and Leto use native Eunomia
   reduced-precision types; Apollo's remaining raw-half FFT surface is
   Apollo-owned and does not consume Eunomia's foreign impls.
-- [ ] Delete the foreign raw-half numeric/cast surface and move `half` from the
+- [x] Delete the foreign raw-half numeric/cast surface and move `half` from the
   production graph to the differential-oracle dev graph.
-- [ ] Update provider tests, Rustdoc, README, changelog, and residual-risk
+- [x] Update provider tests, Rustdoc, README, changelog, and residual-risk
   records for the breaking 0.6.0 contract.
-- [ ] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
-  semver, and path-overridden Hermes/Leto checks.
+- [x] Pass format, feature, warning-denied Clippy, Nextest (86/86), doctest
+  (5/5), rustdoc, semver, and path-overridden Hermes/Leto/Hephaestus checks.
+  Hephaestus also proves its lock must advance from Hermes 0.3/Leto 0.38 to the
+  merged native-provider Hermes 0.4/Leto 0.39 defaults.
 - [ ] Publish and merge Eunomia, then refresh the Atlas gitlink and convergence
   audit.
 

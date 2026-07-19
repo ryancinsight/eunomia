@@ -9,7 +9,6 @@ repository.workspace = true
 description = "Atlas datatype law: the Single Source of Truth for numeric/scalar datatype vocabulary (scalars, complex, packed formats, conversions)"
 
 [dependencies]
-half = { workspace = true }
 bytemuck = { workspace = true }
 libm = { version = "0.2.8", default-features = false }
 rkyv = { workspace = true, optional = true }
@@ -28,6 +27,7 @@ numpy = ["dep:numpy", "dep:pyo3", "std"]
 
 [dev-dependencies]
 criterion = "0.5"
+half = { workspace = true }
 
 # Reduced-precision conversion throughput: F16C-accelerated bulk paths vs the
 # scalar kernel, and the SIMD packed-unpack dispatch. Baselines gate regressions.

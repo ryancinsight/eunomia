@@ -4,6 +4,21 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-19
+
+### Breaking
+
+- E-025c removes Eunomia's `NumericElement`, `FloatElement`, sealing, and
+  `CastFrom` implementations for `half::f16`/`half::bf16`. Use Eunomia's native
+  `F16`/`Bf16` provider types instead. The `half` crate is now a dev-only
+  differential oracle and is absent from Eunomia's production dependency graph.
+
+### Migration
+
+- Replace `half::f16`/`half::bf16` trait-bound usage with `F16`/`Bf16`.
+  Representation-preserving boundaries use `from_bits`/`to_bits`; numeric
+  boundaries use `from_f32`/`to_f32`.
+
 ### Added
 
 - Value-semantic `NumericElement`/`FloatElement` contract tests for the native

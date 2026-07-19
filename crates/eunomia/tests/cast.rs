@@ -12,8 +12,6 @@ where
 fn float_families_convert_integral_coordinates_to_indices() {
     assert_index_cast::<f32>(1);
     assert_index_cast::<f64>(1);
-    assert_index_cast::<half::f16>(1);
-    assert_index_cast::<half::bf16>(1);
     assert_index_cast::<F16>(1);
     assert_index_cast::<F32>(1);
     assert_index_cast::<F64>(1);

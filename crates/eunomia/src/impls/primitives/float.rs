@@ -119,36 +119,6 @@ impl FloatElement for f64 {
     }
 }
 
-impl FloatElement for half::f16 {
-    #[inline(always)]
-    fn from_f32(val: f32) -> Self {
-        half::f16::from_f32(val)
-    }
-    #[inline(always)]
-    fn from_f64(val: f64) -> Self {
-        half::f16::from_f64(val)
-    }
-    #[inline(always)]
-    fn to_f32(self) -> f32 {
-        self.to_f32()
-    }
-}
-
-impl FloatElement for half::bf16 {
-    #[inline(always)]
-    fn from_f32(val: f32) -> Self {
-        half::bf16::from_f32(val)
-    }
-    #[inline(always)]
-    fn from_f64(val: f64) -> Self {
-        half::bf16::from_f64(val)
-    }
-    #[inline(always)]
-    fn to_f32(self) -> f32 {
-        self.to_f32()
-    }
-}
-
 macro_rules! impl_numeric_element_unsigned {
     ($t:ty, $byte_width:expr, $min_value:expr, $max_value:expr) => {
         impl NumericElement for $t {
