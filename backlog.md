@@ -57,9 +57,15 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   converted. Evidence: fmt / clippy-D / nextest 76/76 / doctest / rustdoc / no_std
   clean; aarch64 NEON correct-by-construction (cross-compile blocked by a missing
   C toolchain, unrelated).
-  **Remaining (E-025b/c):** migrate hermes → leto → coeus/apollo off raw
-  `half::f16` → `eunomia::F16` (~900 sites; hermes needs a pin-bump first), then
-  remove the raw-half impls and drop `half` entirely.
+  **E-025b in progress — owner: Codex; scope: native `F16`/`Bf16` bit-pattern
+  constructors/accessors, contract tests, Rustdoc, and PM artifacts.** Hermes'
+  intrinsic kernels require representation-preserving construction and
+  extraction without reaching through Eunomia's public tuple field. Acceptance:
+  const `from_bits`/`to_bits` APIs preserve all `u16` patterns, signed zero, and
+  NaN payloads; full Eunomia gates and a path-patched Hermes check pass.
+  **Remaining after E-025b:** migrate hermes → leto → coeus/apollo off raw
+  `half::f16` → `eunomia::F16` (~900 sites), then remove the raw-half impls and
+  drop `half` entirely.
 - **E-026 [arch] — vocabulary done; gating deferred** Native `layout` module
   (G-A2): `Zeroable`/`Pod` unsafe markers (per-impl `// SAFETY:`, layout pinned by
   the existing `types` `const _` asserts) + the used safe casts (`bytes_of`(+mut),
