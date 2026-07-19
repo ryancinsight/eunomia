@@ -4,6 +4,8 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-18
+
 ### Breaking
 
 - E-025: `F16` and `Bf16` are now native `u16`-backed (`pub struct F16(pub u16)`)
@@ -17,6 +19,9 @@ All notable changes to Eunomia are documented here.
 
 ### Added
 
+- E-025b: const, representation-preserving `F16::from_bits`/`to_bits` and
+  `Bf16::from_bits`/`to_bits` APIs for SIMD and device kernels. Exhaustive tests
+  preserve every `u16` encoding, including signed zero and NaN payloads.
 - E-033: bulk `bfloat16`↔`f32` conversion (`Bf16::widen_slice` /
   `Bf16::narrow_slice`) — ~16× (widen) / ~3.5× (narrow) faster than the scalar
   kernel via autovectorized shift/round-and-truncate (no intrinsics), bit-exact

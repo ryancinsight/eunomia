@@ -8,10 +8,10 @@ Sprint phase: Execution
 
 - [x] Audit Hermes' raw-half boundary and identify the missing provider-owned
   representation contract.
-- [ ] Add const `F16`/`Bf16` bit-pattern constructors and accessors with
+- [x] Add const `F16`/`Bf16` bit-pattern constructors and accessors with
   value-semantic signed-zero and NaN-payload tests.
-- [ ] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
-  semver, and path-patched Hermes checks.
+- [x] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
+  semver, and path-overridden Hermes checks.
 - [ ] Publish Eunomia first, then migrate the bounded Hermes scalar/intrinsic
   scope and continue dependency-ordered into Leto.
 

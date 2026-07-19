@@ -1,6 +1,6 @@
 # Eunomia backlog
 
-Sprint target: 0.3.0 (native reduced-precision conversion).
+Sprint target: 0.5.0 (native reduced-precision provider contract).
 
 ## Recently completed
 
@@ -57,13 +57,13 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   converted. Evidence: fmt / clippy-D / nextest 76/76 / doctest / rustdoc / no_std
   clean; aarch64 NEON correct-by-construction (cross-compile blocked by a missing
   C toolchain, unrelated).
-  **E-025b in progress — owner: Codex; scope: native `F16`/`Bf16` bit-pattern
+  **E-025b done — owner: Codex; scope: native `F16`/`Bf16` bit-pattern
   constructors/accessors, contract tests, Rustdoc, and PM artifacts.** Hermes'
   intrinsic kernels require representation-preserving construction and
   extraction without reaching through Eunomia's public tuple field. Acceptance:
   const `from_bits`/`to_bits` APIs preserve all `u16` patterns, signed zero, and
-  NaN payloads; full Eunomia gates and a path-patched Hermes check pass.
-  **Remaining after E-025b:** migrate hermes → leto → coeus/apollo off raw
+  NaN payloads; full Eunomia gates and a path-overridden Hermes check pass.
+  **Remaining (E-025c):** migrate hermes → leto → coeus/apollo off raw
   `half::f16` → `eunomia::F16` (~900 sites), then remove the raw-half impls and
   drop `half` entirely.
 - **E-026 [arch] — vocabulary done; gating deferred** Native `layout` module
