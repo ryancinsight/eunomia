@@ -56,6 +56,21 @@ macro_rules! impl_arithmetic {
                 $conv_from(a / b)
             }
         }
+        impl core::ops::Rem for $t {
+            type Output = Self;
+            #[inline(always)]
+            fn rem(self, rhs: Self) -> Self {
+                let a = $conv_to(self);
+                let b = $conv_to(rhs);
+                $conv_from(a % b)
+            }
+        }
+        impl core::ops::RemAssign for $t {
+            #[inline(always)]
+            fn rem_assign(&mut self, rhs: Self) {
+                *self = *self % rhs;
+            }
+        }
         impl core::ops::Neg for $t {
             type Output = Self;
             #[inline(always)]
