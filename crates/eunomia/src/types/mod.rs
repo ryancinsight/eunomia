@@ -24,8 +24,8 @@ const _: () = {
 };
 
 // SAFETY: every wrapper is `#[repr(transparent)]` over a type that is itself
-// `Pod`/`Zeroable` — `f32`/`f64`/`i8`/`i16`/`i32`, `half::f16`/`half::bf16`, or a
-// `u8` for the sub-byte formats (all 256 patterns are valid encodings). None
+// `Pod`/`Zeroable` — `f32`/`f64`/`i8`/`i16`/`i32`, a `u16` for `F16`/`Bf16`, or
+// a `u8` for the sub-byte formats (all bit patterns are valid encodings). None
 // carry padding or invalid bit patterns, and the `const _` block below pins each
 // type's size and alignment.
 unsafe impl bytemuck::Zeroable for F16 {}

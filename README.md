@@ -52,8 +52,9 @@ coeus / hephaestus / apollo / …   domain
 ```
 
 Dependency direction is strictly inward: eunomia depends on nothing Atlas-local.
-Its core uses `half`, `bytemuck`, and `libm`; `rkyv`, `serde`, and the
-NumPy/PyO3 0.29 element boundary are optional.
+Its core uses `bytemuck` and `libm`; `rkyv`, `serde`, and the NumPy/PyO3 0.29
+element boundary are optional. The `half` crate is a dev-only differential
+oracle for Eunomia's native reduced-precision conversion tests.
 
 ## Provenance
 

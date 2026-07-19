@@ -17,21 +17,21 @@ stable **1.95.0** pin (no `#![feature]` gates; SIMD via stable `#[target_feature
 | --- | --- | --- |
 | `Complex<T>`, `F32`/`F64`/`I8`/`I16`/`I32` | Native | `#[repr(C/transparent)]` + `const _` layout asserts |
 | `F8`(E4M3)/`Bf8`(E5M2)/`F4`(E3M0)/`Bf4`(E2M1) | **Native** with canonical RNE conversion | `u8`, `convert` kernel (E-023) |
-| `F16`/`Bf16` | **Delegated** | wrappers over `half::f16`/`half::bf16` |
-| f16/bf16 ↔ f32 conversion | **Delegated → now native** | `half` → `convert::{narrow,widen}` (E-022, done) |
+| `F16`/`Bf16` | **Native** | transparent `u16` wrappers (E-025) |
+| f16/bf16 ↔ f32 conversion | **Native** | `convert::{narrow,widen}` (E-022/E-025) |
 | `Pod`/`Zeroable` markers | **Delegated** | `unsafe impl bytemuck::…` (`types/mod.rs`) |
-| `cast_slice`/`bytes_of`/`from_bytes` / `*_ne_bytes` / `from_raw_parts` | **None** | eunomia supplies markers only; 1 `transmute` total |
+| `cast_slice`/`bytes_of`/`from_bytes` / `pod_read_unaligned` | **Native** | checked `layout` vocabulary (E-026) |
 
 ### Capability matrix (BM bytemuck 1.14 · ZC zerocopy 0.8 · HF half 2.3 · TF std TransmuteFrom · EU eunomia)
 
 | Capability | BM | ZC | HF | TF | EU |
 | --- | --- | --- | --- | --- | --- |
 | Compile-time layout check | ✗ silent-UB marker | ✓ derive+`KnownLayout` | — | ✓ compiler-proven | partial (`const _`) |
-| Unaligned read | ✓ | ✓ | — | ~ | ✗ |
+| Unaligned read | ✓ | ✓ | — | ~ | ✓ |
 | Runtime-checked transmute | ✓ `CheckedBitPattern` | ✓ `TryFromBytes` | — | ✗ | ✗ |
-| Slice reinterpret | ✓ `cast_slice` | ✓ DST/`Ref` | ~ `HalfFloatSliceExt` | ~ Sized | ✗ |
+| Slice reinterpret | ✓ `cast_slice` | ✓ DST/`Ref` | ~ `HalfFloatSliceExt` | ~ Sized | ✓ `layout` |
 | Sub-byte floats (f8/f4) | ✗ | ✗ | ✗ | ✗ | **✓ only provider** |
-| f16/bf16 hardware conversion | ✗ | ✗ | ✓ F16C/fp16 | ✗ | ✗ (E-025 follow-up) |
+| f16/bf16 hardware conversion | ✗ | ✗ | ✓ F16C/fp16 | ✗ | ✓ F16C + scalar |
 | Derive-checked safety | partial | ✓ | — | ✓ | ✗ |
 | no_std | ✓ | ✓ | ✓ | ✓ nightly | ✓ |
 
@@ -54,7 +54,8 @@ sole `transmute` (`avx512.rs:56`) + 22 `unsafe impl bytemuck::…` carry no
 **G-C5** `impls/field.rs` "frozen" tests' `#[cfg(any())]` gate landed inside a
 doc-comment → tests are live (E-029).
 
-Architecture — **G-A1** `half` is a removable hard runtime dep (E-025).
+Architecture — **G-A1 (resolved E-025c)** `half` was a removable hard runtime
+dependency; it now exists only in the differential-oracle dev graph.
 **G-A2** no eunomia byte-layout vocabulary; own markers + used cast fns at
 checked tier + bytemuck bridge (E-026/E-027). **G-A3 (resolved E-023)** all
 sub-byte scalar and packed-table conversions use the E-022 kernel.
@@ -73,11 +74,10 @@ E-029 (unsafe SAFETY across the packed SIMD path + scalar `bytemuck` impls;
 field.rs doc cruft); G-C2/G-C3/G-A3/G-D1 via E-023 (sub-byte fold onto the kernel:
 RNE + pinned conventions + one generic home); G-A2 byte-layout vocabulary
 delivered via E-026 (native `layout` module; `bytemuck`-gating deferred to the
-E-027 consumer co-evolution); G-A1 half-drop eunomia-side done (E-025 — `F16`/`Bf16`
-native `u16`; wrapper + packed paths half-free; half now raw-impl-path + oracle
-only). Still open: E-025b/c (consumer half migration then full drop), G-T2
-(vectorize `neon::unpack_f8_to_f32`, E-030), and E-027 (consumer bytemuck→eunomia
-migration).
+E-027 consumer co-evolution); G-A1 fully resolved by E-025/E-025b/E-025c
+(`F16`/`Bf16` native `u16`, explicit bit access, foreign raw-half impls deleted,
+`half` dev-only). Still open: G-T2 (vectorize `neon::unpack_f8_to_f32`, E-030)
+and E-027 (consumer bytemuck→eunomia migration).
 
 Non-gaps (verified, do not chase): `TransmuteFrom` not adoptable; `zerocopy` not
 a migration target (sole stack use is out-of-scope consus `IntoBytes::as_bytes`);
@@ -94,17 +94,30 @@ bytemuck bridged not dropped.
   baseline-revision semver checks, and a Hermes all-feature check using Cargo's
   local path override.
 
+### E-025c (production raw-half retirement) — delivered
+
+- Deleted Eunomia's foreign `NumericElement`, `FloatElement`, sealing, and
+  `CastFrom` implementations for `half::f16`/`half::bf16`; native `F16`/`Bf16`
+  remain the only reduced-precision provider types.
+- `half` moved from normal dependencies to dev-dependencies, preserving the
+  exhaustive independent conversion oracle without entering consumer graphs.
+- Current consumer evidence shows Hermes and Leto are raw-half-free. Apollo's
+  raw-half FFT type remains an Apollo-owned surface and does not depend on the
+  deleted Eunomia implementations.
+- Evidence: normal `cargo tree` excludes `half`; all-feature check and
+  warning-denied Clippy pass; Nextest passes 86/86; doctests pass 5/5;
+  no-default check, rustdoc, and 0.5→0.6 semver classification pass. Hermes 0.4
+  and Leto 0.39 pass all-target/all-feature checks. Hephaestus 0.17 passes the
+  same workspace check after its stale Hermes 0.3/Leto 0.38 lock entries advance
+  to those merged native-provider defaults.
+
 ### Consumer blast radius (source sites; `/target/` excluded)
 
-`bytemuck` (~530) is **entirely internal GPU-ABI** (Pod-derive uniforms,
-`bytes_of` upload, `cast_slice` readback) — no cross-crate public `Pod` type, so
-the bridge is mechanical. `half` public gates chain **eunomia → hermes**
-(`SimdKernel<f16>`, deepest) **→ leto-ops** (`Scalar`/`RealScalar` → `Array<f16>`)
-**→ coeus** (`Tensor<f16>`) / **apollo-fft** (`pub fn forward_f16`). Raw
-type-punning clients (a proper transmute vocabulary's users): coeus (3), hermes
-(~6), moirai (4). Migration ranking: hephaestus ~130 bytemuck / 0 half (bridge
-only; not yet a direct eunomia consumer); coeus ~115/~75; kwavers ~99/0; apollo
-~38/~470; hermes ~6/~340 (deepest half). leto declares bytemuck but never uses it.
+`bytemuck` (~530 at the original audit) is internal GPU-ABI usage
+(Pod-derived uniforms, `bytes_of` upload, `cast_slice` readback), so E-027
+remains a mechanical bridge migration. The raw-half provider gate is closed:
+Hermes and Leto use native Eunomia reduced-precision types. Apollo retains an
+independent raw-half FFT surface that belongs to its transform contract.
 
 ### E-022 (native f16/bf16 kernel) — delivered
 
@@ -140,8 +153,8 @@ only; not yet a direct eunomia consumer); coeus ~115/~75; kwavers ~99/0; apollo
   reference values, exhaustive finite-encoding round trips, and rounding laws.
 - **R2** OCP-vs-IEEE sub-byte convention (G-C3) is a product decision with GPU-
   quantization impact; settle before E-024 migrates formats onto the kernel.
-- **R3** Re-backing `F16`/`Bf16` storage (`half::f16` → `u16`, E-025) is breaking;
-  ≥1 consumer constructs `Bf16(half::bf16::…)` (hermes test) → co-evolution unit.
+- **R3 (closed)** E-025 re-backed `F16`/`Bf16`; E-025b supplied the bit contract;
+  Hermes/Leto migrated; E-025c removed the obsolete foreign raw-half surface.
 - **R4** bytemuck 1.14 (pin) predates several 1.25 helpers; the E-026 bridge must
   target the 1.14 surface.
 - **R5** eunomia is consumed by 9 repos (git, some pinned/patched); every API

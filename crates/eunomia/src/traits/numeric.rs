@@ -7,8 +7,9 @@ use super::{private, CastFrom};
 ///
 /// # Source constructors
 ///
-/// [`from_f64`](super::FloatElement::from_f64) lives on `FloatElement` (precision-correct for
-/// half-precision types via `half::f{16,bf16}::from_f64`). Integer callers
+/// [`from_f64`](super::FloatElement::from_f64) lives on `FloatElement`
+/// (precision-correct for [`F16`](crate::F16) and [`Bf16`](crate::Bf16)).
+/// Integer callers
 /// use the literal `v as Self` truncating cast natively. There is no generic
 /// `from_usize` on `NumericElement` for the same reason — the per-type route
 /// is selected explicitly so callers express precision-correct construction

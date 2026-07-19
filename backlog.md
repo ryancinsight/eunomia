@@ -1,6 +1,6 @@
 # Eunomia backlog
 
-Sprint target: 0.5.0 (native reduced-precision provider contract).
+Sprint target: 0.6.0 (native reduced-precision provider contract).
 
 ## Recently completed
 
@@ -44,14 +44,14 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   kernel special-value **policy parameter**, added when coeus/hephaestus
   quantization needs them. Dep: E-023 + a driving consumer. Acceptance: OCP
   reference vectors match; existing IEEE-style types unchanged. ADR 0003 D3.
-- **E-025 [arch/major] — eunomia re-back done; consumer chain + full half-drop remain**
+- **E-025 [arch/major] — done**
   `F16`/`Bf16` are now native `u16`-backed (breaking `.0` field change): conversions
   route through the E-022 kernel (bit-exact vs `half`, proven exhaustively over all
   2¹⁶ patterns + an f32 narrow sweep), `PartialEq`/`PartialOrd` are manual
   **float-semantic** (not bitwise — preserving `half`'s ±0/NaN/ordering), and the
   whole wrapper + packed path (scalar + AVX2/AVX-512/NEON + slice) is half-free.
-  `half` is now confined to the raw `half::f16`/`bf16` trait impls (for consumers
-  still on raw half) + the differential-oracle tests. Completed as a **takeover** of
+  E-025c removed the foreign raw-half trait/cast surface and moved `half` to the
+  dev-only differential-oracle graph. Completed as a **takeover** of
   a concurrent peer's packed-side WIP (dispatch/intrinsics) combined with my
   wrapper-side re-back; I also fixed the aarch64 NEON path the peer had not
   converted. Evidence: fmt / clippy-D / nextest 76/76 / doctest / rustdoc / no_std
@@ -63,9 +63,19 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   extraction without reaching through Eunomia's public tuple field. Acceptance:
   const `from_bits`/`to_bits` APIs preserve all `u16` patterns, signed zero, and
   NaN payloads; full Eunomia gates and a path-overridden Hermes check pass.
-  **Remaining (E-025c):** migrate hermes → leto → coeus/apollo off raw
-  `half::f16` → `eunomia::F16` (~900 sites), then remove the raw-half impls and
-  drop `half` entirely.
+  **E-025c done — owner: Codex; scope: Eunomia manifests, raw-half
+  primitive/cast impls, provider tests, Rustdoc, and PM artifacts.** Hermes and
+  Leto now use `eunomia::F16`/`Bf16` directly. Remove Eunomia's foreign
+  `half::f16`/`bf16` numeric and cast surface and retire `half` from the
+  production dependency graph; retain it only as the independent dev-time
+  differential oracle. Acceptance: production source/manifests contain no
+  `half` type dependency, all Eunomia gates pass, and path-overridden Hermes and
+  Leto checks remain green. Apollo's raw-half FFT surface is a separate
+  Apollo-owned migration and does not require Eunomia's foreign impls.
+  Acceptance met: normal dependency graph is half-free; all producer gates pass
+  (86/86 Nextest, 5/5 doctests); Hermes 0.4, Leto 0.39, and Hephaestus 0.17
+  compile against Eunomia 0.6. Hephaestus required its stale Hermes 0.3/Leto
+  0.38 lock closure to advance to their merged native-provider defaults.
 - **E-026 [arch] — vocabulary done; gating deferred** Native `layout` module
   (G-A2): `Zeroable`/`Pod` unsafe markers (per-impl `// SAFETY:`, layout pinned by
   the existing `types` `const _` asserts) + the used safe casts (`bytes_of`(+mut),
@@ -108,7 +118,7 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   (2305 ns → 61 ns), **narrow ~49×** (3723 ns → 75 ns) vs the scalar loop;
   `benches/conversions.rs` commits the baselines to gate regressions. Dogfoods
   the E-026 `layout::cast_slice` for the transparent `F16`↔`u16` reinterpret.
-  Consumer: bulk `f16` processing in hermes/leto once migrated (E-025b).
+  Consumer: native reduced-precision processing in Hermes/Leto (E-025).
 - **E-032 [patch] — investigated, no change (finding recorded)** AVX2
   `unpack_f8_to_f32` optimization: the E-031 benchmark flagged it at ~7 Gelem/s
   (gather-bound hypothesis). A branchless SIMD E4M3 decode (`significand × 2^scale`,

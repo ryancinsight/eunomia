@@ -1,6 +1,6 @@
 # ADR 0003: Native byte-layout & reduced-precision vocabulary
 
-- Status: Accepted (conversion slices 1 and 2 landed)
+- Status: Accepted (native conversion and runtime dependency retirement landed)
 - Date: 2026-07-18
 - Class: [arch] (grows eunomia's owned surface; shrinks external deps; ripples to
   every reduced-precision / GPU-byte consumer)
@@ -44,9 +44,9 @@ dependency.** One generic const-parameterized IEEE-754 narrow/widen kernel
 subnormals, inf/NaN, f32-subnormal handling) is the single conversion SSOT.
 `binary16` (`E=5,M=10`) and `bfloat16` (`E=8,M=7`) instantiate it; the sub-byte
 formats fold onto it, deleting the four hand-rolled copies and the truncation
-defect. `half` demotes to a **dev-dependency oracle** + an optional
-`half-interop` feature (bridge trait impls) held only across the consumer
-migration window, then dropped.
+defect. `half` demotes to a **dev-dependency oracle**. The working branch is the
+consumer-migration boundary; no interop feature or bridge trait implementation
+merges into the default branch.
 
 **D2 — Own a byte-layout vocabulary at zerocopy's checked tier; bridge, do not
 replace, bytemuck.** Eunomia gains marker traits (`Zeroable`, `Pod`-equivalent)
@@ -92,13 +92,14 @@ D2's checked tier emulates on stable.
 
 ## Consequences
 
-- Eunomia's external deps shrink from `{half, bytemuck, libm, rkyv?}` toward
-  `{libm, rkyv?}` + optional interop features; the datatype law owns its
-  conversions and byte vocabulary.
+- Eunomia's production deps no longer include `half`; the datatype law owns its
+  reduced-precision conversions while the dev graph retains the independent
+  oracle.
 - One conversion kernel replaces five implementations and fixes the
   truncation/convention defects (G-C2/G-C3/G-A3).
-- Consumers migrate `half::f16` → `eunomia::F16` along the hermes → leto →
-  coeus/apollo chain (co-evolution units), each keeping the bytemuck bridge.
+- Hermes and Leto use `eunomia::F16`/`Bf16` directly. Apollo's remaining raw
+  `half::f16` FFT surface is Apollo-owned and does not require Eunomia's foreign
+  trait or cast implementations.
 - **Verified (slice 1, this change):** the native kernel is bit-exact vs `half`
   by exhaustive widen (all 2¹⁶, both formats), exhaustive finite round-trip, a
   ~4.2M-case rounding sweep across every exponent/round/guard/sticky decision,
