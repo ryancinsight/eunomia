@@ -4,6 +4,18 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Value-semantic `NumericElement`/`FloatElement` contract tests for the native
+  float wrappers (`F16`, `Bf16`, `F32`, `F64`) in `tests/float_element.rs` — the
+  float analogue of `integer_element.rs`. Pins, across all four types, that the
+  reduced-precision wrappers are first-class scalars and not mere storage:
+  constants, exact arithmetic, `abs`/`sqrt`/`signum`/`scalar_fmadd`, ordering
+  reductions, `powi`, the transcendental defaults at exact points, `CastFrom<i32>`,
+  and native-grid rounding (`F16`'s 10-bit grid strictly finer than `Bf16`'s
+  7-bit at `0.1`). This is the contract the hermes SIMD kernels bind as
+  `SimdKernel<F16>`/`<Bf16>`; every assertion is analytic, no tolerances.
+
 ## [0.5.0] - 2026-07-18
 
 ### Breaking
