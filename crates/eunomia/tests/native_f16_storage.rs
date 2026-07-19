@@ -141,3 +141,53 @@ fn f16_bulk_slice_conversion_matches_half_and_scalar() {
         }
     }
 }
+
+#[test]
+fn bf16_bulk_slice_conversion_matches_half_and_kernel() {
+    // Widen every bfloat16 pattern (a shift) vs the `half` oracle.
+    let all: Vec<Bf16> = (0u16..=u16::MAX).map(Bf16).collect();
+    let mut widened = vec![0.0f32; all.len()];
+    Bf16::widen_slice(&all, &mut widened);
+    for (bits, &out) in widened.iter().enumerate() {
+        let reference = half::bf16::from_bits(bits as u16).to_f32();
+        if reference.is_nan() {
+            assert!(out.is_nan(), "widen_slice[{bits:#06x}]");
+        } else {
+            assert_eq!(
+                out.to_bits(),
+                reference.to_bits(),
+                "widen_slice[{bits:#06x}]"
+            );
+        }
+    }
+
+    // Narrow an f32 sweep vs `half` AND the scalar kernel — confirming the fast
+    // round-and-truncate is bit-identical to `narrow::<8, 7>`. Non-multiple-of-8
+    // length exercises the tail.
+    let mut sweep: Vec<f32> = Vec::new();
+    for exp in 0u32..=0xFF {
+        for top in 0u32..(1 << 9) {
+            sweep.push(f32::from_bits((exp << 23) | (top << 14)));
+            sweep.push(f32::from_bits((1 << 31) | (exp << 23) | (top << 14)));
+        }
+    }
+    sweep.push(f32::INFINITY);
+    sweep.push(f32::NEG_INFINITY);
+    sweep.push(f32::from_bits(0x0000_0001));
+
+    let mut narrowed = vec![Bf16::default(); sweep.len()];
+    Bf16::narrow_slice(&sweep, &mut narrowed);
+    for (&x, out) in sweep.iter().zip(&narrowed) {
+        if x.is_nan() {
+            assert_eq!(out.0 & 0x7F80, 0x7F80);
+            assert_ne!(out.0 & 0x007F, 0);
+        } else {
+            assert_eq!(
+                out.0,
+                half::bf16::from_f32(x).to_bits(),
+                "narrow_slice({x})"
+            );
+            assert_eq!(out.0, Bf16::from_f32(x).0, "narrow_slice vs kernel ({x})");
+        }
+    }
+}

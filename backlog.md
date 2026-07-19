@@ -113,6 +113,16 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   Kept the deliverable: an exhaustive direct `avx2::unpack_f8_to_f32` differential
   test (all 256 bytes vs the scalar kernel, valid on AVX-512 hosts too). **Do not
   re-attempt the branchless-compute path for f8→f32.**
+- **E-033 [minor] — done** Bulk `bfloat16`↔`f32` conversion (`Bf16::widen_slice`/
+  `narrow_slice`), completing the bulk conversion surface begun in E-031.
+  `bfloat16` is the high 16 bits of an `f32`, so widen is a shift and narrow a
+  round-and-truncate (RNE) — both branch-light enough to autovectorize, no gather
+  or intrinsics. Bit-exact vs the kernel `narrow::<8,7>` **and** `half` (exhaustive
+  widen + a rounding sweep confirming the fast round-and-truncate matches the
+  kernel). Measured (4096 elems): **widen ~16×** (2471 ns → 150 ns),
+  **narrow ~3.5×** (3625 ns → 1036 ns) vs the scalar kernel loop. Unlike E-032
+  (f8, where compute lost to the gather), the analytical model held —
+  autovectorization confirmed by measurement.
 
 ## Done
 
