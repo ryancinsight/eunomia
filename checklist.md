@@ -1,19 +1,22 @@
 # Eunomia checklist
 
-Target version: 0.5.0
+Target version: 0.6.0
 
 Sprint phase: Execution
 
-## E-025b [minor] — native reduced-precision bit-pattern contract (Owner: Codex)
+## E-025c [major] — retire the production raw-half surface (Owner: Codex)
 
-- [x] Audit Hermes' raw-half boundary and identify the missing provider-owned
-  representation contract.
-- [x] Add const `F16`/`Bf16` bit-pattern constructors and accessors with
-  value-semantic signed-zero and NaN-payload tests.
-- [x] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
-  semver, and path-overridden Hermes checks.
-- [ ] Publish Eunomia first, then migrate the bounded Hermes scalar/intrinsic
-  scope and continue dependency-ordered into Leto.
+- [x] Reconcile the live consumer graph: Hermes and Leto use native Eunomia
+  reduced-precision types; Apollo's remaining raw-half FFT surface is
+  Apollo-owned and does not consume Eunomia's foreign impls.
+- [ ] Delete the foreign raw-half numeric/cast surface and move `half` from the
+  production graph to the differential-oracle dev graph.
+- [ ] Update provider tests, Rustdoc, README, changelog, and residual-risk
+  records for the breaking 0.6.0 contract.
+- [ ] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
+  semver, and path-overridden Hermes/Leto checks.
+- [ ] Publish and merge Eunomia, then refresh the Atlas gitlink and convergence
+  audit.
 
 ## E-021 [arch] — native complex provider cutover
 

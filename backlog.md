@@ -1,6 +1,6 @@
 # Eunomia backlog
 
-Sprint target: 0.5.0 (native reduced-precision provider contract).
+Sprint target: 0.6.0 (native reduced-precision provider contract).
 
 ## Recently completed
 
@@ -63,9 +63,15 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   extraction without reaching through Eunomia's public tuple field. Acceptance:
   const `from_bits`/`to_bits` APIs preserve all `u16` patterns, signed zero, and
   NaN payloads; full Eunomia gates and a path-overridden Hermes check pass.
-  **Remaining (E-025c):** migrate hermes → leto → coeus/apollo off raw
-  `half::f16` → `eunomia::F16` (~900 sites), then remove the raw-half impls and
-  drop `half` entirely.
+  **E-025c in progress — owner: Codex; scope: Eunomia manifests, raw-half
+  primitive/cast impls, provider tests, Rustdoc, and PM artifacts.** Hermes and
+  Leto now use `eunomia::F16`/`Bf16` directly. Remove Eunomia's foreign
+  `half::f16`/`bf16` numeric and cast surface and retire `half` from the
+  production dependency graph; retain it only as the independent dev-time
+  differential oracle. Acceptance: production source/manifests contain no
+  `half` type dependency, all Eunomia gates pass, and path-overridden Hermes and
+  Leto checks remain green. Apollo's raw-half FFT surface is a separate
+  Apollo-owned migration and does not require Eunomia's foreign impls.
 - **E-026 [arch] — vocabulary done; gating deferred** Native `layout` module
   (G-A2): `Zeroable`/`Pod` unsafe markers (per-impl `// SAFETY:`, layout pinned by
   the existing `types` `const _` asserts) + the used safe casts (`bytes_of`(+mut),
