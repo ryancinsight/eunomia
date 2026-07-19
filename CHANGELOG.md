@@ -17,6 +17,10 @@ All notable changes to Eunomia are documented here.
 
 ### Added
 
+- E-033: bulk `bfloat16`↔`f32` conversion (`Bf16::widen_slice` /
+  `Bf16::narrow_slice`) — ~16× (widen) / ~3.5× (narrow) faster than the scalar
+  kernel via autovectorized shift/round-and-truncate (no intrinsics), bit-exact
+  vs `half` and the kernel. Completes the bulk conversion surface.
 - E-031: F16C-accelerated bulk `f16`↔`f32` conversion (`F16::widen_slice` /
   `F16::narrow_slice`) — ~38–49× faster than the scalar kernel on x86-64 with
   F16C (bit-exact vs `half`), scalar fallback elsewhere. Adds eunomia's first
