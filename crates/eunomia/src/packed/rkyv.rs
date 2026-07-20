@@ -84,7 +84,7 @@ impl<T: Packable4> ArchivedPacked4Cow<T> {
     /// Returns the logical length of the archived packed container.
     #[inline]
     pub fn len(&self) -> usize {
-        self.len.deserialize(&mut rkyv::Infallible).unwrap()
+        self.len.deserialize(&mut rkyv::Infallible).expect("infallible rkyv length deserialization")
     }
 
     /// Returns `true` if the archived packed container is empty.
@@ -175,7 +175,7 @@ impl<T: Packable4> ArchivedPacked4Vec<T> {
     /// Returns the logical length of the archived vector.
     #[inline]
     pub fn len(&self) -> usize {
-        self.len.deserialize(&mut rkyv::Infallible).unwrap()
+        self.len.deserialize(&mut rkyv::Infallible).expect("infallible rkyv length deserialization")
     }
 
     /// Returns `true` if the archived vector is empty.
