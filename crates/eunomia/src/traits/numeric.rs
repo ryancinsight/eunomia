@@ -118,4 +118,42 @@ pub trait NumericElement:
     ///
     /// Used as the identity element for `Min` reductions.
     const MAX_VALUE: Self;
+
+    /// Saturating addition.
+    ///
+    /// For floats this is identical to `+` (IEEE 754 already saturates at ±∞).
+    /// Integer implementations override with the native `saturating_add`.
+    #[inline(always)]
+    fn saturating_add(self, rhs: Self) -> Self {
+        self + rhs
+    }
+
+    /// Saturating multiplication.
+    ///
+    /// For floats this is identical to `*` (IEEE 754 already saturates at ±∞).
+    /// Integer implementations override with the native `saturating_mul`.
+    #[inline(always)]
+    fn saturating_mul(self, rhs: Self) -> Self {
+        self * rhs
+    }
+
+    /// Checked addition: returns `Some(self + rhs)` or `None` on integer overflow.
+    ///
+    /// Float types always return `Some` since their arithmetic never overflows
+    /// to undefined behaviour (they produce ±∞ or NaN instead).
+    /// Integer implementations override with the native `checked_add`.
+    #[inline(always)]
+    fn checked_add(self, rhs: Self) -> Option<Self> {
+        Some(self + rhs)
+    }
+
+    /// Checked multiplication: returns `Some(self * rhs)` or `None` on integer
+    /// overflow.
+    ///
+    /// Float types always return `Some` (see [`NumericElement::checked_add`]).
+    /// Integer implementations override with the native `checked_mul`.
+    #[inline(always)]
+    fn checked_mul(self, rhs: Self) -> Option<Self> {
+        Some(self * rhs)
+    }
 }

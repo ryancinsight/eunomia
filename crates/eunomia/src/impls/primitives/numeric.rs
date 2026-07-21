@@ -237,6 +237,22 @@ macro_rules! impl_numeric_element_signed {
             fn count_ones(self) -> u32 {
                 self.count_ones()
             }
+            #[inline(always)]
+            fn saturating_add(self, rhs: Self) -> Self {
+                self.saturating_add(rhs)
+            }
+            #[inline(always)]
+            fn saturating_mul(self, rhs: Self) -> Self {
+                self.saturating_mul(rhs)
+            }
+            #[inline(always)]
+            fn checked_add(self, rhs: Self) -> Option<Self> {
+                self.checked_add(rhs)
+            }
+            #[inline(always)]
+            fn checked_mul(self, rhs: Self) -> Option<Self> {
+                self.checked_mul(rhs)
+            }
         }
     };
 }
