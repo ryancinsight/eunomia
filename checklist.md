@@ -10,9 +10,11 @@ Sprint phase: Execution
       compilation without disturbing any unrelated repository state.
 - [x] Correct relative scaling to use both operands' absolute magnitudes and
       cover negative `f32`/`f64` values.
-- [ ] Pass Eunomia format, feature, warning-denied Clippy, Nextest, doctest,
-      Rustdoc, SemVer, and downstream Helios clean-provider gates.
-- [ ] Publish Eunomia and advance the exact Atlas and Helios pins.
+- [x] Pass Eunomia format, no-default-feature check, warning-denied Clippy,
+      Nextest (94/94), doctest (9/9), warning-denied Rustdoc, and SemVer
+      (196/196), plus clean-provider Helios compilation.
+- [x] Publish Eunomia at `884d193`, advance Atlas to `a5279bf`, and pass hosted
+      Helios run `29882508040` at the pinned consumer head `22bea48`.
 
 ## E-025c [major] — retire the production raw-half surface (Owner: Codex)
 

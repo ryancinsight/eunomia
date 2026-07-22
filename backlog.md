@@ -2,18 +2,16 @@
 
 Sprint target: 0.6.0 (native reduced-precision provider contract).
 
-## Active integration unblock
-
-- **E-034 [minor] — in progress; owner: Codex `/root` stale-peer takeover;
-  scope: `crates/eunomia/src/relative_eq.rs`, crate exports, and PM artifacts.**
-  Publish the provider-owned relative-equality assertion surface already used
-  by Atlas consumers. Acceptance: `f32`, `f64`, complex, reference, slice, and
-  array comparisons preserve absolute/relative OR semantics for positive and
-  negative values; format, feature, warning-denied Clippy, Nextest, doctest,
-  Rustdoc, SemVer, and Helios clean-provider compilation pass.
-
 ## Recently completed
 
+- **E-034 [minor] — done; owner: Codex `/root` stale-peer takeover.** Published
+  provider-owned relative-equality assertions for `f32`, `f64`, complex,
+  reference, slice, and array values. Native-precision tolerances, positive and
+  negative relative scaling, equal infinities, unequal infinities, NaN, and
+  signed zero are covered. Format, no-default-feature check, warning-denied
+  Clippy, 94/94 Nextest, 9/9 doctests, warning-denied Rustdoc, 196/196 SemVer
+  checks, clean-provider Helios compilation, and hosted Helios run `29882508040`
+  passed.
 - **E-021 [arch]** Remove Eunomia's direct `num-traits` dependency and foreign
   `Zero`/`One` implementations, pin the native `Complex32`/`Complex64` ABI at
   compile time, and align the optional NumPy element boundary with
