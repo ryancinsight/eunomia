@@ -4,6 +4,16 @@ Target version: 0.6.0
 
 Sprint phase: Execution
 
+## E-034 [minor] — provider relative equality (Owner: Codex `/root`)
+
+- [x] Take over the stale staged provider increment blocking Helios hosted
+      compilation without disturbing any unrelated repository state.
+- [x] Correct relative scaling to use both operands' absolute magnitudes and
+      cover negative `f32`/`f64` values.
+- [ ] Pass Eunomia format, feature, warning-denied Clippy, Nextest, doctest,
+      Rustdoc, SemVer, and downstream Helios clean-provider gates.
+- [ ] Publish Eunomia and advance the exact Atlas and Helios pins.
+
 ## E-025c [major] — retire the production raw-half surface (Owner: Codex)
 
 - [x] Reconcile the live consumer graph: Hermes and Leto use native Eunomia

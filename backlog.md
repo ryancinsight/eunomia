@@ -2,6 +2,16 @@
 
 Sprint target: 0.6.0 (native reduced-precision provider contract).
 
+## Active integration unblock
+
+- **E-034 [minor] — in progress; owner: Codex `/root` stale-peer takeover;
+  scope: `crates/eunomia/src/relative_eq.rs`, crate exports, and PM artifacts.**
+  Publish the provider-owned relative-equality assertion surface already used
+  by Atlas consumers. Acceptance: `f32`, `f64`, complex, reference, slice, and
+  array comparisons preserve absolute/relative OR semantics for positive and
+  negative values; format, feature, warning-denied Clippy, Nextest, doctest,
+  Rustdoc, SemVer, and Helios clean-provider compilation pass.
+
 ## Recently completed
 
 - **E-021 [arch]** Remove Eunomia's direct `num-traits` dependency and foreign

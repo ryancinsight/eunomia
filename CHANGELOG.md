@@ -4,6 +4,12 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- E-034 adds provider-owned absolute and relative equality assertions for
+  primitive, complex, reference, slice, and array values. Combined tolerances
+  retain absolute-or-relative semantics, including negative-value scaling.
+
 ## [0.6.0] - 2026-07-19
 
 ### Breaking

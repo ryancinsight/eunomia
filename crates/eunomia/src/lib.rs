@@ -12,11 +12,16 @@ mod impls;
 pub mod layout;
 mod ops;
 mod packed;
+pub mod relative_eq;
 mod traits;
 mod types;
 
 // Re-export core traits
 pub use traits::{CastFrom, CastTo, ComplexField, FloatElement, NumericElement, RealField};
+
+// Re-export the relative-equality trait at the crate root so the macro can
+// resolve `eunomia::RelativeEq` and users can opt into the trait if needed.
+pub use relative_eq::RelativeEq;
 
 // Re-export byte-layout markers (the reinterpretation fns live under `layout`)
 pub use layout::{Pod, Zeroable};
