@@ -42,5 +42,5 @@ pub use packed::{
 #[cfg(feature = "rkyv")]
 pub use packed::{ArchivedPacked4Cow, ArchivedPacked4Vec, Packed4CowResolver, Packed4VecResolver};
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 pub use packed::unsafe_intrinsics;

@@ -65,8 +65,10 @@ Const `from_bits`/`to_bits` methods now own the representation-preserving
 boundary and round-trip every `u16` pattern exactly.
 
 Tests/docs — **G-T1 (resolved E-023)** analytical and exhaustive sub-byte
-conversion tests now pin all four formats. **G-T2**
-`neon::unpack_f8_to_f32` is scalar, not vectorized (E-030). **G-D1**
+conversion tests now pin all four formats. **G-T2 (resolved E-030)**
+`neon::unpack_f8_to_f32` is now a branchless 16-lane arithmetic decode,
+exhaustively differential-tested against the scalar kernel on aarch64.
+**G-D1**
 `impls/wrappers/numeric.rs:217` mislabelled Bf8 "1.4.3"; corrected by E-023.
 
 **Resolved:** G-C1 via E-028 (arch.rs no_std `avx512vl` guard); G-C4/G-C5 via
@@ -76,8 +78,9 @@ RNE + pinned conventions + one generic home); G-A2 byte-layout vocabulary
 delivered via E-026 (native `layout` module; `bytemuck`-gating deferred to the
 E-027 consumer co-evolution); G-A1 fully resolved by E-025/E-025b/E-025c
 (`F16`/`Bf16` native `u16`, explicit bit access, foreign raw-half impls deleted,
-`half` dev-only). Still open: G-T2 (vectorize `neon::unpack_f8_to_f32`, E-030)
-and E-027 (consumer bytemuck→eunomia migration).
+`half` dev-only); G-T2 resolved via E-030 (branchless NEON F8 decode +
+exhaustive aarch64 differential). Still open: E-027 (consumer
+bytemuck→eunomia migration).
 
 Non-gaps (verified, do not chase): `TransmuteFrom` not adoptable; `zerocopy` not
 a migration target (sole stack use is out-of-scope consus `IntoBytes::as_bytes`);

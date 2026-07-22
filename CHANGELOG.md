@@ -4,6 +4,15 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- E-030 vectorizes `neon::unpack_f8_to_f32` as a branchless 16-element
+  arithmetic decode, deleting the 1,024-byte scalar gather table. The NEON
+  path is bit-exact against the scalar conversion kernel for every byte
+  value, verified by an exhaustive phase-and-length differential test on
+  aarch64. The `unsafe_intrinsics` re-export now includes aarch64, matching
+  the inner module gate.
+
 ## [0.7.0] - 2026-07-21
 
 ### Added

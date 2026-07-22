@@ -337,6 +337,45 @@ pub unsafe fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
     }
 }
 
+/// Branchless F8 (E4M3, finite-only) decode of one 4-lane widened byte block.
+///
+/// Bit-exact against the scalar [`widen_finite::<4, 3>`] kernel: normals rebias
+/// `(exp + 120) << 23`; subnormals evaluate `mant * 2^-9`, which is exact in
+/// `f32` (integral mantissa <= 7, power-of-two scale) and reproduces the
+/// scalar normalizer's pattern, signed zero included; the top exponent is NaN
+/// with the canonical quiet bit forced when the payload field is zero.
+/// Constant splats are re-materialized per call so the helper stays a leaf;
+/// the compiler hoists them out of the kernel loop.
+#[inline(always)]
+unsafe fn f8_decode_block(b: uint32x4_t) -> uint32x4_t {
+    let sign = vshlq_n_u32(vandq_u32(b, vdupq_n_u32(0x80)), 24);
+    let exp = vandq_u32(vshrq_n_u32(b, 3), vdupq_n_u32(0xF));
+    let mant = vandq_u32(b, vdupq_n_u32(0x7));
+
+    let normal = vorrq_u32(
+        sign,
+        vorrq_u32(
+            vshlq_n_u32(vaddq_u32(exp, vdupq_n_u32(120)), 23),
+            vshlq_n_u32(mant, 20),
+        ),
+    );
+
+    // `0x3B00_0000` is `f32::from_bits` for 2^-9 (`(127 - 9) << 23`).
+    let sub_f = vmulq_n_f32(vcvtq_f32_u32(mant), f32::from_bits(0x3B00_0000));
+    let sub = vorrq_u32(vreinterpretq_u32_f32(sub_f), sign);
+
+    let payload = vshlq_n_u32(mant, 20);
+    let payload = vbslq_u32(
+        vceqq_u32(payload, vdupq_n_u32(0)),
+        vdupq_n_u32(0x0040_0000),
+        payload,
+    );
+    let nan = vorrq_u32(sign, vorrq_u32(vdupq_n_u32(0x7F80_0000), payload));
+
+    let finite = vbslq_u32(vceqq_u32(exp, vdupq_n_u32(0)), sub, normal);
+    vbslq_u32(vceqq_u32(exp, vdupq_n_u32(15)), nan, finite)
+}
+
 /// # Safety
 /// Must run on `aarch64`, where NEON is baseline. Reads and writes stay within
 /// the shorter of the two slices.
@@ -345,35 +384,34 @@ pub unsafe fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
     let len = packed.len().min(unpacked.len());
     let mut i = 0;
 
-    static TABLE_BITS: [u32; 256] = {
-        let mut t = [0u32; 256];
-        let mut idx = 0;
-        while idx < 256 {
-            t[idx] = widen_finite::<4, 3>(idx as u32);
-            idx += 1;
-        }
-        t
-    };
+    while i + 16 <= len {
+        let v = vld1q_u8(packed.as_ptr().add(i) as *const u8);
+        let lo16 = vmovl_u8(vget_low_u8(v));
+        let hi16 = vmovl_u8(vget_high_u8(v));
 
-    while i + 4 <= len {
-        let idx0 = packed[i].0 as usize;
-        let idx1 = packed[i + 1].0 as usize;
-        let idx2 = packed[i + 2].0 as usize;
-        let idx3 = packed[i + 3].0 as usize;
+        // Storing the `u32` lanes as bytes reproduces the scalar
+        // `f32::from_bits` memory image on little-endian aarch64.
+        let out = unpacked.as_mut_ptr().add(i) as *mut u8;
+        vst1q_u8(
+            out,
+            vreinterpretq_u8_u32(f8_decode_block(vmovl_u16(vget_low_u16(lo16)))),
+        );
+        vst1q_u8(
+            out.add(16),
+            vreinterpretq_u8_u32(f8_decode_block(vmovl_u16(vget_high_u16(lo16)))),
+        );
+        vst1q_u8(
+            out.add(32),
+            vreinterpretq_u8_u32(f8_decode_block(vmovl_u16(vget_low_u16(hi16)))),
+        );
+        vst1q_u8(
+            out.add(48),
+            vreinterpretq_u8_u32(f8_decode_block(vmovl_u16(vget_high_u16(hi16)))),
+        );
 
-        let val0 = TABLE_BITS[idx0];
-        let val1 = TABLE_BITS[idx1];
-        let val2 = TABLE_BITS[idx2];
-        let val3 = TABLE_BITS[idx3];
-
-        unpacked[i] = F32(f32::from_bits(val0));
-        unpacked[i + 1] = F32(f32::from_bits(val1));
-        unpacked[i + 2] = F32(f32::from_bits(val2));
-        unpacked[i + 3] = F32(f32::from_bits(val3));
-
-        i += 4;
+        i += 16;
     }
     for j in i..len {
-        unpacked[j] = F32(f32::from_bits(TABLE_BITS[packed[j].0 as usize]));
+        unpacked[j] = F32(f32::from_bits(widen_finite::<4, 3>(u32::from(packed[j].0))));
     }
 }
