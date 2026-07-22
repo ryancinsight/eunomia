@@ -4,6 +4,8 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-21
+
 ### Added
 
 - E-034 adds provider-owned absolute and relative equality assertions for
