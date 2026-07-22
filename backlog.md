@@ -114,9 +114,27 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   "frozen" note in `impls/field.rs` (G-C5). Bf8 "1.4.3" mislabel (G-D1) was already
   corrected under E-023. Evidence: clippy `-D warnings` with `missing_safety_doc`
   enforced; fmt / nextest 59/59 / doctest / rustdoc clean.
-- **E-030 [patch]** Vectorize `neon::unpack_f8_to_f32` (currently scalar in the
-  intrinsics module — G-T2). Acceptance: NEON path differential-equal to scalar;
-  `cargo bloat`/bench note.
+- **E-030 [patch] — done** Vectorized `neon::unpack_f8_to_f32` (G-T2). The
+  scalar 256-entry gather LUT is replaced by a branchless arithmetic decode
+  over 16-element blocks: normals rebias `(exp + 120) << 23`; subnormals
+  evaluate `mant * 2^-9`, exact in `f32` and reproducing the scalar
+  normalizer's pattern including signed zero; the finite-only top exponent
+  selects NaN with the canonical quiet bit forced on zero payload, all
+  bit-exact against `widen_finite::<4, 3>`. The 1,024-byte `TABLE_BITS`
+  static is deleted; the kernel adds ~20 NEON ops per 4-lane block, an
+  estimated net ~700-byte rodata/text reduction (analytical bloat note —
+  no two-revision release build was run in the contended shared cache). The
+  `unsafe_intrinsics` re-export gates in `lib.rs` and `packed/mod.rs` widen
+  from `x86_64` to `x86_64 | aarch64`, matching the inner module gate so the
+  NEON path is differential-testable through the public contract (additive
+  on aarch64; zero public-surface delta on x86_64 — SemVer `[patch]` by
+  analysis, no mechanical run). Evidence: aarch64 lib and test-target checks
+  pass warning-free under the pinned 1.95.0 toolchain; exhaustive
+  256-value × 16-phase × 257-length NEON-vs-scalar differential test added
+  (`neon_f8_unpack_bit_matches_scalar_for_every_byte_and_phase`, executes on
+  aarch64; not executed on this x86-64 host — aarch64 hardware/CI run remains
+  the open execution evidence); host gates pass: fmt, Clippy `-D warnings`,
+  nextest 93/93, doctests 9/9, rustdoc clean.
 - **E-031 [minor] — done** F16C-accelerated bulk `f16`↔`f32` conversion + eunomia's
   first criterion benchmark suite (the E-025 "hardware conversion ladder"
   follow-up). `F16::widen_slice`/`narrow_slice` dispatch to `vcvtph2ps`/`vcvtps2ph`

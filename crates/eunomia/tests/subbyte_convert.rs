@@ -181,6 +181,7 @@ fn exact_high_word(value: f32) -> u16 {
         .expect("invariant: shifting a binary32 pattern leaves exactly 16 bits")
 }
 
+#[cfg(target_arch = "x86_64")]
 fn assert_bf16_bits_equal(left: &[Bf16], right: &[Bf16]) {
     assert_eq!(left.len(), right.len());
     for (left, right) in left.iter().zip(right) {
@@ -287,5 +288,39 @@ fn avx2_f8_unpack_bit_matches_scalar_for_every_byte() {
             "avx2 f8 {:#04x}",
             source.0
         );
+    }
+}
+
+/// Exhaustively verify the vectorized NEON `f8 -> f32` decode (E-030) against
+/// the scalar kernel: every byte value — normals, subnormals, signed zero, and
+/// NaN payloads — at every 16-element block phase and every length, so both
+/// the vector body and the scalar tail are covered for all values.
+#[cfg(target_arch = "aarch64")]
+#[test]
+fn neon_f8_unpack_bit_matches_scalar_for_every_byte_and_phase() {
+    let universe: Vec<F8> = (u8::MIN..=u8::MAX).map(F8).collect();
+    for phase in 0..16 {
+        let rotated: Vec<F8> = universe
+            .iter()
+            .copied()
+            .cycle()
+            .skip(phase)
+            .take(256)
+            .collect();
+        for len in 0..=256 {
+            let src = &rotated[..len];
+            let mut out = vec![F32::default(); len];
+            // SAFETY: NEON is baseline on aarch64 and both slices have equal
+            // length, satisfying the kernel's bounds contract.
+            unsafe { eunomia::unsafe_intrinsics::neon::unpack_f8_to_f32(src, &mut out) };
+            for (offset, (source, result)) in src.iter().zip(&out).enumerate() {
+                assert_eq!(
+                    result.0.to_bits(),
+                    source.to_f32().to_bits(),
+                    "neon f8 phase {phase} len {len} offset {offset} byte {:#04x}",
+                    source.0
+                );
+            }
+        }
     }
 }
