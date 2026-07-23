@@ -4,6 +4,13 @@
 use crate::traits::{private, NumericElement};
 use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8, I16, I32, I8};
 
+// `impl_numeric_element!` declares the wrapper-level NumericElement body. The
+// trailing four closure args (`$sat_add`/`$sat_mul`/`$chk_add`/`$chk_mul`) are
+// OPTIONAL via `$( ... )?` — floats (F16/F32/F64/Bf16/Bf8/Bf4/F8/F4) inherit
+// the trait's float-default behaviour (`Some(self OP rhs)`/identity protection
+// already handled by IEEE 754), while integer wrappers (I8/I16/I32) provide
+// native checked/saturating overrides so overflow is detected instead of
+// silently wrapping under `+`/`*` or panicking under debug overflow checks.
 macro_rules! impl_numeric_element {
     (
         $t:ident,
@@ -26,6 +33,7 @@ macro_rules! impl_numeric_element {
         $or:expr,
         $xor:expr,
         $count_ones:expr
+        $(, $sat_add:expr, $sat_mul:expr, $chk_add:expr, $chk_mul:expr)?
     ) => {
         impl private::Sealed for $t {}
 
@@ -80,6 +88,32 @@ macro_rules! impl_numeric_element {
             fn count_ones(self) -> u32 {
                 $count_ones(self)
             }
+            $(
+                /// Native `saturating_add` replacement for the float-default
+                /// `self + rhs` (which silently wraps on integer overflow in
+                /// release / panics in debug). Caps at `MAX_VALUE`/`MIN_VALUE`.
+                #[inline(always)]
+                fn saturating_add(self, rhs: Self) -> Self {
+                    $sat_add(self, rhs)
+                }
+                /// Native `saturating_mul`; see [`saturating_add`].
+                #[inline(always)]
+                fn saturating_mul(self, rhs: Self) -> Self {
+                    $sat_mul(self, rhs)
+                }
+                /// Native `checked_add` returning `None` on integer overflow
+                /// instead of the float-default `Some(self + rhs)`, which
+                /// silently wraps.
+                #[inline(always)]
+                fn checked_add(self, rhs: Self) -> Option<Self> {
+                    $chk_add(self, rhs)
+                }
+                /// Native `checked_mul`; see [`checked_add`].
+                #[inline(always)]
+                fn checked_mul(self, rhs: Self) -> Option<Self> {
+                    $chk_mul(self, rhs)
+                }
+            )?
         }
 
         const _: () = {
@@ -269,13 +303,23 @@ impl_numeric_element!(
     |x: I8| x.0 as f64,
     |x: I8, b: I8, c: I8| I8(x.0.wrapping_mul(b.0).wrapping_add(c.0)),
     |x: I8| I8(x.0.abs()),
-    |x: I8| I8((x.0 as f32).sqrt() as i8),
+    // Exact integer floor sqrt; negative inputs return 0 (no NaN to signal
+    // domain error). Avoids the f32 round-trip, which lost precision for
+    // wider integer types.
+    |x: I8| if x.0 < 0 { I8(0) } else { I8(x.0.isqrt()) },
     |_| true,
     |_| false,
     |x: I8, y: I8| I8(x.0 & y.0),
     |x: I8, y: I8| I8(x.0 | y.0),
     |x: I8, y: I8| I8(x.0 ^ y.0),
-    |x: I8| x.0.count_ones()
+    |x: I8| x.0.count_ones(),
+    // Integer checked/saturating overrides — match primitive i8 semantics
+    // instead of the trait float-default `Some(self OP self)` which silently
+    // wraps on overflow in release / panics in debug.
+    |x: I8, y: I8| I8(x.0.saturating_add(y.0)),
+    |x: I8, y: I8| I8(x.0.saturating_mul(y.0)),
+    |x: I8, y: I8| x.0.checked_add(y.0).map(I8),
+    |x: I8, y: I8| x.0.checked_mul(y.0).map(I8)
 );
 
 impl_numeric_element!(
@@ -292,13 +336,23 @@ impl_numeric_element!(
     |x: I16| x.0 as f64,
     |x: I16, b: I16, c: I16| I16(x.0.wrapping_mul(b.0).wrapping_add(c.0)),
     |x: I16| I16(x.0.abs()),
-    |x: I16| I16((x.0 as f32).sqrt() as i16),
+    // Exact integer floor sqrt; negative inputs return 0 (no NaN to signal
+    // domain error). Avoids the f32 round-trip, which lost precision for
+    // wider integer types.
+    |x: I16| if x.0 < 0 { I16(0) } else { I16(x.0.isqrt()) },
     |_| true,
     |_| false,
     |x: I16, y: I16| I16(x.0 & y.0),
     |x: I16, y: I16| I16(x.0 | y.0),
     |x: I16, y: I16| I16(x.0 ^ y.0),
-    |x: I16| x.0.count_ones()
+    |x: I16| x.0.count_ones(),
+    // Integer checked/saturating overrides — match primitive i16 semantics
+    // instead of the trait float-default `Some(self OP self)` which silently
+    // wraps on overflow in release / panics in debug.
+    |x: I16, y: I16| I16(x.0.saturating_add(y.0)),
+    |x: I16, y: I16| I16(x.0.saturating_mul(y.0)),
+    |x: I16, y: I16| x.0.checked_add(y.0).map(I16),
+    |x: I16, y: I16| x.0.checked_mul(y.0).map(I16)
 );
 
 impl_numeric_element!(
@@ -315,11 +369,22 @@ impl_numeric_element!(
     |x: I32| x.0 as f64,
     |x: I32, b: I32, c: I32| I32(x.0.wrapping_mul(b.0).wrapping_add(c.0)),
     |x: I32| I32(x.0.abs()),
-    |x: I32| I32((x.0 as f64).sqrt() as i32),
+    // Exact integer floor sqrt via `i32::isqrt()` instead of the previous
+    // `(x.0 as f64).sqrt() as i32`, which could lose precision for large
+    // operands (above 2^53 the f64 round-trip can change the root). Negative
+    // inputs return 0 because integers have no NaN sentinel.
+    |x: I32| if x.0 < 0 { I32(0) } else { I32(x.0.isqrt()) },
     |_| true,
     |_| false,
     |x: I32, y: I32| I32(x.0 & y.0),
     |x: I32, y: I32| I32(x.0 | y.0),
     |x: I32, y: I32| I32(x.0 ^ y.0),
-    |x: I32| x.0.count_ones()
+    |x: I32| x.0.count_ones(),
+    // Integer checked/saturating overrides — match primitive i32 semantics
+    // instead of the trait float-default `Some(self OP self)` which silently
+    // wraps on overflow in release / panics in debug.
+    |x: I32, y: I32| I32(x.0.saturating_add(y.0)),
+    |x: I32, y: I32| I32(x.0.saturating_mul(y.0)),
+    |x: I32, y: I32| x.0.checked_add(y.0).map(I32),
+    |x: I32, y: I32| x.0.checked_mul(y.0).map(I32)
 );

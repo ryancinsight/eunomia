@@ -4,6 +4,23 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- ATLAS-EUNOMIA-044: Unsigned primitive `u8`/`u16`/`u32`/`u64`/`usize` and
+  the wrapper integer types `I8`/`I16`/`I32` now correctly implement
+  `checked_add`/`checked_mul` (returning `None` on overflow) and
+  `saturating_add`/`saturating_mul` (capping at `MIN_VALUE`/`MAX_VALUE`) on
+  `NumericElement`, matching their primitive `i8`/`i16`/`i32` siblings.
+  Before this patch, all of these types inherited the trait's float default
+  `Some(self OP self)`, which silently wrapped in release / panicked in debug
+  on integer overflow. Wrapper `I32` sqrt (and the corresponding `I8`/`I16`
+  wrappers for parity) now route through the exact `i32::isqrt` /
+  `i8::isqrt` / `i16::isqrt` primitives instead of the previous
+  `(self as f64/f32).sqrt() as Self` path, eliminating precision loss for
+  operands near `MAX_VALUE`. New regression tests cover overflow and signed
+  underflow; all 76+ existing focused Nextest cases, doctests, and
+  `cargo clippy -D warnings` continue to pass.
+
 ### Changed
 
 - E-030 vectorizes `neon::unpack_f8_to_f32` as a branchless 16-element

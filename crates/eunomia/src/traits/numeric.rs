@@ -122,7 +122,12 @@ pub trait NumericElement:
     /// Saturating addition.
     ///
     /// For floats this is identical to `+` (IEEE 754 already saturates at ±∞).
-    /// Integer implementations override with the native `saturating_add`.
+    /// Integer implementations **must** override this with the native
+    /// `saturating_add`; the default `self + rhs` would silently wrap in
+    /// release / panic in debug on integer overflow — which is the bug
+    /// ATLAS-EUNOMIA-044 closed. Every primitive integer and integer-wrapper
+    /// impl in this crate already overrides; treat that as a hard rule when
+    /// adding a new `NumericElement` impl for an integer type.
     #[inline(always)]
     fn saturating_add(self, rhs: Self) -> Self {
         self + rhs
@@ -131,7 +136,9 @@ pub trait NumericElement:
     /// Saturating multiplication.
     ///
     /// For floats this is identical to `*` (IEEE 754 already saturates at ±∞).
-    /// Integer implementations override with the native `saturating_mul`.
+    /// Integer implementations **must** override this with the native
+    /// `saturating_mul`; see [`saturating_add`] for the rationale and the
+    /// ATLAS-EUNOMIA-044 history.
     #[inline(always)]
     fn saturating_mul(self, rhs: Self) -> Self {
         self * rhs
@@ -141,7 +148,12 @@ pub trait NumericElement:
     ///
     /// Float types always return `Some` since their arithmetic never overflows
     /// to undefined behaviour (they produce ±∞ or NaN instead).
-    /// Integer implementations override with the native `checked_add`.
+    /// Integer implementations **must** override this with the native
+    /// `checked_add`; the default `Some(self + rhs)` would silently wrap in
+    /// release / panic in debug on integer overflow. Every primitive integer
+    /// and integer-wrapper impl in this crate already overrides; treat that
+    /// as a hard rule when adding a new `NumericElement` impl for an integer
+    /// type.
     #[inline(always)]
     fn checked_add(self, rhs: Self) -> Option<Self> {
         Some(self + rhs)
@@ -151,7 +163,8 @@ pub trait NumericElement:
     /// overflow.
     ///
     /// Float types always return `Some` (see [`NumericElement::checked_add`]).
-    /// Integer implementations override with the native `checked_mul`.
+    /// Integer implementations **must** override with the native
+    /// `checked_mul`; see [`NumericElement::checked_add`] for the rationale.
     #[inline(always)]
     fn checked_mul(self, rhs: Self) -> Option<Self> {
         Some(self * rhs)

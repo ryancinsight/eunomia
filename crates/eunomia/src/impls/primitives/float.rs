@@ -175,6 +175,30 @@ macro_rules! impl_numeric_element_unsigned {
             fn count_ones(self) -> u32 {
                 self.count_ones()
             }
+            /// Native saturating_add replaces the trait's float default `self + rhs`,
+            /// which would wrap in release / panic in debug on uint overflow. The
+            /// native op saturates to `MAX_VALUE`/`MIN_VALUE`.
+            #[inline(always)]
+            fn saturating_add(self, rhs: Self) -> Self {
+                self.saturating_add(rhs)
+            }
+            /// Native saturating_mul; see [`saturating_add`] for rationale.
+            #[inline(always)]
+            fn saturating_mul(self, rhs: Self) -> Self {
+                self.saturating_mul(rhs)
+            }
+            /// Native checked_add returns `None` on uint overflow instead of
+            /// silently wrapping (the trait float default returns `Some(self + rhs)`,
+            /// which is wrong for integers).
+            #[inline(always)]
+            fn checked_add(self, rhs: Self) -> Option<Self> {
+                self.checked_add(rhs)
+            }
+            /// Native checked_mul; see [`checked_add`] for rationale.
+            #[inline(always)]
+            fn checked_mul(self, rhs: Self) -> Option<Self> {
+                self.checked_mul(rhs)
+            }
         }
     };
 }
