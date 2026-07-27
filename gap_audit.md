@@ -43,16 +43,23 @@ boundary); **`half` is fully replaceable** (no external lock-in, RNE oracle).
 
 ### Gaps
 
-Correctness — **G-C1** `packed/unpack/arch.rs:34` no_std `has_avx512f` tests
-`"avx512bw"` (copy-paste) + both no_std AVX-512 branches drop `avx512vl` (E-028).
+Correctness — **G-C1 (resolved E-028)** the no_std `has_avx512f` branch tested
+`"avx512bw"` (copy-paste) and both no_std AVX-512 branches dropped `avx512vl`;
+`arch.rs` now tests `avx512f`/`avx512bw` respectively and both branches require
+`avx512vl`, mirroring the `std` runtime check and the intrinsics'
+`#[target_feature]` set.
 **G-C2 (resolved E-023)** sub-byte narrowing now uses round-to-nearest-even.
 **G-C3 (pinned E-023)** Bf8 is IEEE E5M2; F8/Bf4/F4 are finite-only with the top
 exponent reserved for NaN. OCP types remain gated on a consumer (E-024).
-**G-C4** 18 dispatch `unsafe` blocks + 18 intrinsic `unsafe fn` + the
-sole `transmute` (`avx512.rs:56`) + 22 `unsafe impl bytemuck::…` carry no
-`// SAFETY:` (crate-wide `#![allow(clippy::missing_safety_doc)]`) (E-029).
-**G-C5** `impls/field.rs` "frozen" tests' `#[cfg(any())]` gate landed inside a
-doc-comment → tests are live (E-029).
+**G-C4 (resolved E-029)** the dispatch `unsafe` blocks, the 18 intrinsic
+`unsafe fn`, the sole `transmute` (`avx512.rs:56`), and the `unsafe impl
+bytemuck::…`/`layout` marker impls now all carry `// SAFETY:` (or a rustdoc
+`# Safety` section); the crate-wide `#![allow(clippy::missing_safety_doc)]` is
+gone. The `Pod`/`Zeroable` justifications are backed by the `const _`
+size/alignment/offset assertions in `types/mod.rs`.
+**G-C5 (resolved E-029)** the `impls/field.rs` "frozen" tests' `#[cfg(any())]`
+gate had landed inside a doc-comment, leaving the tests live; the stray gate is
+removed.
 
 Architecture — **G-A1 (resolved E-025c)** `half` was a removable hard runtime
 dependency; it now exists only in the differential-oracle dev graph.
@@ -81,6 +88,18 @@ E-027 consumer co-evolution); G-A1 fully resolved by E-025/E-025b/E-025c
 `half` dev-only); G-T2 resolved via E-030 (branchless NEON F8 decode +
 exhaustive aarch64 differential). Still open: E-027 (consumer
 bytemuck→eunomia migration).
+
+**Re-verified 2026-07-27** (source audit, independent of the E-028/E-029
+delivery claims): `arch.rs` `has_avx512f`/`has_avx512bw` test the correct
+feature strings and both no_std branches gate on `avx512vl`; all 18
+`pub unsafe fn` carry a rustdoc `# Safety` section; every `unsafe impl` in
+`types/mod.rs`, `layout/marker.rs`, and `types/complex/numpy_element.rs` has a
+`// SAFETY:` justification (the `numpy::Element` impls document layout
+equivalence with `num_complex::Complex`); no crate-wide `#![allow(...)]`
+remains in `lib.rs`; no `cfg(any())` remains in `impls/field.rs`. G-C1/G-C4/G-C5
+were previously listed unannotated in **Gaps** while their resolution was
+recorded only in this paragraph — the inline markers above now match their
+siblings so the section cannot be misread as open work.
 
 Non-gaps (verified, do not chase): `TransmuteFrom` not adoptable; `zerocopy` not
 a migration target (sole stack use is out-of-scope consus `IntoBytes::as_bytes`);
