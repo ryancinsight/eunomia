@@ -12,8 +12,10 @@ mod cast;
 mod field;
 mod float;
 mod numeric;
+mod unit;
 
 pub use cast::{CastFrom, CastTo};
 pub use field::{ComplexField, RealField};
 pub use float::FloatElement;
 pub use numeric::NumericElement;
+pub use unit::UnitScalar;

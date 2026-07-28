@@ -17,7 +17,9 @@ mod traits;
 mod types;
 
 // Re-export core traits
-pub use traits::{CastFrom, CastTo, ComplexField, FloatElement, NumericElement, RealField};
+pub use traits::{
+    CastFrom, CastTo, ComplexField, FloatElement, NumericElement, RealField, UnitScalar,
+};
 
 // Re-export the relative-equality trait at the crate root so the macro can
 // resolve `eunomia::RelativeEq` and users can opt into the trait if needed.

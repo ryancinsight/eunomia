@@ -23,6 +23,10 @@ All notable changes to Eunomia are documented here.
 
 ### Changed
 
+- E-035 adds provider-owned `UnitScalar` conversion and scaling for all
+  shipped real storage types plus `Complex32`/`Complex64`, allowing Aequitas to
+  convert real quantities and complex phasors through one native seam.
+
 - E-030 vectorizes `neon::unpack_f8_to_f32` as a branchless 16-element
   arithmetic decode, deleting the 1,024-byte scalar gather table. The NEON
   path is bit-exact against the scalar conversion kernel for every byte

@@ -4,6 +4,13 @@ Sprint target: 0.6.0 (native reduced-precision provider contract).
 
 ## Recently completed
 
+- **E-035 [minor] — done; owner: Codex.** Add provider-owned `UnitScalar`
+  conversion/scaling for all shipped real storage types and `Complex32`/
+  `Complex64`, then cut Aequitas linear-unit conversion over the one seam.
+  Complex components scale together; no imaginary physical unit is introduced.
+  Acceptance: Eunomia provider tests, Aequitas complex-unit tests, and
+  consumer contract checks pass. ADR 0004 and the gap audit record the seam.
+
 - **E-034 [minor] — done; owner: Codex `/root` stale-peer takeover.** Published
   provider-owned relative-equality assertions for `f32`, `f64`, complex,
   reference, slice, and array values. Native-precision tolerances, positive and

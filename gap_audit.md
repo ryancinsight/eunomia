@@ -1,5 +1,18 @@
 # Eunomia gap audit
 
+## Physical-unit scalar conversion (E-035)
+
+**Resolved 2026-07-28.** The stack audit found that Aequitas could convert
+`FloatElement` values but had no provider-owned conversion seam for Eunomia's
+native complex phasors. Eunomia now owns `UnitScalar`, implemented for every
+shipped real float storage type and `Complex32`/`Complex64`. Scaling a complex
+value applies one real coefficient to both components; Eunomia's `Complex::i()`
+is a numerical imaginary unit, not a physical unit. Aequitas consumes this
+single seam, so no overlapping real/complex conversion implementations or
+consumer-local wrappers remain. Evidence is the Eunomia provider test and the
+Aequitas complex-unit contract test. See
+[ADR 0004](docs/adr/0004-unit-scalar-provider-seam.md).
+
 ## Byte-layout / transmutation / reduced-precision (E-022…E-030)
 
 Audit of eunomia's datatype surface against `bytemuck`, `zerocopy`, `half`, and
