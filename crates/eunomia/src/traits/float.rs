@@ -137,6 +137,24 @@ pub trait FloatElement: private::Sealed + NumericElement {
         acc
     }
 
+    /// Base-10 logarithm, `log₁₀(self)`.
+    ///
+    /// Default routes through `f32` via `libm`; `f64` overrides with the
+    /// native double-precision path.
+    #[inline]
+    fn log10(self) -> Self {
+        Self::from_f32(libm::log10f(self.to_f32()))
+    }
+
+    /// Base-2 logarithm, `log₂(self)`.
+    ///
+    /// Default routes through `f32` via `libm`; `f64` overrides with the
+    /// native double-precision path.
+    #[inline]
+    fn log2(self) -> Self {
+        Self::from_f32(libm::log2f(self.to_f32()))
+    }
+
     /// Error function `erf(self) = 2/√π ∫₀ˢᵉˡᶠ e^(-t²) dt`.
     ///
     /// Default routes through `f32`; native-precision types override.

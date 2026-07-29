@@ -106,6 +106,14 @@ impl FloatElement for f64 {
     }
     // Native double-precision special functions (override the f32-routed defaults).
     #[inline]
+    fn log10(self) -> Self {
+        libm::log10(self)
+    }
+    #[inline]
+    fn log2(self) -> Self {
+        libm::log2(self)
+    }
+    #[inline]
     fn erf(self) -> Self {
         libm::erf(self)
     }
