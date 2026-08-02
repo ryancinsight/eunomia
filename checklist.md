@@ -4,6 +4,11 @@ Target version: 0.6.0
 
 Sprint phase: Execution
 
+## E-REL-001 [patch] — crates.io Trusted Publishing
+
+- [x] Add and validate the release workflow, then register `eunomia` against
+      `ryancinsight/eunomia/.github/workflows/rust-release.yml` in crates.io.
+
 ## E-034 [minor] — provider relative equality (Owner: Codex `/root`)
 
 - [x] Take over the stale staged provider increment blocking Helios hosted
