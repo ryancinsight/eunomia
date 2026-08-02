@@ -23,6 +23,9 @@ All notable changes to Eunomia are documented here.
 
 ### Changed
 
+- Added a GitHub Release workflow that validates crate identity and package
+  contents before publishing through crates.io Trusted Publishing.
+
 - E-035 adds provider-owned `UnitScalar` conversion and scaling for all
   shipped real storage types plus `Complex32`/`Complex64`, allowing Aequitas to
   convert real quantities and complex phasors through one native seam.

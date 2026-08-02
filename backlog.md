@@ -4,6 +4,10 @@ Sprint target: 0.6.0 (native reduced-precision provider contract).
 
 ## Recently completed
 
+- **E-REL-001 [patch] — done; owner: Codex `/root`.** Publish future releases
+  through a pinned GitHub Actions workflow using crates.io OIDC Trusted
+  Publishing and no stored registry credential.
+
 - **E-035 [minor] — done; owner: Codex.** Add provider-owned `UnitScalar`
   conversion/scaling for all shipped real storage types and `Complex32`/
   `Complex64`, then cut Aequitas linear-unit conversion over the one seam.
