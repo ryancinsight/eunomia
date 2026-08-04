@@ -99,5 +99,17 @@ jobs:
         with:
           persist-credentials: false
 
+      # cargo-deny is installed and pinned here rather than run through
+      # cargo-deny-action, which bundles its own copy: the version in
+      # v2.0.14 cannot parse the CVSS 4.0 vector in RUSTSEC-2026-0109 and
+      # aborts while loading the advisory database, so the job fails on a
+      # database entry unrelated to this crate. Pinning the tool directly
+      # keeps the version under our control, the same way nextest is handled
+      # in the verify job.
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
+        with:
+          tool: cargo-deny@0.20.2
+
       - name: Audit advisories, licences, bans and sources
-        uses: EmbarkStudios/cargo-deny-action@30f817c6f72275c6d54dc744fbca09ebc958599f # v2.0.14
+        run: cargo deny --all-features check
