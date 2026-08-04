@@ -1,33 +1,46 @@
 # Example: Choosing a Precision
 
 **Crate**: `eunomia`
-**Planned source**: `crates/eunomia/examples/book_choosing_precision.rs` (lands with the chapter as a DoR item)
+**Source**: `crates/eunomia/examples/book_choosing_precision.rs`
 
-## What This Example Will Demonstrate
+Accumulating the same series in `F64`, `F32`, `F16`, and `Bf16` makes the
+storage/accuracy trade-off concrete.  Each step is precision-correct: the
+`FloatElement::from_f64` constructor is the single entry point for
+constant-folded literals, and `assert_relative_eq!` enforces the expected
+error budget rather than relying on an exact comparison.
 
-The precision trade-off across the eunomia scalar vocabulary: computing the
-same accumulated sum in `F32`, `F64`, `F16`, and `Bf16`, and reporting the
-round-trip error against the `f64` reference.
+## Source
 
-| Scalar | Storage | Relative error vs `f64` |
-|---|---|---|
-| `F64` | `u64` | reference |
-| `F32` | `u32` | ~1e-7 (single precision) |
-| `F16` (binary16) | `u16` | ~1e-3 (half precision) |
-| `Bf16` (E8M7) | `u16` | ~4e-3 (bfloat range) |
+```rust
+{{#include ../../../crates/eunomia/examples/book_choosing_precision.rs}}
+```
 
-## Key API Surface
+## Output
 
-- `NumericElement::from_f64` / `FloatElement::from_f64` — precision-correct
-  construction
-- `assert_relative_eq!` — blended tolerance comparison (chapter 12)
-- The `(E, M, B)` format table from chapter 1
+```text
+harmonic sum of the first 256 terms
+ F64: 8 bytes, sum = 6.124344963, relative error = 0.000e0
+ F32: 4 bytes, sum = 6.124345779, relative error = 1.333e-7
+ F16: 2 bytes, sum = 6.085937500, relative error = 6.271e-3
+Bf16: 2 bytes, sum = 5.062500000, relative error = 1.734e-1
+```
 
-## Outline
+## What to notice
 
-- Accumulate a known series in each precision
-- Construct each scalar precision-correctly via `FloatElement::from_f64`
-- Compare against the `f64` reference with `assert_relative_eq!`
-- Report storage cost and error per format
-- Discussion: when reduced precision is the right call (bandwidth-bound
-  kernels, storage) versus when it is not (accumulation, ill-conditioning)
+| Scalar | Storage | Relative error |
+|--------|---------|----------------|
+| `F64`  | 8 bytes | reference      |
+| `F32`  | 4 bytes | ~1.3 × 10⁻⁷   |
+| `F16`  | 2 bytes | ~6.3 × 10⁻³   |
+| `Bf16` | 2 bytes | ~1.7 × 10⁻¹   |
+
+`Bf16` accumulates only 7 mantissa bits, so its harmonic sum diverges from
+the double-precision reference by 17 %.  That is the intended result, not a
+bug: the tolerance in `assert_relative_eq!` is set to `2.0e-1` specifically
+to document the expected worst-case error for this accumulation length.
+
+Use `F32` or `F64` for accumulation and iterative solvers.  Reach for `F16`
+or `Bf16` only for weight storage, activations, or communication buffers
+where bandwidth dominates accuracy.  The `size_of::<T>()` line confirms the
+storage cost without any unsafe cast — it is a property of the Rust type, not
+a runtime branch.
