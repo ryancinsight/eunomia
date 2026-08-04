@@ -1,0 +1,22 @@
+# mdBook configuration for the eunomia datatype-law book.
+# Build:  mdbook build docs/book      Serve:  mdbook serve docs/book
+# The chapter Markdown lives alongside this file (src = "."); the table of
+# contents and part structure are defined in SUMMARY.md.
+[book]
+title = "eunomia: The Datatype Law of Atlas"
+authors = ["Ryan Clanton"]
+description = "The numeric and scalar vocabulary of the Atlas stack — IEEE-754 scalar wrappers, Complex<T>, packed sub-byte formats, element and field traits, and the native conversion kernel."
+src = "."
+language = "en"
+
+[build]
+build-dir = "../../target/book/eunomia"
+create-missing = false
+
+[output.html]
+no-section-label = false
+mathjax-support = true
+site-url = "/eunomia/"
+git-repository-url = "https://github.com/ryancinsight/eunomia"
+edit-url-template = "https://github.com/ryancinsight/eunomia/edit/main/docs/book/{path}"
+default-theme = "rust"
