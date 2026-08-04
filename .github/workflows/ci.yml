@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+  RUST_TOOLCHAIN: 1.97.0
+
+jobs:
+  verify:
+    name: Rust verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: clippy, rustfmt
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@23869a5bd66c73db3c0ac40331f3206eb23791dc # v2.9.1
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
+        with:
+          tool: nextest@0.9.140
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      # eunomia is `no_std` unless `std` is on, and the test targets are as
+      # much a part of that contract as the lib. Both configurations below
+      # were broken and nothing caught it, because this crate had no CI: the
+      # test modules reached for `Vec`/`vec!` through std. Checking
+      # `--all-targets` per feature is what makes that a build failure rather
+      # than a latent one.
+      - name: Check the feature matrix
+        run: |
+          set -euo pipefail
+          for features in \
+            "--no-default-features" \
+            "--no-default-features --features rkyv" \
+            "--no-default-features --features serde" \
+            "--features rkyv" \
+            "--features serde" \
+            "--features rkyv,serde"
+          do
+            echo "::group::cargo check $features"
+            cargo check --locked --workspace --all-targets $features
+            echo "::endgroup::"
+          done
+
+      # The `numpy` feature is excluded from the steps below: it activates
+      # pyo3, which links against libpython and so needs a Python toolchain
+      # provisioned on the runner. It is checked in the matrix above only in
+      # the sense that it is not -- nothing here exercises it. Removal
+      # trigger: add an actions/setup-python step and fold `numpy` in, or
+      # split it into its own job alongside the binding tests.
+      - name: Lint all affected targets
+        run: cargo clippy --locked --workspace --all-targets --features rkyv,serde -- -D warnings
+
+      - name: Run native tests
+        run: cargo nextest run --locked --workspace --features rkyv,serde
+
+      - name: Run documentation tests
+        run: cargo test --locked --workspace --features rkyv,serde --doc
+
+      # Broken intra-doc links do not fail an ordinary build, so without this
+      # gate they accumulate: seventeen were already present when it was added.
+      - name: Build documentation
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --locked --workspace --no-deps --features rkyv,serde
+
+  supply-chain:
+    name: Supply chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Audit advisories, licences, bans and sources
+        uses: EmbarkStudios/cargo-deny-action@30f817c6f72275c6d54dc744fbca09ebc958599f # v2.0.14

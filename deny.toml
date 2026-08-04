@@ -1,0 +1,32 @@
+[graph]
+all-features = true
+
+[advisories]
+yanked = "deny"
+
+[licenses]
+confidence-threshold = 0.9
+allow = [
+    "Apache-2.0",
+    # target-lexicon, reached through the pyo3 build. The LLVM exception only
+    # relaxes Apache-2.0's obligations, so it is permissive wherever plain
+    # Apache-2.0 is.
+    "Apache-2.0 WITH LLVM-exception",
+    # rust-numpy, reached through the optional `numpy` feature.
+    "BSD-2-Clause",
+    "MIT",
+    "Unicode-3.0",
+    "Zlib",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+# eunomia is the foundation of the stack and depends on no first-party crate,
+# so no git source is allowed: an entry appearing here would mean a dependency
+# edge pointing back up the layering.
+[sources]
+unknown-git = "deny"
+unknown-registry = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
