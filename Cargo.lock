@@ -36,6 +36,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
+name = "bytecheck"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0caa33a2c0edca0419d15ac723dff03f1956f7978329b1e3b5fdaaaed9d3ca8b"
+dependencies = [
+ "bytecheck_derive",
+ "ptr_meta",
+ "rancor",
+ "simdutf8",
+]
+
+[[package]]
+name = "bytecheck_derive"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89385e82b5d1821d2219e0b095efa2cc1f246cbf99080f3be46a1a85c0d392d9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bytemuck"
 version = "1.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -52,7 +75,7 @@ checksum = "f9abbd1bc6865053c427f7198e6af43bfdedc55ab791faed4fbd361d789575ff"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.118",
+ "syn",
 ]
 
 [[package]]
@@ -242,6 +265,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.17.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -317,6 +346,26 @@ name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+
+[[package]]
+name = "munge"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e17401f259eba956ca16491461b6e8f72913a0a114e39736ce404410f915a0c"
+dependencies = [
+ "munge_macro",
+]
+
+[[package]]
+name = "munge_macro"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4568f25ccbd45ab5d5603dc34318c1ec56b117531781260002151b8530a9f931"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "ndarray"
@@ -448,22 +497,22 @@ dependencies = [
 
 [[package]]
 name = "ptr_meta"
-version = "0.1.4"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0738ccf7ea06b608c10564b31debd4f5bc5e197fc8bfe088f68ae5ce81e7a4f1"
+checksum = "0b9a0cf95a1196af61d4f1cbdab967179516d9a4a4312af1f31948f8f6224a79"
 dependencies = [
  "ptr_meta_derive",
 ]
 
 [[package]]
 name = "ptr_meta_derive"
-version = "0.1.4"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16b845dbfca988fa33db069c0e230574d15a3088f147a87b64c7589eb662c9ac"
+checksum = "7347867d0a7e1208d93b46767be83e2b8f978c3dad35f775ac8d8847551d6fe1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn",
 ]
 
 [[package]]
@@ -508,7 +557,7 @@ dependencies = [
  "proc-macro2",
  "pyo3-macros-backend",
  "quote",
- "syn 2.0.118",
+ "syn",
 ]
 
 [[package]]
@@ -520,7 +569,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "syn 2.0.118",
+ "syn",
 ]
 
 [[package]]
@@ -530,6 +579,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfbc457d0c7a0759a614551b11a6409e5951f6c7537be1f1b7682b9ae9230368"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "rancor"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "daff8b7b3ccf5f7ba270b3e7a0a4d4c701c5797e38dec27c7e2c3dbb830fed1c"
+dependencies = [
+ "ptr_meta",
 ]
 
 [[package]]
@@ -588,25 +646,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
-name = "rkyv"
-version = "0.7.46"
+name = "rend"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2297bf9c81a3f0dc96bc9521370b88f054168c29826a75e89c55ff196e7ed6a1"
+checksum = "663ba70707f96e871406fe10d68128412e619b06d1d47cb91c3a4c6501176240"
 dependencies = [
+ "bytecheck",
+]
+
+[[package]]
+name = "rkyv"
+version = "0.8.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "815cc8a37159a463064825246cadb07961e25cd9885908606f6d08a98d8f8874"
+dependencies = [
+ "bytecheck",
+ "hashbrown",
+ "munge",
  "ptr_meta",
+ "rancor",
+ "rend",
  "rkyv_derive",
- "seahash",
+ "tinyvec",
 ]
 
 [[package]]
 name = "rkyv_derive"
-version = "0.7.46"
+version = "0.8.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84d7b42d4b8d06048d3ac8db0eb31bcb942cbeb709f0b5f2b2ebde398d3038f5"
+checksum = "c0ed1a78a1b19d184b0daa629dd9a024573173ec7d485b287cb369fb3607cc1c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn",
 ]
 
 [[package]]
@@ -629,12 +701,6 @@ checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
 ]
-
-[[package]]
-name = "seahash"
-version = "4.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c107b6f4780854c8b126e228ea8869f4d7b71260f962fefb57b996b8959ba6b"
 
 [[package]]
 name = "serde"
@@ -663,7 +729,7 @@ checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.118",
+ "syn",
 ]
 
 [[package]]
@@ -680,21 +746,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "simdutf8"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
+
+[[package]]
 name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
-
-[[package]]
-name = "syn"
-version = "1.0.109"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
-dependencies = [
- "proc-macro2",
- "quote",
- "unicode-ident",
-]
 
 [[package]]
 name = "syn"
@@ -722,6 +783,21 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "tinyvec"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb4ebadaa0af04fab11ae01eb5f9fdb5f9c5b875506e210e71c07873528baa7f"
+dependencies = [
+ "tinyvec_macros",
+]
+
+[[package]]
+name = "tinyvec_macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "unicode-ident"
@@ -771,7 +847,7 @@ dependencies = [
  "bumpalo",
  "proc-macro2",
  "quote",
- "syn 2.0.118",
+ "syn",
  "wasm-bindgen-shared",
 ]
 
@@ -835,7 +911,7 @@ checksum = "1ae7f38b72ec2a254e2b87ef277cf2cd4fb97cbebf944faa6f33354da0867930"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.118",
+ "syn",
 ]
 
 [[package]]
@@ -845,28 +921,168 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
 
 [[patch.unused]]
+name = "hephaestus-core"
+version = "0.18.0"
+
+[[patch.unused]]
+name = "hephaestus-cuda"
+version = "0.18.0"
+
+[[patch.unused]]
+name = "hephaestus-metal"
+version = "0.18.0"
+
+[[patch.unused]]
+name = "hephaestus-rocm"
+version = "0.18.0"
+
+[[patch.unused]]
+name = "hephaestus-wgpu"
+version = "0.18.0"
+
+[[patch.unused]]
+name = "coeus-autograd"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "coeus-core"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "coeus-leto"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "coeus-nn"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "coeus-ops"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "coeus-optim"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "coeus-tensor"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "melinoe"
+version = "0.9.0"
+
+[[patch.unused]]
 name = "apollo-fft"
 version = "0.25.0"
 
 [[patch.unused]]
-name = "athena-core"
-version = "0.1.0"
+name = "apollo-nufft"
+version = "0.7.0"
 
 [[patch.unused]]
-name = "aequitas"
-version = "0.1.0"
+name = "apollo-sht"
+version = "0.7.0"
+
+[[patch.unused]]
+name = "gaia"
+version = "0.3.0"
 
 [[patch.unused]]
 name = "hyperion"
 version = "0.1.0"
 
 [[patch.unused]]
-name = "mnemosyne"
+name = "mnemosyne-memory"
 version = "0.6.0"
 
 [[patch.unused]]
-name = "mnemosyne-core"
+name = "mnemosyne-memory-core"
 version = "0.2.0"
+
+[[patch.unused]]
+name = "ritk-core"
+version = "0.9.0"
+
+[[patch.unused]]
+name = "ritk-dicom"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "ritk-image"
+version = "0.2.0"
+
+[[patch.unused]]
+name = "ritk-io"
+version = "0.2.0"
+
+[[patch.unused]]
+name = "ritk-registration"
+version = "0.53.0"
+
+[[patch.unused]]
+name = "ritk-spatial"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "ritk-vtk"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "iris"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "moirai-async"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "moirai-core"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "moirai-executor"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "moirai-gpu"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "moirai-http"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "moirai-parallel"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "moirai-runtime"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "moirai-sync"
+version = "0.4.0"
+
+[[patch.unused]]
+name = "aequitas"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "proteus"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "tyche-core"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "asclepius"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "asclepius-coeus"
+version = "0.1.0"
 
 [[patch.unused]]
 name = "consus-compression"
@@ -897,112 +1113,12 @@ name = "consus-zarr"
 version = "0.1.0"
 
 [[patch.unused]]
-name = "gaia"
-version = "0.3.0"
-
-[[patch.unused]]
-name = "themis"
+name = "themis-topology"
 version = "0.10.1"
-
-[[patch.unused]]
-name = "asclepius"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "asclepius-coeus"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "proteus"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "horae"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "moirai"
-version = "0.4.0"
-
-[[patch.unused]]
-name = "moirai-async"
-version = "0.4.0"
-
-[[patch.unused]]
-name = "moirai-gpu"
-version = "0.4.0"
-
-[[patch.unused]]
-name = "moirai-sync"
-version = "0.4.0"
 
 [[patch.unused]]
 name = "hermes-simd"
 version = "0.5.0"
-
-[[patch.unused]]
-name = "iris"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "coeus-autograd"
-version = "0.9.0"
-
-[[patch.unused]]
-name = "coeus-core"
-version = "0.9.0"
-
-[[patch.unused]]
-name = "coeus-optim"
-version = "0.9.0"
-
-[[patch.unused]]
-name = "coeus-tensor"
-version = "0.9.0"
-
-[[patch.unused]]
-name = "hephaestus-core"
-version = "0.18.0"
-
-[[patch.unused]]
-name = "hephaestus-cuda"
-version = "0.18.0"
-
-[[patch.unused]]
-name = "hephaestus-metal"
-version = "0.18.0"
-
-[[patch.unused]]
-name = "hephaestus-rocm"
-version = "0.18.0"
-
-[[patch.unused]]
-name = "hephaestus-wgpu"
-version = "0.18.0"
-
-[[patch.unused]]
-name = "tyche-core"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "ritk-core"
-version = "0.9.0"
-
-[[patch.unused]]
-name = "ritk-dicom"
-version = "0.1.0"
-
-[[patch.unused]]
-name = "ritk-io"
-version = "0.2.0"
-
-[[patch.unused]]
-name = "ritk-registration"
-version = "0.53.0"
-
-[[patch.unused]]
-name = "melinoe"
-version = "0.9.0"
 
 [[patch.unused]]
 name = "leto"
@@ -1011,3 +1127,15 @@ version = "0.40.0"
 [[patch.unused]]
 name = "leto-ops"
 version = "0.40.0"
+
+[[patch.unused]]
+name = "athena-core"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "athena-leto"
+version = "0.1.0"
+
+[[patch.unused]]
+name = "horae"
+version = "0.1.0"

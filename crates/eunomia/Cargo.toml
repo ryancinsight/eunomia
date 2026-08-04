@@ -19,7 +19,10 @@ pyo3 = { version = "0.29", optional = true }
 [features]
 default = ["std"]
 std = []
-rkyv = ["dep:rkyv", "rkyv/size_32"]
+# `bytecheck` is not optional decoration: RUSTSEC-2026-0235 was an archive
+# validation flaw, and validated access is the only way to read an archive from
+# an untrusted source without it being an unsafe operation.
+rkyv = ["dep:rkyv", "rkyv/pointer_width_32", "rkyv/alloc", "rkyv/bytecheck"]
 serde = ["dep:serde"]
 # NumPy interop: `unsafe impl numpy::Element for Complex<f32|f64>` so the SSOT
 # complex type is usable directly as a rust-numpy array element (Python bindings).

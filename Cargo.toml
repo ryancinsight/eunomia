@@ -15,4 +15,4 @@ eunomia = { path = "crates/eunomia" }
 half = { version = "2.3", default-features = false }
 bytemuck = { version = "1.14", features = ["derive"] }
 libm = { version = "0.2.8", default-features = false }
-rkyv = { version = "0.7", default-features = false }
+rkyv = { version = "0.8", default-features = false }
