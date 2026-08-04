@@ -96,7 +96,7 @@ macro_rules! impl_numeric_element {
                 fn saturating_add(self, rhs: Self) -> Self {
                     $sat_add(self, rhs)
                 }
-                /// Native `saturating_mul`; see [`saturating_add`].
+                /// Native `saturating_mul`; see [`Self::saturating_add`].
                 #[inline(always)]
                 fn saturating_mul(self, rhs: Self) -> Self {
                     $sat_mul(self, rhs)
@@ -108,7 +108,7 @@ macro_rules! impl_numeric_element {
                 fn checked_add(self, rhs: Self) -> Option<Self> {
                     $chk_add(self, rhs)
                 }
-                /// Native `checked_mul`; see [`checked_add`].
+                /// Native `checked_mul`; see [`Self::checked_add`].
                 #[inline(always)]
                 fn checked_mul(self, rhs: Self) -> Option<Self> {
                     $chk_mul(self, rhs)

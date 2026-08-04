@@ -190,7 +190,7 @@ macro_rules! impl_numeric_element_unsigned {
             fn saturating_add(self, rhs: Self) -> Self {
                 self.saturating_add(rhs)
             }
-            /// Native saturating_mul; see [`saturating_add`] for rationale.
+            /// Native saturating_mul; see [`Self::saturating_add`] for rationale.
             #[inline(always)]
             fn saturating_mul(self, rhs: Self) -> Self {
                 self.saturating_mul(rhs)
@@ -202,7 +202,7 @@ macro_rules! impl_numeric_element_unsigned {
             fn checked_add(self, rhs: Self) -> Option<Self> {
                 self.checked_add(rhs)
             }
-            /// Native checked_mul; see [`checked_add`] for rationale.
+            /// Native checked_mul; see [`Self::checked_add`] for rationale.
             #[inline(always)]
             fn checked_mul(self, rhs: Self) -> Option<Self> {
                 self.checked_mul(rhs)

@@ -137,7 +137,7 @@ pub trait NumericElement:
     ///
     /// For floats this is identical to `*` (IEEE 754 already saturates at ±∞).
     /// Integer implementations **must** override this with the native
-    /// `saturating_mul`; see [`saturating_add`] for the rationale and the
+    /// `saturating_mul`; see [`Self::saturating_add`] for the rationale and the
     /// ATLAS-EUNOMIA-044 history.
     #[inline(always)]
     fn saturating_mul(self, rhs: Self) -> Self {
