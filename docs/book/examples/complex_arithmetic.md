@@ -13,6 +13,8 @@ plain byte slices.
 ## Source
 
 ```rust
+# extern crate eunomia;
+# extern crate bytemuck;
 {{#include ../../../crates/eunomia/examples/book_complex_arithmetic.rs}}
 ```
 

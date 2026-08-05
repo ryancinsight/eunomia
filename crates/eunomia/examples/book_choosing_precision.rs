@@ -1,4 +1,4 @@
-//! Compare accumulation error and storage cost across Eunomia precisions.
+// Compare accumulation error and storage cost across Eunomia precisions.
 
 use eunomia::{Bf16, FloatElement, NumericElement, F16, F32, F64};
 

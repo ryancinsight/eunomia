@@ -1,4 +1,4 @@
-//! Inspect exact and rounded conversions through Eunomia's native kernel.
+// Inspect exact and rounded conversions through Eunomia's native kernel.
 
 use eunomia::convert::{narrow, widen};
 use eunomia::{Bf16, F16};

@@ -1,4 +1,4 @@
-//! Use Eunomia's complex vocabulary in a solver-shaped calculation.
+// Use Eunomia's complex vocabulary in a solver-shaped calculation.
 
 use eunomia::{Complex32, Complex64};
 

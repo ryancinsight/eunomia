@@ -13,6 +13,7 @@ with exact bit-pattern assertions.
 ## Source
 
 ```rust
+# extern crate eunomia;
 {{#include ../../../crates/eunomia/examples/book_rounding_behaviour.rs}}
 ```
 
@@ -37,7 +38,7 @@ with exact bit-pattern assertions.
   exponent range gives it more precision near 0.1 than binary16 does.
 
 - The ties-to-even assertion:
-  ```rust
+  ```rust,no_run
   let midpoint = 1.0_f32 + 2.0_f32.powi(-11);
   assert_eq!(F16::from_f32(midpoint).to_bits(), 0x3C00);
   ```

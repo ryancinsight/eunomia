@@ -12,6 +12,7 @@ error budget rather than relying on an exact comparison.
 ## Source
 
 ```rust
+# extern crate eunomia;
 {{#include ../../../crates/eunomia/examples/book_choosing_precision.rs}}
 ```
 
