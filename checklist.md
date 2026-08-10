@@ -1,6 +1,6 @@
 # Eunomia checklist
 
-Target version: 0.6.0
+Target version: 0.8.0
 
 Sprint phase: Execution
 

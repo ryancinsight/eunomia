@@ -1,6 +1,6 @@
 # Eunomia backlog
 
-Sprint target: 0.6.0 (native reduced-precision provider contract).
+Sprint target: 0.8.0 (native reduced-precision provider contract).
 
 ## Recently completed
 
