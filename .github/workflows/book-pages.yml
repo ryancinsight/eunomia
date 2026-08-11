@@ -24,7 +24,7 @@ jobs:
     # Body owned once by Atlas (ADR 0035); the caller passes only the
     # built output directory. Enable Pages once per repository under
     # Settings -> Pages -> Source: GitHub Actions.
-    uses: ryancinsight/atlas/.github/workflows/book-pages.yml@602c5b8eb5a5c0e19f59af256f81be6919c685a4
+    uses: ryancinsight/atlas/.github/workflows/book-pages.yml@95b7d7101ec34f8324cf1b83aa716ba133355f11
     permissions:
       contents: read
       pages: write
