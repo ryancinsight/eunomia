@@ -2,6 +2,23 @@
 
 Sprint target: 0.8.0 (native reduced-precision provider contract).
 
+## 0.8.0 closure refresh — 2026-08-10
+
+The Eunomia 0.8.0 provider surface is source-complete and indexed on crates.io
+(as confirmed by `cargo search eunomia`, which resolves `eunomia = "0.8.0"`).
+A clean exact-head clone passes locked metadata, formatting, all six CI feature
+checks, warning-denied all-target Clippy, 116/116 Nextest, 9/9 doctests,
+Rustdoc, and locked package listing. The offline `cargo publish --dry-run`
+validation is intentionally not claimed because Cargo cannot query crates.io
+with `CARGO_NET_OFFLINE=true`; an online exact-revision dry run remains the
+final release verification.
+
+The remaining backlog is correctly classified rather than hidden: E-024 waits
+for a driving OCP-MXFP quantization consumer, and E-027 is consumer-owned
+bytemuck-to-Eunomia GPU-ABI co-evolution across Hephaestus/Coeus. The Atlas
+parent gitlink and convergence record require an owner-authorized parent
+delivery and are not changed by this provider-local closure.
+
 ## Recently completed
 
 - **E-REL-001 [patch] — done; owner: Codex `/root`.** Publish future releases
