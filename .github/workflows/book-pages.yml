@@ -32,4 +32,8 @@ jobs:
     with:
       output-path: target/book/eunomia
       mdbook-test: true
+      # Must match rust-toolchain.toml: cargo build honours the pin while
+      # mdbook spawns rustdoc from the installed default, and a mismatch
+      # fails E0514 (crate compiled by an incompatible rustc).
+      rust-toolchain: "1.97.0"
       cargo-package: eunomia
