@@ -1,5 +1,21 @@
 # Eunomia gap audit
 
+## 0.8.0 provider closure refresh — 2026-08-10
+
+The provider's current 0.8.0 source surface is complete for its committed scope
+and the version is indexed on crates.io. A clean exact-head clone passed locked
+metadata, formatting, all six CI feature checks, warning-denied all-target
+Clippy, 116/116 Nextest, 9/9 doctests, Rustdoc, and locked package listing. The
+offline `cargo publish --dry-run` attempt is not a release failure: Cargo tried
+to query the registry while `CARGO_NET_OFFLINE=true`; the online exact-revision
+dry run remains an external release verification.
+
+The provider-local closure does not claim the Atlas parent gitlink or parent
+convergence audit. E-024 remains intentionally gated on a driving OCP-MXFP
+quantization consumer. E-027 remains consumer-owned GPU-ABI co-evolution: the
+Eunomia layout vocabulary is delivered, while optional bytemuck gating and
+consumer migration must be verified together in Hephaestus/Coeus.
+
 ## Physical-unit scalar conversion (E-035)
 
 **Resolved 2026-07-28.** The stack audit found that Aequitas could convert

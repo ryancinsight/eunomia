@@ -8,6 +8,14 @@ Sprint phase: Execution
 
 - [x] Add and validate the release workflow, then register `eunomia` against
       `ryancinsight/eunomia/.github/workflows/rust-release.yml` in crates.io.
+- [x] Confirm Eunomia `0.8.0` is indexed on crates.io (2026-08-09) and validate
+      the clean-provider package gates: metadata, formatting, all six feature
+      checks, warning-denied Clippy, 116/116 Nextest, 9/9 doctests, Rustdoc,
+      and `cargo package --locked --list`.
+- [ ] Run an online `cargo publish --locked --package eunomia --dry-run` from
+      the exact delivery revision; the offline validation cannot perform the
+      crates.io registry lookup.
+
 
 ## E-034 [minor] — provider relative equality (Owner: Codex `/root`)
 
@@ -34,8 +42,13 @@ Sprint phase: Execution
   (5/5), rustdoc, semver, and path-overridden Hermes/Leto/Hephaestus checks.
   Hephaestus also proves its lock must advance from Hermes 0.3/Leto 0.38 to the
   merged native-provider Hermes 0.4/Leto 0.39 defaults.
-- [ ] Publish and merge Eunomia, then refresh the Atlas gitlink and convergence
-  audit.
+- [x] Publish Eunomia `0.8.0`; crates.io indexing is confirmed at
+      https://crates.io/crates/eunomia and the provider release workflow is
+      verified. The exact online dry-run remains tracked under E-REL-001.
+- [ ] Merge the 0.8.0 provider revision into the remote default and refresh the
+      Atlas gitlink/convergence audit; the current parent pointer remains an
+      owner-authorized delivery gate.
+
 
 ## E-021 [arch] — native complex provider cutover
 
