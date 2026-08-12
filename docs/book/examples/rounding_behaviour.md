@@ -39,6 +39,8 @@ with exact bit-pattern assertions.
 
 - The ties-to-even assertion:
   ```rust,no_run
+  # extern crate eunomia;
+  # use eunomia::F16;
   let midpoint = 1.0_f32 + 2.0_f32.powi(-11);
   assert_eq!(F16::from_f32(midpoint).to_bits(), 0x3C00);
   ```
@@ -47,9 +49,8 @@ with exact bit-pattern assertions.
   significand — `0x3C00` has bit 0 clear, `0x3C01` has it set — so the result
   rounds *down* to `1.0`.
 
-- The half-ulp bound:
-  Around 0.1, binary16 has exponent field 14 (`2^(14-15) = 2^-1` … wait, let
-  the example speak: `half_ulp = 2^-15` for the biased exponent at 0.1, and
-  the assertion `(rounded - value).abs() <= half_ulp` confirms the kernel never
-  exceeds this bound.  Failing this assertion would imply a truncation or
-  round-away-from-zero bug in the conversion path.
+- The half-ulp bound: correct rounding can never land further than half a grid
+  spacing from the true value.  At 0.1 the example computes `half_ulp = 2^-15`
+  and asserts `(rounded - value).abs() <= half_ulp`.  Failing that assertion
+  would imply a truncation or round-away-from-zero bug in the conversion path,
+  either of which can exceed half an ulp.
