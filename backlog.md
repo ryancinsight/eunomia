@@ -19,6 +19,12 @@ bytemuck-to-Eunomia GPU-ABI co-evolution across Hephaestus/Coeus. The Atlas
 parent gitlink and convergence record require an owner-authorized parent
 delivery and are not changed by this provider-local closure.
 
+**Re-verified 2026-08-12** at the provider worktree head: no-default-feature
+check, warning-denied all-target/all-feature Clippy, Nextest **117/117**
+(all features), 9/9 doctests, strict all-target check, and rustdoc all pass.
+The Nextest count continues to grow with new value-semantic tests (was
+116/116 at the clean-clone snapshot).
+
 ## Recently completed
 
 - **E-REL-001 [patch] — done; owner: Codex `/root`.** Publish future releases

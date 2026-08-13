@@ -74,6 +74,15 @@ pub trait FloatElement: private::Sealed + NumericElement {
     fn powf(self, n: Self) -> Self {
         Self::from_f32(libm::powf(self.to_f32(), n.to_f32()))
     }
+    /// Sign-preserving cube root — defined for all reals (`cbrt(-8) == -2`),
+    /// unlike `powf(self, 1/3)` which is NaN for negative operands.
+    ///
+    /// Default routes through `f32` via `libm`; `f64` (and the `F64` wrapper)
+    /// override with the native double-precision path.
+    #[inline]
+    fn cbrt(self) -> Self {
+        Self::from_f32(libm::cbrtf(self.to_f32()))
+    }
     /// Reciprocal `1 / self`.
     #[inline]
     fn recip(self) -> Self {

@@ -12,6 +12,9 @@ Sprint phase: Execution
       the clean-provider package gates: metadata, formatting, all six feature
       checks, warning-denied Clippy, 116/116 Nextest, 9/9 doctests, Rustdoc,
       and `cargo package --locked --list`.
+- [x] Re-verify 2026-08-12 at the provider worktree head: no-default-feature
+      check, warning-denied all-target/all-feature Clippy, Nextest 117/117
+      (all features), 9/9 doctests, and strict all-target check pass.
 - [ ] Run an online `cargo publish --locked --package eunomia --dry-run` from
       the exact delivery revision; the offline validation cannot perform the
       crates.io registry lookup.
