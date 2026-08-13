@@ -27,24 +27,75 @@ pub struct F64(pub f64);
 pub struct Bf16(pub u16);
 
 /// Brain Float 8: IEEE-style E5M2 with infinity and NaN.
-#[derive(Copy, Clone, Default, PartialEq, PartialOrd, Debug)]
+///
+/// `PartialEq`/`PartialOrd` are float-semantic (via `f32`), not bitwise.
+#[derive(Copy, Clone, Default, Debug)]
 #[repr(transparent)]
 pub struct Bf8(pub u8);
 
 /// Brain Float 4: finite-only E2M1 with the top exponent reserved for NaN.
-#[derive(Copy, Clone, Default, PartialEq, PartialOrd, Debug)]
+///
+/// `PartialEq`/`PartialOrd` are float-semantic (via `f32`), not bitwise.
+#[derive(Copy, Clone, Default, Debug)]
 #[repr(transparent)]
 pub struct Bf4(pub u8);
 
 /// Finite-only 8-bit float: E4M3 with the top exponent reserved for NaN.
-#[derive(Copy, Clone, Default, PartialEq, PartialOrd, Debug)]
+///
+/// `PartialEq`/`PartialOrd` are float-semantic (via `f32`), not bitwise.
+#[derive(Copy, Clone, Default, Debug)]
 #[repr(transparent)]
 pub struct F8(pub u8);
 
 /// Finite-only 4-bit float: E3M0 with the top exponent reserved for NaN.
-#[derive(Copy, Clone, Default, PartialEq, PartialOrd, Debug)]
+///
+/// `PartialEq`/`PartialOrd` are float-semantic (via `f32`), not bitwise.
+#[derive(Copy, Clone, Default, Debug)]
 #[repr(transparent)]
 pub struct F4(pub u8);
+
+/// Float-semantic `PartialEq`/`PartialOrd` for the bit-pattern float wrappers.
+///
+/// Every type below stores a raw sign-magnitude bit pattern, so the *derived*
+/// comparison would order lexicographically on those bits. The sign bit is the
+/// most significant bit of the magnitude field, which makes the derive
+/// numerically wrong in three separate ways: every negative value sorts **above**
+/// every positive one, `-0` compares unequal to `+0`, and NaN compares ordered
+/// and reflexive. [`NumericElement::min_scalar`](crate::NumericElement::min_scalar)
+/// and `max_scalar` are defaults over exactly this `PartialOrd`, so a derived
+/// ordering silently inverts every Min/Max reduction, `clamp`, and sort taken
+/// over these types anywhere in the stack.
+///
+/// The comparison therefore widens to `f32` first. That widening is **exact**
+/// for all six formats — each has at most an 11-bit significand and an exponent
+/// range inside `f32`'s, so no operand is perturbed and the result is the
+/// format's own IEEE 754 ordering rather than an approximation of it.
+///
+/// Deliberately no `Eq`/`Ord`/`Hash`: these are floats. NaN is unordered and
+/// non-reflexive and `-0 == +0` while their encodings differ, so the
+/// reflexivity, total-order, and `Eq`/`Hash`-agreement contracts do not hold —
+/// std's keyed and ordered collections silently corrupt on an impl that claims
+/// otherwise. Bit-exactness (encoding round trips, archive identity) is a
+/// distinct contract and is asserted on the raw field, not through these impls.
+macro_rules! float_semantic_cmp {
+    ($($t:ident),+ $(,)?) => {$(
+        impl PartialEq for $t {
+            #[inline]
+            fn eq(&self, other: &Self) -> bool {
+                self.to_f32() == other.to_f32()
+            }
+        }
+
+        impl PartialOrd for $t {
+            #[inline]
+            fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+                self.to_f32().partial_cmp(&other.to_f32())
+            }
+        }
+    )+};
+}
+
+float_semantic_cmp!(F16, Bf16, Bf8, Bf4, F8, F4);
 
 impl F16 {
     /// The value `+0.0`.
@@ -132,20 +183,6 @@ impl F16 {
     #[inline]
     pub fn narrow_slice(src: &[f32], dst: &mut [Self]) {
         crate::convert::narrow_f16(src, crate::layout::cast_slice_mut::<Self, u16>(dst));
-    }
-}
-
-impl PartialEq for F16 {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        self.to_f32() == other.to_f32()
-    }
-}
-
-impl PartialOrd for F16 {
-    #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        self.to_f32().partial_cmp(&other.to_f32())
     }
 }
 
@@ -239,20 +276,6 @@ impl Bf16 {
     #[inline]
     pub fn narrow_slice(src: &[f32], dst: &mut [Self]) {
         crate::convert::narrow_bf16(src, crate::layout::cast_slice_mut::<Self, u16>(dst));
-    }
-}
-
-impl PartialEq for Bf16 {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        self.to_f32() == other.to_f32()
-    }
-}
-
-impl PartialOrd for Bf16 {
-    #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        self.to_f32().partial_cmp(&other.to_f32())
     }
 }
 

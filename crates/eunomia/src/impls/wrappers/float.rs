@@ -5,8 +5,10 @@ use crate::traits::FloatElement;
 use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8};
 
 macro_rules! impl_float_element {
-    ($t:ident, $from_f32:expr, $from_f64:expr, $to_f32:expr) => {
+    ($t:ident, $acc:ty, $from_f32:expr, $from_f64:expr, $to_f32:expr) => {
         impl FloatElement for $t {
+            type Accumulator = $acc;
+
             #[inline(always)]
             fn from_f32(val: f32) -> Self {
                 $from_f32(val)
@@ -23,14 +25,21 @@ macro_rules! impl_float_element {
     };
 }
 
-impl_float_element!(F16, F16::from_f32, F16::from_f64, F16::to_f32);
-impl_float_element!(F32, F32, |val| F32(val as f32), |x: F32| x.0);
+// Accumulator column: reduced-precision formats widen to `f32` (exact — each
+// has a ≤11-bit significand — and it lifts them off their stagnation point,
+// `n ≈ 1/ε`); the `f32`/`f64` wrappers accumulate in themselves. The rationale
+// is stated once on `FloatElement::Accumulator`.
+impl_float_element!(F16, f32, F16::from_f32, F16::from_f64, F16::to_f32);
+impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0);
 // F64 wraps native `f64`, so it gets an explicit impl with native
 // double-precision transcendentals — the macro's f32-routed default would
 // widen-narrow and discard f64 precision. (F32 routes through f32 = native;
 // F16/Bf16/F8/F4/Bf8/Bf4 have no hardware transcendentals, so the f32 default is
 // their correct reduced-precision path.)
 impl FloatElement for F64 {
+    // Identity: nothing in the crate is wider than `f64`.
+    type Accumulator = Self;
+
     #[inline(always)]
     fn from_f32(val: f32) -> Self {
         F64(val as f64)
@@ -133,24 +142,61 @@ impl FloatElement for F64 {
             F64(libm::copysign(1.0, self.0))
         }
     }
+    // Native double-precision special functions, mirroring the primitive `f64`
+    // impl. Without these five the trait's `f32`-routed defaults apply and the
+    // wrapper silently evaluates at single precision — a concrete-precision
+    // contract violation, since `F64` is `#[repr(transparent)]` over `f64` and
+    // its entire contract is that arithmetic executes in `f64`.
+    #[inline]
+    fn log10(self) -> Self {
+        F64(libm::log10(self.0))
+    }
+    #[inline]
+    fn log2(self) -> Self {
+        F64(libm::log2(self.0))
+    }
+    #[inline]
+    fn erf(self) -> Self {
+        F64(libm::erf(self.0))
+    }
+    #[inline]
+    fn erfc(self) -> Self {
+        F64(libm::erfc(self.0))
+    }
+    #[inline]
+    fn lgamma(self) -> Self {
+        F64(libm::lgamma(self.0))
+    }
 }
-impl_float_element!(Bf16, Bf16::from_f32, Bf16::from_f64, Bf16::to_f32);
+impl_float_element!(Bf16, f32, Bf16::from_f32, Bf16::from_f64, Bf16::to_f32);
 impl_float_element!(
     Bf8,
+    f32,
     Bf8::from_f32,
     |val| Bf8::from_f32(val as f32),
     |x: Bf8| x.to_f32()
 );
 impl_float_element!(
     Bf4,
+    f32,
     Bf4::from_f32,
     |val| Bf4::from_f32(val as f32),
     |x: Bf4| x.to_f32()
 );
-impl_float_element!(F8, F8::from_f32, |val| F8::from_f32(val as f32), |x: F8| x
-    .to_f32());
-impl_float_element!(F4, F4::from_f32, |val| F4::from_f32(val as f32), |x: F4| x
-    .to_f32());
+impl_float_element!(
+    F8,
+    f32,
+    F8::from_f32,
+    |val| F8::from_f32(val as f32),
+    |x: F8| x.to_f32()
+);
+impl_float_element!(
+    F4,
+    f32,
+    F4::from_f32,
+    |val| F4::from_f32(val as f32),
+    |x: F4| x.to_f32()
+);
 
 #[cfg(test)]
 mod tests {

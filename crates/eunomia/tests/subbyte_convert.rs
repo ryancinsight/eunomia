@@ -46,53 +46,60 @@ fn subbyte_widening_matches_declared_layouts() {
     assert!(F4(0x07).to_f32().is_nan());
 }
 
+// The assertions below are *encoding* contracts, so they compare the raw bit
+// pattern (`.0`) rather than the values. The sub-byte `PartialEq` is
+// float-semantic (see `float_semantic_cmp!` in `types::floats`), under which
+// `-0` equals `+0` and NaN equals nothing — neither of which can express "this
+// input narrows to exactly this code".
 #[test]
 fn subbyte_narrowing_rounds_to_nearest_ties_to_even() {
-    assert_eq!(Bf8::from_f32(1.125), Bf8(0x3C));
-    assert_eq!(Bf8::from_f32(1.375), Bf8(0x3E));
+    assert_eq!(Bf8::from_f32(1.125).0, 0x3C);
+    assert_eq!(Bf8::from_f32(1.375).0, 0x3E);
 
-    assert_eq!(Bf4::from_f32(1.25), Bf4(0x02));
-    assert_eq!(Bf4::from_f32(1.75), Bf4(0x04));
+    assert_eq!(Bf4::from_f32(1.25).0, 0x02);
+    assert_eq!(Bf4::from_f32(1.75).0, 0x04);
 
-    assert_eq!(F8::from_f32(1.0625), F8(0x38));
-    assert_eq!(F8::from_f32(1.1875), F8(0x3A));
+    assert_eq!(F8::from_f32(1.0625).0, 0x38);
+    assert_eq!(F8::from_f32(1.1875).0, 0x3A);
 
-    assert_eq!(F4::from_f32(0.75), F4(0x03));
-    assert_eq!(F4::from_f32(1.5), F4(0x04));
+    assert_eq!(F4::from_f32(0.75).0, 0x03);
+    assert_eq!(F4::from_f32(1.5).0, 0x04);
 }
 
 #[test]
 fn finite_only_formats_saturate_and_canonicalize_nan() {
-    assert_eq!(Bf4::from_f32(f32::INFINITY), Bf4(0x05));
-    assert_eq!(Bf4::from_f32(f32::NEG_INFINITY), Bf4(0x0D));
-    assert_eq!(Bf4::from_f32(f32::NAN), Bf4(0x07));
+    assert_eq!(Bf4::from_f32(f32::INFINITY).0, 0x05);
+    assert_eq!(Bf4::from_f32(f32::NEG_INFINITY).0, 0x0D);
+    assert_eq!(Bf4::from_f32(f32::NAN).0, 0x07);
 
-    assert_eq!(F8::from_f32(f32::INFINITY), F8(0x77));
-    assert_eq!(F8::from_f32(f32::NEG_INFINITY), F8(0xF7));
-    assert_eq!(F8::from_f32(f32::NAN), F8(0x7F));
+    assert_eq!(F8::from_f32(f32::INFINITY).0, 0x77);
+    assert_eq!(F8::from_f32(f32::NEG_INFINITY).0, 0xF7);
+    assert_eq!(F8::from_f32(f32::NAN).0, 0x7F);
 
-    assert_eq!(F4::from_f32(f32::INFINITY), F4(0x06));
-    assert_eq!(F4::from_f32(f32::NEG_INFINITY), F4(0x0E));
-    assert_eq!(F4::from_f32(f32::NAN), F4(0x07));
+    assert_eq!(F4::from_f32(f32::INFINITY).0, 0x06);
+    assert_eq!(F4::from_f32(f32::NEG_INFINITY).0, 0x0E);
+    assert_eq!(F4::from_f32(f32::NAN).0, 0x07);
 }
 
 #[test]
 fn every_finite_subbyte_encoding_round_trips() {
+    // Bit-exact, not value-equal: `-0` must round-trip to `0x80`, not `0x00`,
+    // and float-semantic equality cannot see that difference.
     for bits in 0u8..=u8::MAX {
         if bits & 0x7C != 0x7C {
-            assert_eq!(Bf8::from_f32(Bf8(bits).to_f32()), Bf8(bits));
+            assert_eq!(Bf8::from_f32(Bf8(bits).to_f32()).0, bits);
         }
         if bits & 0x78 != 0x78 {
-            assert_eq!(F8::from_f32(F8(bits).to_f32()), F8(bits));
+            assert_eq!(F8::from_f32(F8(bits).to_f32()).0, bits);
         }
     }
 
     for bits in 0u8..16 {
         if bits & 0x06 != 0x06 {
-            assert_eq!(Bf4::from_f32(Bf4(bits).to_f32()), Bf4(bits));
+            assert_eq!(Bf4::from_f32(Bf4(bits).to_f32()).0, bits);
         }
         if bits & 0x07 != 0x07 {
-            assert_eq!(F4::from_f32(F4(bits).to_f32()), F4(bits));
+            assert_eq!(F4::from_f32(F4(bits).to_f32()).0, bits);
         }
     }
 }
@@ -102,17 +109,19 @@ fn numeric_constants_match_subbyte_value_contracts() {
     assert_eq!(Bf8::MIN_VALUE.to_f32(), f32::NEG_INFINITY);
     assert_eq!(Bf8::MAX_VALUE.to_f32(), f32::INFINITY);
 
-    assert_eq!(Bf4::INFINITY, Bf4(0x05));
-    assert_eq!(Bf4::MIN_VALUE, Bf4(0x0D));
-    assert_eq!(Bf4::MAX_VALUE, Bf4(0x05));
+    // Encoding identity of the reduction identity elements, so the assertion is
+    // on the code rather than the value.
+    assert_eq!(Bf4::INFINITY.0, 0x05);
+    assert_eq!(Bf4::MIN_VALUE.0, 0x0D);
+    assert_eq!(Bf4::MAX_VALUE.0, 0x05);
 
-    assert_eq!(F8::INFINITY, F8(0x77));
-    assert_eq!(F8::MIN_VALUE, F8(0xF7));
-    assert_eq!(F8::MAX_VALUE, F8(0x77));
+    assert_eq!(F8::INFINITY.0, 0x77);
+    assert_eq!(F8::MIN_VALUE.0, 0xF7);
+    assert_eq!(F8::MAX_VALUE.0, 0x77);
 
-    assert_eq!(F4::INFINITY, F4(0x06));
-    assert_eq!(F4::MIN_VALUE, F4(0x0E));
-    assert_eq!(F4::MAX_VALUE, F4(0x06));
+    assert_eq!(F4::INFINITY.0, 0x06);
+    assert_eq!(F4::MIN_VALUE.0, 0x0E);
+    assert_eq!(F4::MAX_VALUE.0, 0x06);
 }
 
 fn assert_every_rounding_boundary(
