@@ -88,6 +88,10 @@ impl FloatElement for F64 {
         F64(libm::pow(self.0, n.0))
     }
     #[inline]
+    fn cbrt(self) -> Self {
+        F64(libm::cbrt(self.0))
+    }
+    #[inline]
     fn recip(self) -> Self {
         F64(1.0 / self.0)
     }
@@ -148,6 +152,8 @@ mod tests {
         assert!((F64(0.7).sin().0 - 0.7_f64.sin()).abs() < 1e-15);
         assert!((F64(0.25).acos().0 - 0.25_f64.acos()).abs() < 1e-15);
         assert!((F64(2.0).powf(F64(10.0)).0 - 1024.0).abs() < 1e-12);
+        assert!((F64(-8.0).cbrt().0 + 2.0).abs() < 1e-15);
+        assert!((F64(27.0).cbrt().0 - 3.0).abs() < 1e-15);
     }
 
     #[test]

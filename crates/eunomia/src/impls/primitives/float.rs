@@ -77,6 +77,10 @@ impl FloatElement for f64 {
         libm::pow(self, n)
     }
     #[inline]
+    fn cbrt(self) -> Self {
+        libm::cbrt(self)
+    }
+    #[inline]
     fn recip(self) -> Self {
         1.0 / self
     }

@@ -120,6 +120,15 @@ macro_rules! float_element_contract {
                 "cos(0)"
             );
 
+            // ── Sign-preserving cube root (exact for representable cubes) ──
+            assert_eq!(g(FloatElement::cbrt(f(8.0))), 2.0, "cbrt(8)");
+            assert_eq!(
+                g(FloatElement::cbrt(f(-8.0))),
+                -2.0,
+                "cbrt(-8) sign-preserving"
+            );
+            assert_eq!(g(FloatElement::cbrt(f(0.0))), 0.0, "cbrt(0)");
+
             // ── CastFrom<i32> maps an in-range integer to its float value ──
             assert_eq!(
                 g(<$t as CastFrom<i32>>::cast_from(5_i32)),

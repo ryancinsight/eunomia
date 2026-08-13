@@ -4,6 +4,16 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- `FloatElement::cbrt` — the sign-preserving cube root, defined for all reals
+  (`cbrt(-8) == -2`), unlike `powf(x, 1/3)` which is NaN for negative
+  operands. The default routes through `libm::cbrtf` (the correct
+  reduced-precision path for `F16`/`Bf16`); primitive `f64` and the `F64`
+  wrapper override with native `libm::cbrt`. Added because Aequitas'
+  `Quantity::cbrt` was rooting through `powf(1/3)` — this is the scalar-math
+  SSOT home for the operation.
+
 ### Fixed
 
 - ATLAS-EUNOMIA-044: Unsigned primitive `u8`/`u16`/`u32`/`u64`/`usize` and
