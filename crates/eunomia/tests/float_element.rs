@@ -129,6 +129,27 @@ macro_rules! float_element_contract {
             );
             assert_eq!(g(FloatElement::cbrt(f(0.0))), 0.0, "cbrt(0)");
 
+            // ── Reciprocal square root (exact for representable squares) ──
+            assert_eq!(g(FloatElement::rsqrt(f(4.0))), 0.5, "rsqrt(4)");
+            assert_eq!(g(FloatElement::rsqrt(f(0.25))), 2.0, "rsqrt(0.25)");
+
+            // ── General nth root (sign-preserving for odd n) ──
+            assert_eq!(g(FloatElement::nth_root(f(4.0), 2)), 2.0, "nth_root(4, 2)");
+            assert_eq!(
+                g(FloatElement::nth_root(f(-2.0), 1)),
+                -2.0,
+                "nth_root(-2, 1)"
+            );
+            let cbrt_via_nth = g(FloatElement::nth_root(f(-8.0), 3));
+            assert!(
+                (cbrt_via_nth + 2.0).abs() < 1e-6,
+                "nth_root(-8, 3) ≈ -2 (sign-preserving)"
+            );
+            assert!(
+                !NumericElement::is_nan(FloatElement::nth_root(f(-8.0), 3)),
+                "nth_root(-8, 3) is not NaN (powf(1/3) would be)"
+            );
+
             // ── CastFrom<i32> maps an in-range integer to its float value ──
             assert_eq!(
                 g(<$t as CastFrom<i32>>::cast_from(5_i32)),

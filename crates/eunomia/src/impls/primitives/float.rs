@@ -85,6 +85,17 @@ impl FloatElement for f64 {
         1.0 / self
     }
     #[inline]
+    fn nth_root(self, n: u32) -> Self {
+        if n == 0 {
+            return f64::NAN;
+        }
+        if n % 2 == 1 {
+            libm::copysign(libm::pow(libm::fabs(self), 1.0 / n as f64), self)
+        } else {
+            libm::pow(self, 1.0 / n as f64)
+        }
+    }
+    #[inline]
     fn floor(self) -> Self {
         libm::floor(self)
     }
