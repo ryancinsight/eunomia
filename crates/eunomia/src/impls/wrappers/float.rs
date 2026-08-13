@@ -96,6 +96,20 @@ impl FloatElement for F64 {
         F64(1.0 / self.0)
     }
     #[inline]
+    fn nth_root(self, n: u32) -> Self {
+        if n == 0 {
+            return F64(f64::NAN);
+        }
+        if n % 2 == 1 {
+            F64(libm::copysign(
+                libm::pow(libm::fabs(self.0), 1.0 / n as f64),
+                self.0,
+            ))
+        } else {
+            F64(libm::pow(self.0, 1.0 / n as f64))
+        }
+    }
+    #[inline]
     fn floor(self) -> Self {
         F64(libm::floor(self.0))
     }
@@ -154,6 +168,11 @@ mod tests {
         assert!((F64(2.0).powf(F64(10.0)).0 - 1024.0).abs() < 1e-12);
         assert!((F64(-8.0).cbrt().0 + 2.0).abs() < 1e-15);
         assert!((F64(27.0).cbrt().0 - 3.0).abs() < 1e-15);
+        // nth_root composes pow(|x|, 1/n) + copysign, so it is ~1 ulp rather
+        // than the exact-perfect-cube cbrt; bounds are looser accordingly.
+        assert!((F64(27.0).nth_root(3).0 - 3.0).abs() < 1e-12);
+        assert!((F64(-27.0).nth_root(3).0 + 3.0).abs() < 1e-12);
+        assert!((F64(64.0).nth_root(6).0 - 2.0).abs() < 1e-12);
     }
 
     #[test]

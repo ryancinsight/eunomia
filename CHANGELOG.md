@@ -14,6 +14,17 @@ All notable changes to Eunomia are documented here.
   `Quantity::cbrt` was rooting through `powf(1/3)` — this is the scalar-math
   SSOT home for the operation.
 
+- `FloatElement::rsqrt` — the reciprocal square root `1 / √x`, computed as
+  `sqrt(self).recip()` at native precision (no f32 widen-narrow). `NaN` for
+  negative inputs. Consumers previously emulated it as `powf(x, -0.5)`.
+
+- `FloatElement::nth_root(n)` — the real `n`th root, sign-preserving for odd
+  `n` (`nth_root(-8, 3) == -2`), `NaN` for negative operands with even `n`.
+  libm has no general-root primitive, so the default composes
+  `powf(|x|, 1/n)` with `copysign` for the odd case; primitive `f64` and the
+  `F64` wrapper override with native double-precision. Consumers previously
+  emulated roots as `powf(x, 1/n)` / `powf(x, 0.25)` / `powf(x, 0.2)`.
+
 ### Fixed
 
 - ATLAS-EUNOMIA-044: Unsigned primitive `u8`/`u16`/`u32`/`u64`/`usize` and

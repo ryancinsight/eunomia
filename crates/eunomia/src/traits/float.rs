@@ -88,6 +88,32 @@ pub trait FloatElement: private::Sealed + NumericElement {
     fn recip(self) -> Self {
         Self::from_f32(1.0 / self.to_f32())
     }
+    /// Reciprocal square root `1 / √self`, computed as `sqrt(self).recip()` at
+    /// native precision (no f32 widen-narrow). `NaN` for negative inputs.
+    #[inline]
+    fn rsqrt(self) -> Self {
+        self.sqrt().recip()
+    }
+    /// Real `n`th root, sign-preserving for odd `n` (`nth_root(-8, 3) == -2`),
+    /// `NaN` for negative operands with even `n`. `n == 0` is undefined and
+    /// returns `NaN`.
+    ///
+    /// libm has no general-root primitive, so the default composes
+    /// `powf(|x|, 1/n)` with `copysign` for the odd case. `f64` (and the `F64`
+    /// wrapper) override with the native double-precision path.
+    #[inline]
+    fn nth_root(self, n: u32) -> Self {
+        if n == 0 {
+            return <Self as NumericElement>::NAN;
+        }
+        let x = self.to_f32();
+        let root = if n % 2 == 1 {
+            libm::copysignf(libm::powf(libm::fabsf(x), 1.0 / n as f32), x)
+        } else {
+            libm::powf(x, 1.0 / n as f32)
+        };
+        Self::from_f32(root)
+    }
 
     // ── Rounding / sign ──
 
