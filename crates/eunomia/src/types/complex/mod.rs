@@ -46,6 +46,18 @@ impl<T> Complex<T> {
     pub const fn new(re: T, im: T) -> Self {
         Self { re, im }
     }
+
+    /// Borrow the real part.
+    #[inline(always)]
+    pub const fn re(&self) -> &T {
+        &self.re
+    }
+
+    /// Borrow the imaginary part.
+    #[inline(always)]
+    pub const fn im(&self) -> &T {
+        &self.im
+    }
 }
 
 impl From<f32> for Complex32 {
