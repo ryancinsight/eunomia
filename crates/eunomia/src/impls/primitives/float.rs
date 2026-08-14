@@ -4,6 +4,11 @@
 use crate::traits::{FloatElement, NumericElement};
 
 impl FloatElement for f32 {
+    // Identity: `f32` accumulation already holds `ε₃₂ ≈ 1.2e-7`, and widening to
+    // `f64` would cost bandwidth and SIMD lanes rather than fix a defect. A
+    // caller wanting double-precision accumulation instantiates at `f64`.
+    type Accumulator = Self;
+
     #[inline(always)]
     fn from_f32(val: f32) -> Self {
         val
@@ -19,6 +24,10 @@ impl FloatElement for f32 {
 }
 
 impl FloatElement for f64 {
+    // Identity: `f64` is the widest format the crate carries, so there is
+    // nothing to widen into.
+    type Accumulator = Self;
+
     #[inline(always)]
     fn from_f32(val: f32) -> Self {
         val as f64

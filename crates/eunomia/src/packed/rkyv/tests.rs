@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 
 use crate::packed::cow::Packed4Cow;
 use crate::packed::vec::Packed4Vec;
-use crate::{Bf4, Packable4};
+use crate::Bf4;
 use rkyv::rancor::Error;
 
 /// Every representable `Bf4` code, so the round trip covers the whole domain
@@ -23,9 +23,15 @@ fn every_code() -> Packed4Vec<Bf4> {
     vec
 }
 
-fn elements<T: Packable4 + PartialEq + core::fmt::Debug>(vec: &Packed4Vec<T>) -> Vec<T> {
+/// The raw 4-bit codes, not the `Bf4` values.
+///
+/// An archive round trip is a bit-exactness contract, and `Bf4`'s `PartialEq`
+/// is float-semantic: the NaN codes `0x06`/`0x07` in [`every_code`] compare
+/// unequal to themselves, and `-0` compares equal to `+0` despite a different
+/// encoding. Comparing codes asserts what the archive actually promises.
+fn codes(vec: &Packed4Vec<Bf4>) -> Vec<u8> {
     (0..vec.len())
-        .map(|i| vec.get(i).expect("index below len"))
+        .map(|i| vec.get(i).expect("index below len").0)
         .collect()
 }
 
@@ -36,7 +42,7 @@ fn vec_round_trips_every_element() {
     let restored: Packed4Vec<Bf4> = rkyv::from_bytes::<_, Error>(&bytes).expect("deserialize");
 
     assert_eq!(restored.len(), original.len());
-    assert_eq!(elements(&restored), elements(&original));
+    assert_eq!(codes(&restored), codes(&original));
 }
 
 #[test]
@@ -48,7 +54,12 @@ fn cow_round_trips_every_element() {
 
     assert_eq!(restored.len(), original.len());
     for i in 0..original.len() {
-        assert_eq!(restored.get(i), original.get(i), "element {i}");
+        // Codes, not values: `Bf4` compares float-semantically (see `codes`).
+        assert_eq!(
+            restored.get(i).map(|v| v.0),
+            original.get(i).map(|v| v.0),
+            "element {i}"
+        );
     }
 }
 
@@ -64,7 +75,7 @@ fn odd_length_round_trips() {
     let restored: Packed4Vec<Bf4> = rkyv::from_bytes::<_, Error>(&bytes).expect("deserialize");
 
     assert_eq!(restored.len(), 3);
-    assert_eq!(elements(&restored), elements(&original));
+    assert_eq!(codes(&restored), codes(&original));
 }
 
 #[test]
@@ -87,7 +98,12 @@ fn archived_view_reads_without_deserializing() {
     assert_eq!(archived.len(), original.len());
     let view = archived.as_view().expect("validated archive yields a view");
     for i in 0..original.len() {
-        assert_eq!(view.get(i), original.get(i), "element {i}");
+        // Codes, not values: `Bf4` compares float-semantically (see `codes`).
+        assert_eq!(
+            view.get(i).map(|v| v.0),
+            original.get(i).map(|v| v.0),
+            "element {i}"
+        );
     }
 }
 

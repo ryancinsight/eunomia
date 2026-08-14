@@ -6,6 +6,18 @@ All notable changes to Eunomia are documented here.
 
 ### Added
 
+- `FloatElement::Accumulator` — the associated type naming the format a
+  reduction over `T` accumulates in, plus `to_accumulator`/`from_accumulator`
+  to move values through it. Identity for `f32`/`f64`/`F32`/`F64`; `f32` for
+  `F16`/`Bf16`/`Bf8`/`Bf4`/`F8`/`F4`, for which widening is exact (≤11-bit
+  significand into 24) and necessary: the binding limit on a reduced-precision
+  reduction is stagnation at `n ≈ 1/ε` (256 elements for `bf16`), not gradual
+  accuracy loss. This is the crate's only sanctioned widening route — without
+  it every downstream reduced-precision reduction must either lose precision or
+  hand-roll a cast-compute-cast body, which is the fake-generic pattern the
+  datatype law exists to forbid. Additive and non-breaking: `FloatElement` is
+  sealed, so no out-of-crate implementor can exist to be broken.
+
 - `FloatElement::cbrt` — the sign-preserving cube root, defined for all reals
   (`cbrt(-8) == -2`), unlike `powf(x, 1/3)` which is NaN for negative
   operands. The default routes through `libm::cbrtf` (the correct
@@ -26,6 +38,34 @@ All notable changes to Eunomia are documented here.
   emulated roots as `powf(x, 1/n)` / `powf(x, 0.25)` / `powf(x, 0.2)`.
 
 ### Fixed
+
+- The `F64` wrapper evaluated `log10`, `log2`, `erf`, `erfc`, and `lgamma` in
+  single precision. Its `FloatElement` impl overrode 19 of the trait's 24
+  `f32`-routed defaults but not these five, so each ran
+  `from_f32(libm::<op>f(self.to_f32()))` — an `f64 → f32 → f64` round trip that
+  discarded roughly nine decimal digits on the one type whose entire contract
+  is `f64` precision. Measured before the fix: `log10(2.0)` returned
+  `0.3010300099849701` against the true `0.3010299956639812` (error `1.4e-8`),
+  and `lgamma(5.0)` returned `3.178053855895996` against `3.1780538303479458`
+  (error `2.6e-8`). All five now dispatch the native `libm` `f64` entry points,
+  matching the primitive `f64` impl, and `tests/float_special.rs` pins them
+  against both that impl and closed-form references to `1e-15`.
+
+- `Bf8`, `Bf4`, `F8`, and `F4` compared and ordered by raw bit pattern. They
+  carried `#[derive(PartialEq, PartialOrd)]` over their `u8` code while the
+  sign bit is that code's most significant bit, so every negative value sorted
+  **above** every positive one, `-0` compared unequal to `+0`, and NaN compared
+  ordered and reflexive. Because `NumericElement::min_scalar`/`max_scalar` are
+  defaults over exactly that `PartialOrd` and are not overridden for these
+  types, every Min/Max reduction, `clamp`, and sort over a sub-byte float was
+  silently sign-inverted — and a Max reduction seeded with `MIN_VALUE` returned
+  its own identity element for all input, since the seed's sign bit dominated
+  every finite operand. All six bit-pattern float wrappers now share one
+  float-semantic comparison (widening to `f32`, which is exact for each), and
+  `tests/float_order.rs` verifies it exhaustively over every encoding against
+  an independent sign-magnitude oracle. No `Eq`/`Ord`/`Hash` is added: these
+  are floats. Bit-exactness contracts (encoding round trips, rkyv archive
+  identity) now assert on the raw code rather than through `PartialEq`.
 
 - ATLAS-EUNOMIA-044: Unsigned primitive `u8`/`u16`/`u32`/`u64`/`usize` and
   the wrapper integer types `I8`/`I16`/`I32` now correctly implement
