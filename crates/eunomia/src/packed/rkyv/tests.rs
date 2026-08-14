@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 
 use crate::packed::cow::Packed4Cow;
 use crate::packed::vec::Packed4Vec;
-use crate::{Bf4, Packable4};
+use crate::Bf4;
 use rkyv::rancor::Error;
 
 /// Every representable `Bf4` code, so the round trip covers the whole domain
