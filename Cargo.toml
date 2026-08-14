@@ -18,41 +18,53 @@ repository = "https://github.com/ryancinsight/eunomia"
 # shrinking its count) is burn-down work; adding one requires the same
 # justification any suppression does. Anything not listed is a hard error.
 [workspace.lints.clippy]
-pedantic = { level = "warn", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
 # Eunomia is the datatype law: an input-dependent `unwrap` in it panics inside
-# every consumer's process. Zero sites at the floor's establishment.
+# every consumer's process. Zero sites in the tree -- denied outright, no ratchet.
 unwrap_used = "deny"
 
-# --- Curated baseline (hit counts measured 2026-08-14, --all-targets) ---
+# Pedantic floor ratchet: every class listed below already fires in this
+# workspace and is allowed at its measured baseline; every class NOT listed is a
+# hard error. Counts are `cargo clippy --all-targets --features rkyv,serde` hits
+# (the gate's own invocation) at the time the floor was established, deduplicated
+# per source site, as total (production), where production excludes
+# `#[cfg(test)]` modules and test, bench and example targets. Burn a class down
+# to zero, then delete its line -- the floor tightens, never loosens.
+
+# --- Numeric conversion debt (242 sites, 230 in production) ---
 # Eunomia's whole purpose is representation conversion, so the cast family is
 # the domain, not an accident: each site is a specified narrowing/widening
 # quantizer whose range is proven by the surrounding format invariants.
-cast_possible_truncation = "allow"  # 45
-ptr_as_ptr = "allow"                # 44
-cast_possible_wrap = "allow"        # 42
-cast_ptr_alignment = "allow"        # 35
-cast_lossless = "allow"             # 30
-cast_precision_loss = "allow"       # 9
-cast_sign_loss = "allow"            # 8
+cast_possible_truncation = "allow" # 86 (76 prod)
+cast_possible_wrap = "allow"       # 45 (45 prod)
+ptr_as_ptr = "allow"               # 44 (44 prod)
+cast_ptr_alignment = "allow"       # 35 (35 prod)
+cast_lossless = "allow"            # 38 (36 prod)
+cast_sign_loss = "allow"           # 21 (21 prod)
+cast_precision_loss = "allow"      # 16 (12 prod)
+
+# --- Public-surface annotation debt (234 sites, 234 in production) ---
 # Scalar trait methods are single-instruction forwards to the primitive op;
 # inlining them is the zero-cost-abstraction contract, not a hint.
-inline_always = "allow"             # 116
+inline_always = "allow"            # 116 (116 prod)
 # `#[must_use]` on every combinator and accessor of a scalar vocabulary crate
 # is noise at this density; revisit as a targeted pass over the public surface.
-return_self_not_must_use = "allow"  # 62
-must_use_candidate = "allow"        # 50
+return_self_not_must_use = "allow" # 62 (62 prod)
+must_use_candidate = "allow"       # 56 (56 prod)
+
+# --- Naming and layout debt (32 sites, 21 in production) ---
 # The SIMD unpack kernels declare their intrinsic helper `fn`s next to the use
 # site inside `#[target_feature]` bodies, which is where they belong.
-items_after_statements = "allow"    # 18
-wildcard_imports = "allow"          # 4   (`use core::arch::x86_64::*` in intrinsics)
+items_after_statements = "allow"   # 18 (16 prod)
+wildcard_imports = "allow"         # 4  (4 prod)  `use core::arch::x86_64::*`
 # Index-suffixed and mathematical names (`lo`/`hi`, `re`/`im`, `a`/`b`/`c`/`d`
 # in complex arithmetic) are the clearest spelling of the formulas involved.
-similar_names = "allow"             # 6
-many_single_char_names = "allow"    # 1
+similar_names = "allow"            # 6  (1 prod)
+many_single_char_names = "allow"   # 1  (0 prod)
 # Exact float comparison is the assertion in a crate whose contract is bit-level
 # encoding behaviour; tolerances would weaken the test.
-float_cmp = "allow"                 # 5   (test targets)
-too_many_lines = "allow"            # 1   (table-driven conformance test)
+float_cmp = "allow"                # 6  (1 prod)
+too_many_lines = "allow"           # 1  (0 prod) table-driven conformance test
 
 [workspace.dependencies]
 eunomia = { path = "crates/eunomia" }
