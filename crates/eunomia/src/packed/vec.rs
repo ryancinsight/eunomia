@@ -144,7 +144,7 @@ pub struct Packed4Iter<'a, T: Packable4> {
     pub(crate) index: usize,
 }
 
-impl<'a, T: Packable4> Iterator for Packed4Iter<'a, T> {
+impl<T: Packable4> Iterator for Packed4Iter<'_, T> {
     type Item = T;
 
     #[inline]
@@ -163,7 +163,7 @@ impl<'a, T: Packable4> Iterator for Packed4Iter<'a, T> {
     }
 }
 
-impl<'a, T: Packable4> ExactSizeIterator for Packed4Iter<'a, T> {}
+impl<T: Packable4> ExactSizeIterator for Packed4Iter<'_, T> {}
 
 impl<'a, T: Packable4> IntoIterator for Packed4Slice<'a, T> {
     type Item = T;
@@ -178,7 +178,7 @@ impl<'a, T: Packable4> IntoIterator for Packed4Slice<'a, T> {
     }
 }
 
-impl<'a, T: Packable4> core::iter::FusedIterator for Packed4Iter<'a, T> {}
+impl<T: Packable4> core::iter::FusedIterator for Packed4Iter<'_, T> {}
 
 impl<T: Packable4> IntoIterator for Packed4Vec<T> {
     type Item = T;

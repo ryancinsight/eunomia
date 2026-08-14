@@ -2,7 +2,7 @@ use super::slice::{Packable4, Packed4Slice};
 use super::vec::Packed4Vec;
 use crate::types::{Bf4, F4};
 
-/// A Clone-on-Write (CoW) container for packed 4-bit elements.
+/// A Clone-on-Write (`CoW`) container for packed 4-bit elements.
 ///
 /// Promotes zero-copy operations by borrowing packed byte buffers as read-only
 /// `Packed4Slice`s, only upgrading to an owned `Packed4Vec` when mutation is requested.
@@ -90,8 +90,10 @@ impl<'a, T: Packable4> Packed4Cow<'a, T> {
             *self = Self::Owned(owned);
         }
         match self {
-            Self::Owned(ref mut vec) => vec,
-            _ => unreachable!(),
+            Self::Owned(vec) => vec,
+            Self::Borrowed(_) => {
+                unreachable!("invariant: the branch above converted Borrowed into Owned")
+            }
         }
     }
 
@@ -127,6 +129,15 @@ impl<'a, T: Packable4> Packed4Cow<'a, T> {
             Self::Owned(vec) => vec.as_view().sub_slice(range).map(Packed4Cow::Borrowed),
         }
     }
+
+    /// Iterate the unpacked elements without consuming the container.
+    ///
+    /// The by-reference [`IntoIterator`] impl exists for `for` loops; this is
+    /// the method form callers reach for in iterator chains.
+    #[inline]
+    pub fn iter(&'a self) -> super::vec::Packed4Iter<'a, T> {
+        self.into_iter()
+    }
 }
 
 pub enum Packed4CowIntoIter<'a, T: Packable4> {
@@ -141,7 +152,7 @@ pub enum Packed4CowIntoIter<'a, T: Packable4> {
     },
 }
 
-impl<'a, T: Packable4> Iterator for Packed4CowIntoIter<'a, T> {
+impl<T: Packable4> Iterator for Packed4CowIntoIter<'_, T> {
     type Item = T;
 
     #[inline]
@@ -170,7 +181,7 @@ impl<'a, T: Packable4> Iterator for Packed4CowIntoIter<'a, T> {
     }
 }
 
-impl<'a, T: Packable4> ExactSizeIterator for Packed4CowIntoIter<'a, T> {}
+impl<T: Packable4> ExactSizeIterator for Packed4CowIntoIter<'_, T> {}
 
 impl<'a, T: Packable4> IntoIterator for &'a Packed4Cow<'a, T> {
     type Item = T;

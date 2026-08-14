@@ -140,8 +140,8 @@ fn cross_width_cast_round_trip() {
 /// checks). Every affected type now matches `std`'s checked / saturating
 /// semantics exactly:
 ///   * `checked_add`/`checked_mul` return `None` on overflow.
-///   * `saturating_add`/`saturating_mul` cap at MIN_VALUE (signed underflow)
-///     and at MAX_VALUE (any overflow).
+///   * `saturating_add`/`saturating_mul` cap at `MIN_VALUE` (signed underflow)
+///     and at `MAX_VALUE` (any overflow).
 ///   * In-range operands pass through unchanged.
 ///   * For signed types, MIN.saturating_add(-1) = MIN (i.e. no panic); for
 ///     unsigned, MIN = 0 and -1 is not representable, so the underflow
@@ -204,7 +204,7 @@ integer_overflow_contract!(i64_overflow_contract, i64, signed);
 integer_overflow_contract!(isize_overflow_contract, isize, signed);
 
 /// Wrapper I8/I16/I32 must mirror their primitive siblings by ATLAS-EUNOMIA-044:
-/// the wrapper-level NumericElement must expose the same overflow semantics as
+/// the wrapper-level `NumericElement` must expose the same overflow semantics as
 /// `std` (saturating to MIN/MAX, `None` on overflow), and integer-wrapper
 /// `sqrt` must route through `isqrt` (not the legacy f32/f64 round-trip).
 mod wrapper_integer_overflow {

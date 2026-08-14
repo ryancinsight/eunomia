@@ -10,6 +10,50 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.95"
 repository = "https://github.com/ryancinsight/eunomia"
 
+# Stack lint floor. Declared once here; every member inherits it with
+# `lints.workspace = true`. New and touched code meets the full floor; the
+# `allow` entries below are a curated, non-increasing baseline for classes that
+# fire broadly across the existing tree, each recorded with its measured hit
+# count at the revision the floor was established. Removing an entry (or
+# shrinking its count) is burn-down work; adding one requires the same
+# justification any suppression does. Anything not listed is a hard error.
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Eunomia is the datatype law: an input-dependent `unwrap` in it panics inside
+# every consumer's process. Zero sites at the floor's establishment.
+unwrap_used = "deny"
+
+# --- Curated baseline (hit counts measured 2026-08-14, --all-targets) ---
+# Eunomia's whole purpose is representation conversion, so the cast family is
+# the domain, not an accident: each site is a specified narrowing/widening
+# quantizer whose range is proven by the surrounding format invariants.
+cast_possible_truncation = "allow"  # 45
+ptr_as_ptr = "allow"                # 44
+cast_possible_wrap = "allow"        # 42
+cast_ptr_alignment = "allow"        # 35
+cast_lossless = "allow"             # 30
+cast_precision_loss = "allow"       # 9
+cast_sign_loss = "allow"            # 8
+# Scalar trait methods are single-instruction forwards to the primitive op;
+# inlining them is the zero-cost-abstraction contract, not a hint.
+inline_always = "allow"             # 116
+# `#[must_use]` on every combinator and accessor of a scalar vocabulary crate
+# is noise at this density; revisit as a targeted pass over the public surface.
+return_self_not_must_use = "allow"  # 62
+must_use_candidate = "allow"        # 50
+# The SIMD unpack kernels declare their intrinsic helper `fn`s next to the use
+# site inside `#[target_feature]` bodies, which is where they belong.
+items_after_statements = "allow"    # 18
+wildcard_imports = "allow"          # 4   (`use core::arch::x86_64::*` in intrinsics)
+# Index-suffixed and mathematical names (`lo`/`hi`, `re`/`im`, `a`/`b`/`c`/`d`
+# in complex arithmetic) are the clearest spelling of the formulas involved.
+similar_names = "allow"             # 6
+many_single_char_names = "allow"    # 1
+# Exact float comparison is the assertion in a crate whose contract is bit-level
+# encoding behaviour; tolerances would weaken the test.
+float_cmp = "allow"                 # 5   (test targets)
+too_many_lines = "allow"            # 1   (table-driven conformance test)
+
 [workspace.dependencies]
 eunomia = { path = "crates/eunomia" }
 half = { version = "2.3", default-features = false }

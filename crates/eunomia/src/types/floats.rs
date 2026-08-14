@@ -294,6 +294,10 @@ impl Bf8 {
 
     /// Convert from `f32` with round-to-nearest, ties-to-even.
     #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the width invariant in the expect message is proven by the narrow_* return range"
+    )]
     pub fn from_f32(val: f32) -> Self {
         Self(
             u8::try_from(narrow::<5, 2>(val.to_bits()))
@@ -314,6 +318,10 @@ impl Bf4 {
     /// Infinity and finite overflow saturate to the signed maximum finite
     /// value. NaN maps to the canonical all-ones magnitude encoding.
     #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the width invariant in the expect message is proven by the narrow_* return range"
+    )]
     pub fn from_f32(val: f32) -> Self {
         Self(
             u8::try_from(narrow_finite::<2, 1>(val.to_bits()))
@@ -346,6 +354,10 @@ impl F8 {
     /// Infinity and finite overflow saturate to the signed maximum finite
     /// value. NaN maps to the canonical all-ones magnitude encoding.
     #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the width invariant in the expect message is proven by the narrow_* return range"
+    )]
     pub fn from_f32(val: f32) -> Self {
         Self(
             u8::try_from(narrow_finite::<4, 3>(val.to_bits()))
@@ -366,6 +378,10 @@ impl F4 {
     /// Infinity and finite overflow saturate to the signed maximum finite
     /// value. NaN maps to the reserved top exponent.
     #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the width invariant in the expect message is proven by the narrow_* return range"
+    )]
     pub fn from_f32(val: f32) -> Self {
         Self(
             u8::try_from(narrow_finite::<3, 0>(val.to_bits()))

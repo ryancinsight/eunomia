@@ -1,5 +1,5 @@
 //! Arithmetic operators for [`Complex`] (field-wise Add/Sub/Neg/Rem, the
-//! complex product/quotient Mul/Div, and the order-less PartialOrd).
+//! complex product/quotient Mul/Div, and the order-less `PartialOrd`).
 
 use super::Complex;
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, Sub, SubAssign};
@@ -112,7 +112,7 @@ impl<T: Sub<Output = T>> Sub<T> for Complex<T> {
 }
 
 /// Compound assignment by a real scalar (`*= s`, `/= s`, `+= s`, `-= s`),
-/// forwarding to the by-value scalar operators above (num_complex parity).
+/// forwarding to the by-value scalar operators above (`num_complex` parity).
 impl<T: Mul<Output = T> + Clone + Copy> MulAssign<T> for Complex<T> {
     #[inline(always)]
     fn mul_assign(&mut self, rhs: T) {

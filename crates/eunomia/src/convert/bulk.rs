@@ -92,8 +92,12 @@ fn round_f32_to_bf16(bits: u32) -> u16 {
     // A NaN must keep a nonzero mantissa (else it collapses to infinity), forcing
     // the low mantissa bit when the retained payload is empty — the kernel's rule.
     let high = bits >> 16;
+    #[expect(
+        clippy::verbose_bit_mask,
+        reason = "the mask names the retained NaN payload bits; trailing_zeros() obscures it"
+    )]
     let nan = high | u32::from(high & 0x7F == 0);
-    let is_nan = (bits & 0x7F80_0000 == 0x7F80_0000) & (bits & 0x007F_FFFF != 0);
+    let is_nan = (bits & 0x7F80_0000 == 0x7F80_0000) && (bits & 0x007F_FFFF != 0);
     (if is_nan { nan } else { rounded }) as u16
 }
 

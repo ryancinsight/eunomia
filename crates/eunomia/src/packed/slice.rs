@@ -261,7 +261,7 @@ impl<'a, T: Packable4> Packed4SliceMut<'a, T> {
     }
 }
 
-impl<'a, T: Packable4> Packed4Slice<'a, T> {
+impl<T: Packable4> Packed4Slice<'_, T> {
     /// Unpack all elements into a destination slice.
     #[inline]
     pub fn unpack(&self, dest: &mut [T::Unpacked]) {
@@ -276,7 +276,7 @@ impl<'a, T: Packable4> Packed4Slice<'a, T> {
     }
 }
 
-impl<'a> Packed4Slice<'a, Bf4> {
+impl Packed4Slice<'_, Bf4> {
     /// Unpack all elements into a destination slice of Bf16.
     #[inline]
     pub fn unpack_to_bf16(&self, dest: &mut [Bf16]) {
@@ -284,7 +284,7 @@ impl<'a> Packed4Slice<'a, Bf4> {
     }
 }
 
-impl<'a> Packed4Slice<'a, F4> {
+impl Packed4Slice<'_, F4> {
     /// Unpack all elements into a destination slice of F32.
     #[inline]
     pub fn unpack_to_f32(&self, dest: &mut [F32]) {

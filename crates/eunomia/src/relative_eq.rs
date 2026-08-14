@@ -213,8 +213,7 @@ pub fn __relative_eq_panic<T: fmt::Debug, E: fmt::Debug>(
     max_relative: E,
 ) -> ! {
     panic!(
-        "assert_relative_eq failed\n  left: {:?}\n right: {:?}\n epsilon: {:?}\n max_relative: {:?}",
-        left, right, epsilon, max_relative
+        "assert_relative_eq failed\n  left: {left:?}\n right: {right:?}\n epsilon: {epsilon:?}\n max_relative: {max_relative:?}"
     )
 }
 

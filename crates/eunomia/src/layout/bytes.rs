@@ -36,14 +36,16 @@ impl core::error::Error for PodCastError {}
 pub fn bytes_of<T: Pod>(value: &T) -> &[u8] {
     // SAFETY: `T: Pod` has no padding and every bit is initialized, so the
     // `size_of::<T>()` bytes behind `value` are a valid `[u8]` of that length.
-    unsafe { core::slice::from_raw_parts((value as *const T).cast::<u8>(), size_of::<T>()) }
+    unsafe { core::slice::from_raw_parts(core::ptr::from_ref(value).cast::<u8>(), size_of::<T>()) }
 }
 
 /// View a [`Pod`] value as its raw bytes, mutably.
 #[inline]
 pub fn bytes_of_mut<T: Pod>(value: &mut T) -> &mut [u8] {
     // SAFETY: as [`bytes_of`]; `T: Pod` accepts any byte pattern written back.
-    unsafe { core::slice::from_raw_parts_mut((value as *mut T).cast::<u8>(), size_of::<T>()) }
+    unsafe {
+        core::slice::from_raw_parts_mut(core::ptr::from_mut(value).cast::<u8>(), size_of::<T>())
+    }
 }
 
 /// Compute the destination length for reinterpreting `src_len` elements of
