@@ -472,3 +472,9 @@ tracked for independent-oracle retirement in Leto.
   (eunomia = datatypes; vectors/geometry = leto CPU / hephaestus GPU), the
   GPU-vector concern does not belong in the datatype crate. eunomia is now a
   single-crate workspace. README + diagram synced.
+
+## ADR governance — generated index refresh
+
+- **[patch]** Refresh the generated ADR index from the existing canonical
+  `Accepted` headers for ADR 0001–0004. No decision content changes; Atlas
+  root `ATLAS-ADR-GOV-058` owns the cross-repository burn-down.
