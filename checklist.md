@@ -4,6 +4,14 @@ Target version: 0.8.0
 
 Sprint phase: Execution
 
+## FloatElement sign-preserving roots (cbrt/rsqrt/nth_root) — done
+
+- [x] Add sign-preserving `cbrt` to `FloatElement` — PR #60 (`bba10b6`).
+- [x] Add sign-preserving `rsqrt` and `nth_root` to `FloatElement` — PR #63,
+      merged `1a52590`.
+- [x] Verify the consumer migrations resolve against `1a52590`: CFDrs PR #341
+      (`e30704b2`), kwavers PR #364 (`1cb63974`), ritk PR #139 (`ec7e2e4c`).
+
 ## E-REL-001 [patch] — crates.io Trusted Publishing
 
 - [x] Add and validate the release workflow, then register `eunomia` against

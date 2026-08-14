@@ -27,6 +27,13 @@ The Nextest count continues to grow with new value-semantic tests (was
 
 ## Recently completed
 
+- **FloatElement sign-preserving roots — done; owner: Codex.** Added
+  `cbrt` (PR #60, `bba10b6`) and `rsqrt`/`nth_root` (PR #63, merged
+  `1a52590`) to `FloatElement`, completing the provider-owned sign-preserving
+  root surface. Consumers now replace `powf`-emulated roots with these
+  methods: CFDrs PR #341 (`e30704b2`), kwavers PR #364 (`1cb63974`), and
+  ritk PR #139 (`ec7e2e4c`).
+
 - **E-REL-001 [patch] — done; owner: Codex `/root`.** Publish future releases
   through a pinned GitHub Actions workflow using crates.io OIDC Trusted
   Publishing and no stored registry credential.
