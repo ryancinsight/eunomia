@@ -24,10 +24,11 @@ Sprint phase: Execution
       check, warning-denied all-target/all-feature Clippy, Nextest 117/117
       (all features), 9/9 doctests, and strict all-target check pass.
 - [x] Run an online `cargo publish --locked --package eunomia --dry-run` from
-      exact default head `b6f001a`; Cargo packages 73 files, verifies the crate,
+      exact default head `d252f968`; Cargo packages 73 files, verifies the crate,
       and stops at the expected dry-run upload boundary.
 - [x] Add a hosted Rust 1.95.0 all-target/all-feature MSRV gate using the
-      committed lockfile and pinned action SHAs.
+      committed lockfile and pinned action SHAs; run `31789001841` passes at
+      PR head `b6c3d9a`.
 
 
 ## E-034 [minor] — provider relative equality (Owner: Codex `/root`)
@@ -59,7 +60,7 @@ Sprint phase: Execution
       https://crates.io/crates/eunomia and the provider release workflow is
       verified. The exact online dry-run remains tracked under E-REL-001.
 - [x] Merge the 0.8.0 provider revision into the remote default and refresh the
-      Atlas gitlink/convergence audit; current default is `b6f001a` and the
+      Atlas gitlink/convergence audit; current default is `d252f968` and the
       parent pointer already records that exact head.
 
 

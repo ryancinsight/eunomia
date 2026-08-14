@@ -37,7 +37,8 @@ The Nextest count continues to grow with new value-semantic tests (was
 - **E-REL-001 [patch] — done; owner: Codex `/root`.** Publish future releases
   through a pinned GitHub Actions workflow using crates.io OIDC Trusted
   Publishing and no stored registry credential. The exact online dry-run passes
-  at default head `b6f001a`.
+  at default head `d252f968`; the MSRV workflow passes in hosted run
+  `31789001841` at PR head `b6c3d9a`.
 
 - **E-035 [minor] — done; owner: Codex.** Add provider-owned `UnitScalar`
   conversion/scaling for all shipped real storage types and `Complex32`/
