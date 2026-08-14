@@ -8,10 +8,10 @@ The Eunomia 0.8.0 provider surface is source-complete and indexed on crates.io
 (as confirmed by `cargo search eunomia`, which resolves `eunomia = "0.8.0"`).
 A clean exact-head clone passes locked metadata, formatting, all six CI feature
 checks, warning-denied all-target Clippy, 116/116 Nextest, 9/9 doctests,
-Rustdoc, and locked package listing. The offline `cargo publish --dry-run`
-validation is intentionally not claimed because Cargo cannot query crates.io
-with `CARGO_NET_OFFLINE=true`; an online exact-revision dry run remains the
-final release verification.
+Rustdoc, locked package listing, and the declared Rust 1.95.0 all-target,
+all-feature check. The online `cargo publish --locked --package eunomia
+--dry-run` also passes at the current default head; Cargo packages and verifies
+the crate, then stops at the expected dry-run upload boundary.
 
 The remaining backlog is correctly classified rather than hidden: E-024 waits
 for a driving OCP-MXFP quantization consumer, and E-027 is consumer-owned
@@ -36,7 +36,8 @@ The Nextest count continues to grow with new value-semantic tests (was
 
 - **E-REL-001 [patch] — done; owner: Codex `/root`.** Publish future releases
   through a pinned GitHub Actions workflow using crates.io OIDC Trusted
-  Publishing and no stored registry credential.
+  Publishing and no stored registry credential. The exact online dry-run passes
+  at default head `b6f001a`.
 
 - **E-035 [minor] — done; owner: Codex.** Add provider-owned `UnitScalar`
   conversion/scaling for all shipped real storage types and `Complex32`/

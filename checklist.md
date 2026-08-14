@@ -23,9 +23,11 @@ Sprint phase: Execution
 - [x] Re-verify 2026-08-12 at the provider worktree head: no-default-feature
       check, warning-denied all-target/all-feature Clippy, Nextest 117/117
       (all features), 9/9 doctests, and strict all-target check pass.
-- [ ] Run an online `cargo publish --locked --package eunomia --dry-run` from
-      the exact delivery revision; the offline validation cannot perform the
-      crates.io registry lookup.
+- [x] Run an online `cargo publish --locked --package eunomia --dry-run` from
+      exact default head `b6f001a`; Cargo packages 73 files, verifies the crate,
+      and stops at the expected dry-run upload boundary.
+- [x] Add a hosted Rust 1.95.0 all-target/all-feature MSRV gate using the
+      committed lockfile and pinned action SHAs.
 
 
 ## E-034 [minor] — provider relative equality (Owner: Codex `/root`)
@@ -56,9 +58,9 @@ Sprint phase: Execution
 - [x] Publish Eunomia `0.8.0`; crates.io indexing is confirmed at
       https://crates.io/crates/eunomia and the provider release workflow is
       verified. The exact online dry-run remains tracked under E-REL-001.
-- [ ] Merge the 0.8.0 provider revision into the remote default and refresh the
-      Atlas gitlink/convergence audit; the current parent pointer remains an
-      owner-authorized delivery gate.
+- [x] Merge the 0.8.0 provider revision into the remote default and refresh the
+      Atlas gitlink/convergence audit; current default is `b6f001a` and the
+      parent pointer already records that exact head.
 
 
 ## E-021 [arch] — native complex provider cutover
