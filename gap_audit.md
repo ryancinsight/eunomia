@@ -239,3 +239,11 @@ independent raw-half FFT surface that belongs to its transform contract.
 - Leto passes warning-denied all-target/all-feature Clippy, Nextest 305/305,
   doctests 8/8, rustdoc, and semver checks. Manifest/source and production-graph
   residue scans confirm the dependency boundary.
+
+## ADR governance — generated index refresh
+
+The four ADR source headers already use the canonical `Status: Accepted` token.
+The tracked `docs/adr/README.md` table was stale and now records those same
+statuses. The change is derived documentation only; no decision content or
+provider contract changed. The cross-repository status remains owned by Atlas
+`ATLAS-ADR-GOV-058`.

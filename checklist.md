@@ -105,3 +105,13 @@ conventions). See ADR 0003 / gap_audit §Byte-layout for the full workstream
 - [x] Correct sub-byte numeric constants to match their declared layouts.
 - [x] Pass format, feature, warning-denied Clippy, Nextest, doctest, rustdoc,
   semver, and downstream Leto/Hephaestus checks.
+
+## ADR governance — generated index refresh
+
+- [x] Confirm ADR 0001–0004 already carry canonical `Status: Accepted`
+  headers; no decision content changes are in scope.
+- [x] Regenerate `docs/adr/README.md` from the provider ADR headers and verify
+  exact generator equality in the Atlas overlay.
+- [x] Synchronize the provider backlog and gap audit with the derived-index
+  refresh; retain the root Atlas ADR-governance item as the cross-repository
+  status owner.
