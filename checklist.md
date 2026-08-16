@@ -4,6 +4,17 @@ Target version: 0.8.0
 
 Sprint phase: Execution
 
+## E-036 [patch] — strict Clippy Rustdoc closure — in progress
+
+- Owner: Codex; claimed 2026-08-16 from the clean provider default `58e5715`.
+- Scope: `crates/eunomia/src/types/complex/numpy_element.rs` Rustdoc and this
+  provider checklist/gap audit only. No numeric or public API behavior changes.
+- Acceptance: standalone format, locked workspace check, warning-denied
+  all-target/all-feature Clippy, Nextest, doctests, Rustdoc, and cargo-deny
+  pass at the final provider head; the corrected terminology is documented.
+- [ ] Correct the Clippy `doc_markdown` failure and synchronize the audit
+      evidence.
+
 ## FloatElement sign-preserving roots (cbrt/rsqrt/nth_root) — done
 
 - [x] Add sign-preserving `cbrt` to `FloatElement` — PR #60 (`bba10b6`).
