@@ -1,5 +1,22 @@
 # Eunomia gap audit
 
+## Strict Clippy Rustdoc closure — 2026-08-16
+
+The fetched default head `58e5715` failed the repository's denied pedantic
+Clippy floor because `crates/eunomia/src/types/complex/numpy_element.rs:8`
+used the bare term `NumPy` in module documentation. The source behavior and
+public API were already correct; the fix adds the required Markdown code span
+around the proper noun.
+
+Standalone verification with the Atlas overlay disabled passed: formatting,
+locked workspace all-target/all-feature check, strict Clippy, Nextest 135/135,
+9/9 doctests, Rustdoc, and cargo-deny 0.20.2 (`advisories ok, bans ok,
+licenses ok, sources ok`). Cargo-deny reports the existing duplicate `syn`
+versions as a warning; no advisory, license, source, or ban failure remains.
+
+The audit does not claim runtime performance, GPU behavior, or release/publish
+state; those remain governed by the provider's release and consumer records.
+
 ## 0.8.0 provider closure refresh — 2026-08-10
 
 The provider's current 0.8.0 source surface is complete for its committed scope

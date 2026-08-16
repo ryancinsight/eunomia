@@ -5,7 +5,7 @@
 //!
 //! The implementation is sound because `Complex<T>` is `#[repr(C)] { re, im }`,
 //! bit-identical in layout and alignment to `num_complex::Complex<T>` (which
-//! `numpy` re-exports as `numpy::Complex32`/`numpy::Complex64`). The NumPy dtype
+//! `numpy` re-exports as `numpy::Complex32`/`numpy::Complex64`). The `NumPy` dtype
 //! (`complex64`/`complex128`) is therefore the same descriptor; we delegate to
 //! the canonical `num_complex` impl to obtain it rather than reconstructing it.
 
