@@ -25,6 +25,30 @@ check, warning-denied all-target/all-feature Clippy, Nextest **117/117**
 The Nextest count continues to grow with new value-semantic tests (was
 116/116 at the clean-clone snapshot).
 
+## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — Verify the optional NumPy boundary [patch] — in progress
+
+The optional `numpy` feature implements the provider's `numpy::Element`
+boundary for `Complex32` and `Complex64`. Hephaestus and Kwavers enable that
+feature from their Python binding crates, but this repository's CI previously
+excluded it because no Python runtime was provisioned.
+
+Scope is the provider CI workflow and the existing complex provider contract
+test. Eunomia remains a crates.io datatype provider, not a standalone Python
+package; Python packaging remains owned by its consumers.
+
+- [x] Provision pinned Python 3.13 and NumPy 2.5.1 in a dedicated CI job.
+- [x] Run locked feature check, strict Clippy, Nextest, and doctests in that
+  job; the runtime test asserts the NumPy dtype names and item sizes for both
+  shipped complex representations.
+- [ ] Collect the exact-head hosted job and close this item with its run ID.
+
+Local evidence at the branch head: the NumPy feature compiles and the focused
+Nextest contract passes 4/4. Locked Cargo commands are blocked by the Atlas
+development overlay adding `[patch.unused]` lock state; strict local Clippy is
+also blocked by the shared cache containing MSVC artifacts while the pinned
+Windows GNU toolchain is active. Hosted Linux verification is the acceptance
+oracle.
+
 ## Recently completed
 
 - **FloatElement sign-preserving roots — done; owner: Codex.** Added
