@@ -40,6 +40,10 @@ package; Python packaging remains owned by its consumers.
 - [x] Run locked feature check, strict Clippy, Nextest, and doctests in that
   job; the runtime test asserts the NumPy dtype names and item sizes for both
   shipped complex representations.
+- [x] Install the pinned Nextest binary in the NumPy job as well as the
+  general verification job. The first hosted attempt compiled and linted the
+  feature, then failed before tests because `cargo nextest` was unavailable
+  (`32412277378`, job `96565207307`).
 - [ ] Collect the exact-head hosted job and close this item with its run ID.
 
 Local evidence at the branch head: the NumPy feature compiles and the focused

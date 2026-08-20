@@ -12,6 +12,8 @@ Sprint phase: Execution
       SHAs and finite 20-minute execution budget.
 - [x] Add a runtime dtype contract for `Complex32` (`complex64`, 8 bytes) and
       `Complex64` (`complex128`, 16 bytes); focused Nextest passes 4/4.
+- [x] Install `nextest@0.9.140` in the NumPy job after hosted run
+      `32412277378` failed because the command was not on `PATH`.
 - [x] Confirm the feature compiles locally. The locked overlay gate and strict
       local Clippy remain blocked by the shared `[patch.unused]` lock state and
       GNU/MSVC shared-cache mismatch respectively; no such claim is made.

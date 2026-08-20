@@ -107,6 +107,11 @@ jobs:
       - name: Install the pinned NumPy runtime
         run: python -m pip install --disable-pip-version-check "numpy==2.5.1"
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
+        with:
+          tool: nextest@0.9.140
+
       - name: Check the NumPy feature
         run: cargo check --locked --workspace --all-targets --features numpy
 
