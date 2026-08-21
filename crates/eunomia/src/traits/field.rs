@@ -69,6 +69,11 @@ pub trait RealField: FloatElement + PartialOrd + Neg<Output = Self> {
     }
 
     /// Restrict `self` to `[min, max]` (assumes `min ≤ max`).
+    ///
+    /// The operation inherits [`NumericElement::min_scalar`] and
+    /// [`NumericElement::max_scalar`]: a single NaN bound is ignored, a NaN
+    /// input is reduced to the lower bound, and the result preserves the
+    /// signed-zero convention of the scalar operations.
     #[inline]
     fn clamp(self, min: Self, max: Self) -> Self {
         self.max_scalar(min).min_scalar(max)

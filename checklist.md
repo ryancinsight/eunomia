@@ -4,6 +4,20 @@ Target version: 0.8.0
 
 Sprint phase: Execution
 
+## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — current slice
+
+- [x] Define one real-scalar min/max contract: one NaN is ignored, two NaNs
+      remain NaN, `min(-0, +0)` is `-0`, and `max(-0, +0)` is `+0`.
+- [x] Implement the contract in the `NumericElement` default and document the
+      native primitive-float overrides; keep Complex's explicit ordering.
+- [x] Add generic value-semantic tests for all shipped real scalar types and
+      `RealField::clamp` NaN-bound cases.
+- [x] Synchronize the numeric book and draft ADR 0005.
+- [ ] Run the exact-head provider gates and record the revision and any hosted
+      coverage still required.
+- [ ] Merge the provider change, then refresh the Atlas gitlink in a separate
+      convergence increment.
+
 ## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — current slice
 
 - [x] Confirm the optional NumPy boundary is consumed by Hephaestus and

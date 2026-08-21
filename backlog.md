@@ -53,6 +53,33 @@ also blocked by the shared cache containing MSVC artifacts while the pinned
 Windows GNU toolchain is active. Hosted Linux verification is the acceptance
 oracle.
 
+## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — Unify scalar NaN and signed-zero laws [major] [arch] — in progress
+
+The scalar audit found that the default `NumericElement` min/max path was
+order-dependent for one NaN, while primitive float overrides and reduced-
+precision wrappers did not have one documented contract. The same split affects
+generic reductions and `RealField::clamp`.
+
+Scope: the `NumericElement` min/max default, primitive float documentation,
+real-wrapper conformance tests, `RealField::clamp` documentation, the numeric
+book, and the governing ADR. Complex ordering remains its explicit
+lexicographic contract; consumer rewrites and registry release are out of
+scope.
+
+- [x] Define one real-scalar table for one/two NaNs and `±0`.
+- [x] Implement the table without precision-changing casts or duplicate
+      wrapper implementations.
+- [x] Add generic value-semantic coverage for every shipped real scalar and
+      `RealField::clamp` cases.
+- [ ] Run exact-head format, strict Clippy, Nextest, doctest, Rustdoc, and
+      package checks; record hosted-only limitations.
+- [ ] Merge the provider change and refresh the Atlas provider pointer in a
+      separate convergence increment.
+
+Owner: Codex. Branch: `fix/eunomia-nan-contract`. Claimed scope: Eunomia
+numeric trait, primitive/wrapper numeric docs, float conformance tests, numeric
+book, ADR, and provider PM artifacts.
+
 ## Recently completed
 
 - **FloatElement sign-preserving roots — done; owner: Codex.** Added

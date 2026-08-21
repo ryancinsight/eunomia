@@ -50,3 +50,23 @@ pub trait NumericElement:
 - `CastFrom<i32>` and the integer boundary
 - Writing a kernel once over `NumericElement` and instantiating across
   `F32`/`F64`/`F16`/`Bf16`/`I32`/`Complex32`
+
+## Minimum and maximum special values
+
+`NumericElement::min_scalar` and `max_scalar` are value operations, not raw
+`PartialOrd` expressions. For every shipped real floating-point scalar they
+use the same table:
+
+| Inputs | `min_scalar` | `max_scalar` |
+| --- | --- | --- |
+| one NaN and one non-NaN | the non-NaN value | the non-NaN value |
+| two NaNs | NaN | NaN |
+| `-0` and `+0` | `-0` | `+0` |
+| all other values | numeric minimum | numeric maximum |
+
+The NaN rule is commutative even though `PartialOrd` correctly reports every
+NaN comparison as unordered. The signed-zero rule is also independent of
+operand order. Primitive `f32`/`f64` implementations use their native
+operations; wrapper types inherit the single trait default, so reductions and
+`RealField::clamp` do not diverge by storage format. Integer sentinels named
+`NAN` are ordinary zero values and follow integer comparison semantics.

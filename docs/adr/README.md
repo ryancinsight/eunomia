@@ -10,3 +10,4 @@
 | [0002](0002-native-complex-provider-cutover.md) | Native complex provider cutover | Accepted |
 | [0003](0003-native-byte-layout-and-reduced-precision.md) | Native byte-layout & reduced-precision vocabulary | Accepted |
 | [0004](0004-unit-scalar-provider-seam.md) | Provider-Owned Unit Scalar Scaling | Accepted |
+| [0005](0005-real-scalar-min-max-special-values.md) | Real-scalar minimum and maximum special values | Accepted |

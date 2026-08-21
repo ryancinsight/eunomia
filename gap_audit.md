@@ -1,5 +1,27 @@
 # Eunomia gap audit
 
+## Scalar min/max special values — ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21
+
+The audit found a contract split in `NumericElement::min_scalar` and
+`max_scalar`: the generic path used order-dependent `PartialOrd` checks, while
+primitive `f32`/`f64` used native operations and reduced-precision wrappers
+inherited the generic path. A single NaN therefore produced different results
+by operand order and signed-zero selection was not specified. `RealField::clamp`
+composes the same operations, so the ambiguity reached field consumers.
+
+The fix is one provider-owned value table in the trait Rustdoc and numeric
+book: one NaN is ignored, two NaNs return NaN, minimum selects `-0`, and maximum
+selects `+0`, all independent of operand order. The default checks NaN and the
+sign bit without widening; native primitive overrides remain in place only as
+the equivalent optimized implementation. Complex retains its explicit
+lexicographic ordering and is outside the real-scalar table.
+
+Evidence is the generic `float_order` test instantiated for `f32`, `f64`,
+`F16`, `F32`, `F64`, `Bf16`, `Bf8`, `Bf4`, `F8`, and `F4`, plus direct
+`RealField::clamp` cases. Exact-head format, strict Clippy, Nextest, doctest,
+Rustdoc, package, and hosted checks remain pending until the implementation is
+committed.
+
 ## Strict Clippy Rustdoc closure — 2026-08-16
 
 The fetched default head `58e5715` failed the repository's denied pedantic
