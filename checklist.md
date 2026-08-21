@@ -14,10 +14,18 @@ Sprint phase: Execution
       `RealField::clamp` NaN-bound cases.
 - [x] Synchronize the numeric book and accept ADR 0005.
 - [x] Run exact-head format, strict all-target/all-feature Clippy, Nextest
-      **138/138**, doctests **9/9**, Rustdoc, locked package listing, fresh
-      staged-library `mdbook test`, and `mdbook build` at implementation head
-      `ba51a16`. The first direct mdBook invocation lacked Cargo artifacts and
-      failed with `E0463`; the committed workflow staging procedure passed.
+      **138/138**, doctests **9/9**, Rustdoc, and locked package listing at
+      final code head `0cf3c7d`. The focused signed-zero regression also passes
+      under Nextest.
+- [x] Fresh staged-library `mdbook test` and `mdbook build` passed at the
+      implementation head `ba51a16`; the later commits change only tests,
+      checklist state, and the Unreleased changelog. The static `mdbook build`
+      passes at `0cf3c7d`.
+- [ ] Re-run local staged-library `mdbook test` against `0cf3c7d` after the
+      shared target cache is uncontended and lane-owned artifacts are rebuilt;
+      the current retry is invalidated by cached artifacts whose dep-info points
+      at `D:/atlas/repos/eunomia` and by missing fresh `rkyv` compiler-artifact
+      messages. Hosted fresh-build coverage remains pending.
 - [ ] Push the provider branch, open the PR, and collect terminal hosted gates.
 - [ ] Merge the provider change, then refresh the Atlas gitlink in a separate
       convergence increment.
