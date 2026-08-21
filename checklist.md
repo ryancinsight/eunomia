@@ -4,6 +4,32 @@ Target version: 0.8.0
 
 Sprint phase: Execution
 
+## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — current slice
+
+- [x] Define one real-scalar min/max contract: one NaN is ignored, two NaNs
+      remain NaN, `min(-0, +0)` is `-0`, and `max(-0, +0)` is `+0`.
+- [x] Implement the contract in the `NumericElement` default and document the
+      native primitive-float overrides; keep Complex's explicit ordering.
+- [x] Add generic value-semantic tests for all shipped real scalar types and
+      `RealField::clamp` NaN-bound cases.
+- [x] Synchronize the numeric book and accept ADR 0005.
+- [x] Run exact-head format, strict all-target/all-feature Clippy, Nextest
+      **138/138**, doctests **9/9**, Rustdoc, and locked package listing at
+      final code head `0cf3c7d`. The focused signed-zero regression also passes
+      under Nextest.
+- [x] Fresh staged-library `mdbook test` and `mdbook build` passed at the
+      implementation head `ba51a16`; the later commits change only tests,
+      checklist state, and the Unreleased changelog. The static `mdbook build`
+      passes at `0cf3c7d`.
+- [ ] Re-run local staged-library `mdbook test` against `0cf3c7d` after the
+      shared target cache is uncontended and lane-owned artifacts are rebuilt;
+      the current retry is invalidated by cached artifacts whose dep-info points
+      at `D:/atlas/repos/eunomia` and by missing fresh `rkyv` compiler-artifact
+      messages. Hosted fresh-build coverage remains pending.
+- [ ] Push the provider branch, open the PR, and collect terminal hosted gates.
+- [ ] Merge the provider change, then refresh the Atlas gitlink in a separate
+      convergence increment.
+
 ## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — current slice
 
 - [x] Confirm the optional NumPy boundary is consumed by Hephaestus and

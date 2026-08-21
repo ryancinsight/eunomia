@@ -61,10 +61,10 @@ pub struct F4(pub u8);
 /// most significant bit of the magnitude field, which makes the derive
 /// numerically wrong in three separate ways: every negative value sorts **above**
 /// every positive one, `-0` compares unequal to `+0`, and NaN compares ordered
-/// and reflexive. [`NumericElement::min_scalar`](crate::NumericElement::min_scalar)
-/// and `max_scalar` are defaults over exactly this `PartialOrd`, so a derived
-/// ordering silently inverts every Min/Max reduction, `clamp`, and sort taken
-/// over these types anywhere in the stack.
+/// and reflexive. The comparison remains intentionally unordered for NaN and
+/// treats the two zeros as equal; [`NumericElement::min_scalar`](crate::NumericElement::min_scalar)
+/// and `max_scalar` add the explicit NaN and signed-zero value semantics needed
+/// by reductions and `clamp`.
 ///
 /// The comparison therefore widens to `f32` first. That widening is **exact**
 /// for all six formats — each has at most an 11-bit significand and an exponent

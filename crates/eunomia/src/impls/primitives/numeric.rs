@@ -75,12 +75,12 @@ impl NumericElement for f32 {
     fn count_ones(self) -> u32 {
         self.to_bits().count_ones()
     }
-    /// Use native `f32::min` which correctly handles NaN propagation.
+    /// Use native `f32::min`, which matches the shared NaN and signed-zero contract.
     #[inline(always)]
     fn min_scalar(self, other: Self) -> Self {
         self.min(other)
     }
-    /// Use native `f32::max` which correctly handles NaN propagation.
+    /// Use native `f32::max`, which matches the shared NaN and signed-zero contract.
     #[inline(always)]
     fn max_scalar(self, other: Self) -> Self {
         self.max(other)
@@ -159,12 +159,12 @@ impl NumericElement for f64 {
     fn count_ones(self) -> u32 {
         self.to_bits().count_ones()
     }
-    /// Use native `f64::min` which correctly handles NaN propagation.
+    /// Use native `f64::min`, which matches the shared NaN and signed-zero contract.
     #[inline(always)]
     fn min_scalar(self, other: Self) -> Self {
         self.min(other)
     }
-    /// Use native `f64::max` which correctly handles NaN propagation.
+    /// Use native `f64::max`, which matches the shared NaN and signed-zero contract.
     #[inline(always)]
     fn max_scalar(self, other: Self) -> Self {
         self.max(other)
@@ -173,7 +173,7 @@ impl NumericElement for f64 {
 
 /// Shared `NumericElement` body for the built-in signed integer types. Differs
 /// from [`impl_numeric_element_unsigned`] only in `ALL_ONES` (-1), `SIGN_MASK`
-/// (`T::MIN`), and `abs`. `min_scalar`/`max_scalar` use the `PartialOrd`-based
+/// (`T::MIN`), and `abs`. `min_scalar`/`max_scalar` use the special-value-aware
 /// trait defaults.
 macro_rules! impl_numeric_element_signed {
     ($t:ty, $byte_width:expr) => {

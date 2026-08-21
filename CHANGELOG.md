@@ -39,6 +39,12 @@ All notable changes to Eunomia are documented here.
 
 ### Fixed
 
+- `NumericElement::min_scalar` and `max_scalar` now apply one shared
+  real-scalar special-value contract: one NaN is ignored, two NaNs produce
+  NaN, `min(-0, +0)` is `-0`, and `max(-0, +0)` is `+0` regardless of operand
+  order. The contract is covered across every shipped real scalar and
+  inherited by `FieldElement::clamp`; complex ordering remains explicit.
+
 - The `F64` wrapper evaluated `log10`, `log2`, `erf`, `erfc`, and `lgamma` in
   single precision. Its `FloatElement` impl overrode 19 of the trait's 24
   `f32`-routed defaults but not these five, so each ran

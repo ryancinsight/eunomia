@@ -6,17 +6,17 @@
 //! so every negative value sorts above every positive one, `-0` compares unequal
 //! to `+0`, and NaN compares ordered.
 //!
-//! This is not cosmetic. [`NumericElement::min_scalar`]/[`max_scalar`] are
-//! defaults over exactly this `PartialOrd` and are not overridden for these
-//! types, so `MIN_VALUE`/`MAX_VALUE`-seeded Min/Max reductions, `clamp`, and
-//! every sort taken over them anywhere in the Atlas stack inherit whatever the
-//! comparison says. This file is the regression that keeps it IEEE 754.
+//! This is not cosmetic. `PartialOrd` remains unordered for NaN, while
+//! [`NumericElement::min_scalar`]/[`max_scalar`] define the separate value
+//! contract used by reductions and `clamp`: one NaN is ignored and signed-zero
+//! ties select the IEEE minimum or maximum independent of operand order. This
+//! file verifies both surfaces against independent encoding and value oracles.
 //!
 //! [`max_scalar`]: NumericElement::max_scalar
 
 use core::cmp::Ordering;
 
-use eunomia::{Bf16, Bf4, Bf8, NumericElement, F16, F4, F8};
+use eunomia::{Bf16, Bf4, Bf8, NumericElement, RealField, F16, F32, F4, F64, F8};
 
 /// Independent sign-magnitude ordering oracle.
 ///
@@ -114,8 +114,9 @@ exhaustive_order_conformance!(f4_orders_as_ieee754, F4, 0u8..16, 0x08, 0x07, |c|
 /// crate computes.
 ///
 /// Each `-1.0` code is the crate's own `ONE` constant with the format's
-/// `SIGN_MASK` bit set. Under a derived (bitwise) ordering every one of these
-/// assertions inverts, because setting the sign bit raises the raw `u8`.
+/// `SIGN_MASK` bit set. The value-semantic comparison must keep the negative
+/// value below the positive one even though setting the sign bit raises the
+/// raw encoding.
 macro_rules! negative_sorts_below_positive {
     ($name:ident, $t:ident) => {
         #[test]
@@ -143,9 +144,9 @@ macro_rules! negative_sorts_below_positive {
                 one.0,
                 "max(-1, 1) == 1"
             );
-            // A Max reduction seeds its accumulator with MIN_VALUE; with a
-            // bitwise ordering that seed (sign bit set) dominates every finite
-            // operand and the reduction returns the identity element forever.
+            // A Max reduction seeds its accumulator with MIN_VALUE; the
+            // value-semantic ordering must replace that identity with the first
+            // finite operand.
             assert_eq!(
                 NumericElement::max_scalar(<$t as NumericElement>::MIN_VALUE, one).0,
                 one.0,
@@ -167,7 +168,7 @@ negative_sorts_below_positive!(f4_negatives_sort_below_positives, F4);
 negative_sorts_below_positive!(f16_negatives_sort_below_positives, F16);
 negative_sorts_below_positive!(bf16_negatives_sort_below_positives, Bf16);
 
-/// The 16-bit wrappers already compared float-semantically; their impls now come
+/// The 16-bit wrappers already compare float-semantically; their impls now come
 /// from the shared `float_semantic_cmp!` expansion, so this pins that the
 /// consolidation preserved the behaviour. `2^32` ordered pairs is out of budget,
 /// so every one of the `65_536` codes is checked against a representative set
@@ -241,4 +242,109 @@ fn nan_is_unordered_and_non_reflexive() {
         )+};
     }
     assert_nan_unordered!(F16, Bf16, Bf8, Bf4, F8, F4);
+}
+
+/// Assert the shared min/max special-value contract for one real scalar type.
+fn assert_real_min_max_contract<T: NumericElement>() {
+    let nan = T::NAN;
+    let one = T::ONE;
+    let positive_zero = T::ZERO;
+    let negative_zero = <T as NumericElement>::bitor(T::ZERO, T::SIGN_MASK);
+
+    assert_eq!(
+        <T as NumericElement>::min_scalar(nan, one),
+        one,
+        "min(NaN, 1) ignores NaN"
+    );
+    assert_eq!(
+        <T as NumericElement>::min_scalar(one, nan),
+        one,
+        "min(1, NaN) ignores NaN"
+    );
+    assert_eq!(
+        <T as NumericElement>::max_scalar(nan, one),
+        one,
+        "max(NaN, 1) ignores NaN"
+    );
+    assert_eq!(
+        <T as NumericElement>::max_scalar(one, nan),
+        one,
+        "max(1, NaN) ignores NaN"
+    );
+    assert!(
+        <T as NumericElement>::min_scalar(nan, nan).is_nan(),
+        "min(NaN, NaN) remains NaN"
+    );
+    assert!(
+        <T as NumericElement>::max_scalar(nan, nan).is_nan(),
+        "max(NaN, NaN) remains NaN"
+    );
+
+    let min_zero = <T as NumericElement>::min_scalar(positive_zero, negative_zero);
+    let min_zero_reversed = <T as NumericElement>::min_scalar(negative_zero, positive_zero);
+    assert_eq!(min_zero, negative_zero, "min(+0, -0) returns exactly -0");
+    assert_eq!(
+        min_zero_reversed, negative_zero,
+        "min(-0, +0) returns exactly -0"
+    );
+    assert_eq!(
+        min_zero.bitand(T::SIGN_MASK),
+        T::SIGN_MASK,
+        "min(+0, -0) returns -0"
+    );
+    assert_eq!(
+        min_zero_reversed.bitand(T::SIGN_MASK),
+        T::SIGN_MASK,
+        "min(-0, +0) returns -0"
+    );
+
+    let max_zero = <T as NumericElement>::max_scalar(positive_zero, negative_zero);
+    let max_zero_reversed = <T as NumericElement>::max_scalar(negative_zero, positive_zero);
+    assert_eq!(max_zero, positive_zero, "max(+0, -0) returns exactly +0");
+    assert_eq!(
+        max_zero_reversed, positive_zero,
+        "max(-0, +0) returns exactly +0"
+    );
+    assert_eq!(
+        max_zero.bitand(T::SIGN_MASK),
+        T::ZERO,
+        "max(+0, -0) returns +0"
+    );
+    assert_eq!(
+        max_zero_reversed.bitand(T::SIGN_MASK),
+        T::ZERO,
+        "max(-0, +0) returns +0"
+    );
+
+    let clamp = |value: T, min: T, max: T| {
+        <T as NumericElement>::min_scalar(<T as NumericElement>::max_scalar(value, min), max)
+    };
+    assert_eq!(clamp(nan, T::ZERO, one), T::ZERO, "clamp(NaN, 0, 1) = 0");
+    assert_eq!(clamp(one, nan, T::ONE), one, "clamp(1, NaN, 1) = 1");
+    assert_eq!(
+        clamp(T::ZERO, T::ZERO, nan),
+        T::ZERO,
+        "clamp(0, 0, NaN) = 0"
+    );
+}
+
+#[test]
+fn real_scalars_share_nan_and_signed_zero_min_max() {
+    assert_real_min_max_contract::<f32>();
+    assert_real_min_max_contract::<f64>();
+    assert_real_min_max_contract::<F16>();
+    assert_real_min_max_contract::<F32>();
+    assert_real_min_max_contract::<F64>();
+    assert_real_min_max_contract::<Bf16>();
+    assert_real_min_max_contract::<Bf8>();
+    assert_real_min_max_contract::<Bf4>();
+    assert_real_min_max_contract::<F8>();
+    assert_real_min_max_contract::<F4>();
+}
+
+#[test]
+fn real_field_clamp_uses_the_scalar_special_value_contract() {
+    assert_eq!(<f32 as RealField>::clamp(f32::NAN, 0.0, 1.0), 0.0);
+    assert_eq!(<f64 as RealField>::clamp(1.0, f64::NAN, 1.0), 1.0);
+    assert_eq!(<f64 as RealField>::clamp(0.0, 0.0, f64::NAN), 0.0);
 }
