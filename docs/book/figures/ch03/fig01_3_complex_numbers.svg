@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420" role="img" aria-label="3. Complex Numbers">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs>
+<rect width="1000" height="420" fill="#f8fafc"/>
+<text x="500" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#111827">3. Complex Numbers</text>
+<rect x="85" y="175" width="220" height="86" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="195" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">real</text>
+<line x1="195" y1="218" x2="382" y2="218" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="390" y="175" width="220" height="86" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="500" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">imaginary</text>
+<line x1="500" y1="218" x2="687" y2="218" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="695" y="175" width="220" height="86" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="805" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">Complex&lt;T&gt;</text>
+<text x="500" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#475569">Generated from Eunomia&#x27;s domain figure manifest</text>
+</svg>

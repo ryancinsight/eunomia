@@ -1,5 +1,10 @@
 # 6. Scalar Fields: RealField and ComplexField
 
+<!-- generated-figure-start -->
+![Figure 6.1 — Scalar Fields: RealField and ComplexField](figures/ch06/fig01_6_scalar_fields_realfield_and_complexfield.svg)
+*Figure 6.1 — Scalar Fields: RealField and ComplexField*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 A *scalar field* is the algebraic setting in which linear algebra and

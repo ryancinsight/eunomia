@@ -1,5 +1,10 @@
 # 4. NumericElement: The Monomorphization Extension Point
 
+<!-- generated-figure-start -->
+![Figure 4.1 — NumericElement: The Monomorphization Extension Point](figures/ch04/fig01_4_numericelement_the_monomorphization_extension_point.svg)
+*Figure 4.1 — NumericElement: The Monomorphization Extension Point*
+<!-- generated-figure-end -->
+
 ## Governing idea
 
 Atlas kernels are written once and instantiated across every shipped scalar

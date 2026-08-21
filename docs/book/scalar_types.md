@@ -1,5 +1,10 @@
 # 1. Floating-Point Scalar Types
 
+<!-- generated-figure-start -->
+![Figure 1.1 — Floating-Point Scalar Types](figures/ch01/fig01_1_floating_point_scalar_types.svg)
+*Figure 1.1 — Floating-Point Scalar Types*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 A floating-point number is a finite approximation to a real value, stored as

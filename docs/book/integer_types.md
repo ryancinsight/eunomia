@@ -1,5 +1,10 @@
 # 2. Integer Scalar Types
 
+<!-- generated-figure-start -->
+![Figure 2.1 — Integer Scalar Types](figures/ch02/fig01_2_integer_scalar_types.svg)
+*Figure 2.1 — Integer Scalar Types*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 An integer scalar is an exact value in a fixed-width two's-complement

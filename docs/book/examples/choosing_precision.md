@@ -1,5 +1,10 @@
 # Example: Choosing a Precision
 
+<!-- generated-figure-start -->
+![Figure 1.2 — Example: Choosing a Precision](../figures/ch01/fig02_example_choosing_a_precision.svg)
+*Figure 1.2 — Example: Choosing a Precision*
+<!-- generated-figure-end -->
+
 **Crate**: `eunomia`
 **Source**: `crates/eunomia/examples/book_choosing_precision.rs`
 

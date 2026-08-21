@@ -13,6 +13,9 @@ on:
       - "docs/book/**"
 
       - ".github/workflows/book-pages.yml"
+      - "scripts/check_book_figures.py"
+      - "scripts/generate_book_figures.py"
+      - "scripts/tests/test_check_book_figures.py"
 
   pull_request:
 
@@ -21,6 +24,9 @@ on:
       - "docs/book/**"
 
       - ".github/workflows/book-pages.yml"
+      - "scripts/check_book_figures.py"
+      - "scripts/generate_book_figures.py"
+      - "scripts/tests/test_check_book_figures.py"
 
   workflow_dispatch:
 
@@ -41,8 +47,22 @@ concurrency:
 
 
 jobs:
+  check-figures:
+    name: Check book figures
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify local figure references
+        run: |
+          python3 scripts/generate_book_figures.py docs/book --check
+          python3 scripts/check_book_figures.py docs/book
 
   deploy:
+    needs: check-figures
 
     # Body owned once by Atlas (ADR 0035); the caller passes only the
 
