@@ -67,12 +67,6 @@ jobs:
             echo "::endgroup::"
           done
 
-      # The `numpy` feature is excluded from the steps below: it activates
-      # pyo3, which links against libpython and so needs a Python toolchain
-      # provisioned on the runner. It is checked in the matrix above only in
-      # the sense that it is not -- nothing here exercises it. Removal
-      # trigger: add an actions/setup-python step and fold `numpy` in, or
-      # split it into its own job alongside the binding tests.
       - name: Lint all affected targets
         run: cargo clippy --locked --workspace --all-targets --features rkyv,serde -- -D warnings
 
@@ -88,6 +82,47 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --locked --workspace --no-deps --features rkyv,serde
+
+  numpy:
+    name: NumPy feature contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: clippy, rustfmt
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install the pinned NumPy runtime
+        run: python -m pip install --disable-pip-version-check "numpy==2.5.1"
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
+        with:
+          tool: nextest@0.9.140
+
+      - name: Check the NumPy feature
+        run: cargo check --locked --workspace --all-targets --features numpy
+
+      - name: Lint the NumPy feature
+        run: cargo clippy --locked --workspace --all-targets --features numpy -- -D warnings
+
+      - name: Run the NumPy contract tests
+        run: cargo nextest run --locked --workspace --features numpy
+
+      - name: Run NumPy documentation tests
+        run: cargo test --locked --workspace --features numpy --doc
 
   supply-chain:
     name: Supply chain

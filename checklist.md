@@ -4,6 +4,22 @@ Target version: 0.8.0
 
 Sprint phase: Execution
 
+## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — current slice
+
+- [x] Confirm the optional NumPy boundary is consumed by Hephaestus and
+      Kwavers, while Eunomia has no standalone Python packaging surface.
+- [x] Add the dedicated Python 3.13 / NumPy 2.5.1 CI job with pinned action
+      SHAs and finite 20-minute execution budget.
+- [x] Add a runtime dtype contract for `Complex32` (`complex64`, 8 bytes) and
+      `Complex64` (`complex128`, 16 bytes); focused Nextest passes 4/4.
+- [x] Install `nextest@0.9.140` in the NumPy job after hosted run
+      `32412277378` failed because the command was not on `PATH`.
+- [x] Confirm the feature compiles locally. The locked overlay gate and strict
+      local Clippy remain blocked by the shared `[patch.unused]` lock state and
+      GNU/MSVC shared-cache mismatch respectively; no such claim is made.
+- [ ] Collect hosted CI at the exact branch head, then synchronize the Atlas
+      and provider completion records.
+
 ## E-036 [patch] — strict Clippy Rustdoc closure — closed 2026-08-16
 
 - Owner: Codex; claimed 2026-08-16 from the clean provider default `58e5715`.

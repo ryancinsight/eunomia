@@ -29,3 +29,43 @@ fn complex_types_implement_the_selected_numpy_element_contract() {
     assert_element::<Complex32>();
     assert_element::<Complex64>();
 }
+
+#[cfg(feature = "numpy")]
+#[test]
+fn complex_types_report_their_canonical_numpy_dtypes() {
+    use numpy::Element;
+    use pyo3::prelude::Python;
+    use pyo3::types::PyAnyMethods;
+
+    Python::initialize();
+    Python::attach(|py| {
+        let complex32_dtype = <Complex32 as Element>::get_dtype(py);
+        let complex64_dtype = <Complex64 as Element>::get_dtype(py);
+
+        let complex32_name = complex32_dtype
+            .getattr("name")
+            .expect("complex64 dtype exposes name")
+            .extract::<String>()
+            .expect("complex64 dtype name is a string");
+        let complex64_name = complex64_dtype
+            .getattr("name")
+            .expect("complex128 dtype exposes name")
+            .extract::<String>()
+            .expect("complex128 dtype name is a string");
+        let complex32_itemsize = complex32_dtype
+            .getattr("itemsize")
+            .expect("complex64 dtype exposes itemsize")
+            .extract::<usize>()
+            .expect("complex64 dtype itemsize is an integer");
+        let complex64_itemsize = complex64_dtype
+            .getattr("itemsize")
+            .expect("complex128 dtype exposes itemsize")
+            .extract::<usize>()
+            .expect("complex128 dtype itemsize is an integer");
+
+        assert_eq!(complex32_name, "complex64");
+        assert_eq!(complex64_name, "complex128");
+        assert_eq!(complex32_itemsize, core::mem::size_of::<Complex32>());
+        assert_eq!(complex64_itemsize, core::mem::size_of::<Complex64>());
+    });
+}
