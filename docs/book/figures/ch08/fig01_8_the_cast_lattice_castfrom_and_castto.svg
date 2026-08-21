@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420" role="img" aria-label="8. The Cast Lattice: CastFrom and CastTo">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/></marker></defs>
+<rect width="1000" height="420" fill="#f8fafc"/>
+<text x="500" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#111827">8. The Cast Lattice: CastFrom and CastTo</text>
+<rect x="40" y="175" width="200" height="86" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="140" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">From</text>
+<line x1="140" y1="218" x2="272" y2="218" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="280" y="175" width="200" height="86" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="380" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">TryFrom</text>
+<line x1="380" y1="218" x2="512" y2="218" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="520" y="175" width="200" height="86" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="620" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">CastFrom</text>
+<line x1="620" y1="218" x2="752" y2="218" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="760" y="175" width="200" height="86" rx="8" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<text x="860" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#1f2937">CastTo</text>
+<text x="500" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#475569">Generated from Eunomia&#x27;s domain figure manifest</text>
+</svg>

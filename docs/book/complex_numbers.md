@@ -1,5 +1,10 @@
 # 3. Complex Numbers
 
+<!-- generated-figure-start -->
+![Figure 3.1 — Complex Numbers](figures/ch03/fig01_3_complex_numbers.svg)
+*Figure 3.1 — Complex Numbers*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 A complex number is the pair

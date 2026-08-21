@@ -1,5 +1,10 @@
 # 9. The Native Conversion Kernel
 
+<!-- generated-figure-start -->
+![Figure 9.1 — The Native Conversion Kernel](figures/ch09/fig01_9_the_native_conversion_kernel.svg)
+*Figure 9.1 — The Native Conversion Kernel*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 Converting between IEEE-754 formats of different widths is the operation

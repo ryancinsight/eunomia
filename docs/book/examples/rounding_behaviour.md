@@ -1,5 +1,10 @@
 # Example: Rounding Behaviour
 
+<!-- generated-figure-start -->
+![Figure 9.2 — Example: Rounding Behaviour](../figures/ch09/fig02_example_rounding_behaviour.svg)
+*Figure 9.2 — Example: Rounding Behaviour*
+<!-- generated-figure-end -->
+
 **Crate**: `eunomia`
 **Source**: `crates/eunomia/examples/book_rounding_behaviour.rs`
 

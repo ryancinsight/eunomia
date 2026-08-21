@@ -1,5 +1,10 @@
 # 8. The Cast Lattice: CastFrom and CastTo
 
+<!-- generated-figure-start -->
+![Figure 8.1 — The Cast Lattice: CastFrom and CastTo](figures/ch08/fig01_8_the_cast_lattice_castfrom_and_castto.svg)
+*Figure 8.1 — The Cast Lattice: CastFrom and CastTo*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 Converting a value from one numeric representation to another is a *cast*.

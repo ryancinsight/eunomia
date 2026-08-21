@@ -1,5 +1,10 @@
 # 12. Relative Equality
 
+<!-- generated-figure-start -->
+![Figure 12.1 — Relative Equality](figures/ch12/fig01_12_relative_equality.svg)
+*Figure 12.1 — Relative Equality*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 Two floating-point values are rarely *exactly* equal after arithmetic — the
