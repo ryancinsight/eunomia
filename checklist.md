@@ -13,8 +13,12 @@ Sprint phase: Execution
 - [x] Add generic value-semantic tests for all shipped real scalar types and
       `RealField::clamp` NaN-bound cases.
 - [x] Synchronize the numeric book and draft ADR 0005.
-- [ ] Run the exact-head provider gates and record the revision and any hosted
-      coverage still required.
+- [x] Run exact-head format, strict all-target/all-feature Clippy, Nextest
+      **138/138**, doctests **9/9**, Rustdoc, locked package listing, fresh
+      staged-library `mdbook test`, and `mdbook build` at implementation head
+      `ba51a16`. The first direct mdBook invocation lacked Cargo artifacts and
+      failed with `E0463`; the committed workflow staging procedure passed.
+- [ ] Push the provider branch, open the PR, and collect terminal hosted gates.
 - [ ] Merge the provider change, then refresh the Atlas gitlink in a separate
       convergence increment.
 

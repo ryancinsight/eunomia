@@ -71,8 +71,14 @@ scope.
       wrapper implementations.
 - [x] Add generic value-semantic coverage for every shipped real scalar and
       `RealField::clamp` cases.
-- [ ] Run exact-head format, strict Clippy, Nextest, doctest, Rustdoc, and
-      package checks; record hosted-only limitations.
+- [x] Run exact-head format, strict all-target/all-feature Clippy, Nextest
+      **138/138**, doctests **9/9**, Rustdoc, locked package listing, fresh
+      staged-library `mdbook test`, and `mdbook build`. Implementation head
+      `ba51a16` passes all listed checks. A direct mdBook run without staged
+      Cargo artifacts failed with `E0463`; the committed workflow's staging
+      path passes, so no book source change was required.
+- [ ] Collect the hosted provider PR gates at the exact pushed head and record
+      the terminal result.
 - [ ] Merge the provider change and refresh the Atlas provider pointer in a
       separate convergence increment.
 

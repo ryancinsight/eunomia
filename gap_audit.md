@@ -18,9 +18,12 @@ lexicographic ordering and is outside the real-scalar table.
 
 Evidence is the generic `float_order` test instantiated for `f32`, `f64`,
 `F16`, `F32`, `F64`, `Bf16`, `Bf8`, `Bf4`, `F8`, and `F4`, plus direct
-`RealField::clamp` cases. Exact-head format, strict Clippy, Nextest, doctest,
-Rustdoc, package, and hosted checks remain pending until the implementation is
-committed.
+`RealField::clamp` cases. Implementation head `ba51a16` passes format, strict
+all-target/all-feature Clippy, Nextest **138/138**, doctests **9/9**, Rustdoc,
+locked package listing, fresh staged-library `mdbook test`, and `mdbook build`.
+The direct local mdBook invocation failed only because it omitted the Cargo
+artifact staging required by mdBook 0.5.4; the workflow-equivalent fresh-stage
+run passes. Hosted provider gates and merge remain open.
 
 ## Strict Clippy Rustdoc closure — 2026-08-16
 
