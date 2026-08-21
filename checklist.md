@@ -12,7 +12,7 @@ Sprint phase: Execution
       native primitive-float overrides; keep Complex's explicit ordering.
 - [x] Add generic value-semantic tests for all shipped real scalar types and
       `RealField::clamp` NaN-bound cases.
-- [x] Synchronize the numeric book and draft ADR 0005.
+- [x] Synchronize the numeric book and accept ADR 0005.
 - [x] Run exact-head format, strict all-target/all-feature Clippy, Nextest
       **138/138**, doctests **9/9**, Rustdoc, locked package listing, fresh
       staged-library `mdbook test`, and `mdbook build` at implementation head

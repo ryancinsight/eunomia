@@ -282,6 +282,11 @@ fn assert_real_min_max_contract<T: NumericElement>() {
 
     let min_zero = <T as NumericElement>::min_scalar(positive_zero, negative_zero);
     let min_zero_reversed = <T as NumericElement>::min_scalar(negative_zero, positive_zero);
+    assert_eq!(min_zero, negative_zero, "min(+0, -0) returns exactly -0");
+    assert_eq!(
+        min_zero_reversed, negative_zero,
+        "min(-0, +0) returns exactly -0"
+    );
     assert_eq!(
         min_zero.bitand(T::SIGN_MASK),
         T::SIGN_MASK,
@@ -295,6 +300,11 @@ fn assert_real_min_max_contract<T: NumericElement>() {
 
     let max_zero = <T as NumericElement>::max_scalar(positive_zero, negative_zero);
     let max_zero_reversed = <T as NumericElement>::max_scalar(negative_zero, positive_zero);
+    assert_eq!(max_zero, positive_zero, "max(+0, -0) returns exactly +0");
+    assert_eq!(
+        max_zero_reversed, positive_zero,
+        "max(-0, +0) returns exactly +0"
+    );
     assert_eq!(
         max_zero.bitand(T::SIGN_MASK),
         T::ZERO,
