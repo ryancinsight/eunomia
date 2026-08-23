@@ -1,5 +1,10 @@
 # 14. Position in the Atlas Stack
 
+<!-- generated-figure-start -->
+![Figure 14.1 — Position in the Atlas Stack](figures/ch14/fig01_14_position_in_the_atlas_stack.svg)
+*Figure 14.1 — Position in the Atlas Stack*
+<!-- generated-figure-end -->
+
 ## The layering
 
 Eunomia is the foundation of the Atlas dependency graph — the datatype law

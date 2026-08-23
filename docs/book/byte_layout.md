@@ -1,5 +1,10 @@
 # 10. Byte Layout: Pod and Zeroable
 
+<!-- generated-figure-start -->
+![Figure 10.1 — Byte Layout: Pod and Zeroable](figures/ch10/fig01_10_byte_layout_pod_and_zeroable.svg)
+*Figure 10.1 — Byte Layout: Pod and Zeroable*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 Reinterpreting a value as raw bytes is safe only when the type's layout

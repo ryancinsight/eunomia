@@ -1,5 +1,10 @@
 # Example: Complex Arithmetic in a Solver
 
+<!-- generated-figure-start -->
+![Figure 3.2 — Example: Complex Arithmetic in a Solver](../figures/ch03/fig02_example_complex_arithmetic_in_a_solver.svg)
+*Figure 3.2 — Example: Complex Arithmetic in a Solver*
+<!-- generated-figure-end -->
+
 **Crate**: `eunomia`
 **Source**: `crates/eunomia/examples/book_complex_arithmetic.rs`
 

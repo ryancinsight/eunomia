@@ -1,5 +1,10 @@
 # 7. UnitScalar: The Physical-Unit Seam
 
+<!-- generated-figure-start -->
+![Figure 7.1 — UnitScalar: The Physical-Unit Seam](figures/ch07/fig01_7_unitscalar_the_physical_unit_seam.svg)
+*Figure 7.1 — UnitScalar: The Physical-Unit Seam*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 Physical quantities are real values scaled by an SI-unit coefficient:

@@ -1,5 +1,10 @@
 # 11. Packed Sub-byte Formats
 
+<!-- generated-figure-start -->
+![Figure 11.1 — Packed Sub-byte Formats](figures/ch11/fig01_11_packed_sub_byte_formats.svg)
+*Figure 11.1 — Packed Sub-byte Formats*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 The sub-byte float formats (`F4` E3M0, `F8` E4M3, `Bf4` E2M1, `Bf8` E5M2)

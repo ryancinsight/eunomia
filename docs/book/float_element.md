@@ -1,5 +1,10 @@
 # 5. FloatElement: The Transcendental Surface
 
+<!-- generated-figure-start -->
+![Figure 5.1 — FloatElement: The Transcendental Surface](figures/ch05/fig01_5_floatelement_the_transcendental_surface.svg)
+*Figure 5.1 — FloatElement: The Transcendental Surface*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 Real transcendental functions — the exponentials, logarithms, and

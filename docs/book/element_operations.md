@@ -1,5 +1,10 @@
 # 13. Element Operations
 
+<!-- generated-figure-start -->
+![Figure 13.1 — Element Operations](figures/ch13/fig01_13_element_operations.svg)
+*Figure 13.1 — Element Operations*
+<!-- generated-figure-end -->
+
 ## Governing equations
 
 Element operations are the pointwise arithmetic of the scalar vocabulary —
