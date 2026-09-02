@@ -13,6 +13,12 @@ use super::{narrow, widen};
 
 /// Widen a slice of `binary16` bit patterns into `f32`, writing
 /// `min(src.len(), dst.len())` elements.
+/// The dispatch is `#[inline]` on purpose: it is a feature probe and a call,
+/// and a consumer that already runs inside a matching `#[target_feature]`
+/// scope can then inline the accelerated body itself, keeping the converted
+/// lanes in registers instead of round-tripping them through the caller's
+/// buffer. Nothing about the conversion changes; only where it may be placed.
+#[inline]
 pub(crate) fn widen_f16(src: &[u16], dst: &mut [f32]) {
     #[cfg(target_arch = "x86_64")]
     {
@@ -30,6 +36,12 @@ pub(crate) fn widen_f16(src: &[u16], dst: &mut [f32]) {
 
 /// Narrow a slice of `f32` into `binary16` bit patterns (round to nearest, ties
 /// to even), writing `min(src.len(), dst.len())` elements.
+/// The dispatch is `#[inline]` on purpose: it is a feature probe and a call,
+/// and a consumer that already runs inside a matching `#[target_feature]`
+/// scope can then inline the accelerated body itself, keeping the converted
+/// lanes in registers instead of round-tripping them through the caller's
+/// buffer. Nothing about the conversion changes; only where it may be placed.
+#[inline]
 pub(crate) fn narrow_f16(src: &[f32], dst: &mut [u16]) {
     #[cfg(target_arch = "x86_64")]
     {
@@ -65,6 +77,12 @@ fn narrow_f16_scalar(src: &[f32], dst: &mut [u16]) {
 /// 16 bits of the `f32`, so widening is a left shift — exact for every value
 /// (normals, subnormals, infinity, NaN) and the loop autovectorizes to a plain
 /// unpack/shift, no F16C needed.
+/// The dispatch is `#[inline]` on purpose: it is a feature probe and a call,
+/// and a consumer that already runs inside a matching `#[target_feature]`
+/// scope can then inline the accelerated body itself, keeping the converted
+/// lanes in registers instead of round-tripping them through the caller's
+/// buffer. Nothing about the conversion changes; only where it may be placed.
+#[inline]
 pub(crate) fn widen_bf16(src: &[u16], dst: &mut [f32]) {
     let n = src.len().min(dst.len());
     for i in 0..n {
@@ -74,6 +92,12 @@ pub(crate) fn widen_bf16(src: &[u16], dst: &mut [f32]) {
 
 /// Narrow a slice of `f32` into `bfloat16` bit patterns (round to nearest, ties
 /// to even). Branchless per element so the loop autovectorizes.
+/// The dispatch is `#[inline]` on purpose: it is a feature probe and a call,
+/// and a consumer that already runs inside a matching `#[target_feature]`
+/// scope can then inline the accelerated body itself, keeping the converted
+/// lanes in registers instead of round-tripping them through the caller's
+/// buffer. Nothing about the conversion changes; only where it may be placed.
+#[inline]
 pub(crate) fn narrow_bf16(src: &[f32], dst: &mut [u16]) {
     let n = src.len().min(dst.len());
     for i in 0..n {
