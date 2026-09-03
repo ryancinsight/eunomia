@@ -4,6 +4,19 @@ Target version: 0.8.0
 
 Sprint phase: Execution
 
+## E-037 [patch] — Remove the external reduced-precision oracle (Owner: Codex)
+
+- [x] Claim the provider-local test, manifest, ADR, and PM scope on the clean
+      default head.
+- [ ] Replace the `half` dev oracle with an independent IEEE-754 reference
+      module while preserving exhaustive and rounding-boundary coverage.
+- [ ] Remove the workspace and crate `half` declarations and synchronize the
+      E-025c records.
+- [ ] Pass format, strict all-target/all-feature Clippy, Nextest, doctests,
+      Rustdoc, and the standalone locked lockfile check.
+- [ ] Push, merge, and refresh the Atlas provider pointer in a separate
+      convergence increment.
+
 ## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — current slice
 
 - [x] Define one real-scalar min/max contract: one NaN is ignored, two NaNs

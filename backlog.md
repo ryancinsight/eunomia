@@ -2,6 +2,18 @@
 
 Sprint target: 0.8.0 (native reduced-precision provider contract).
 
+## E-037 [patch] — Remove the external reduced-precision oracle — in-progress
+
+- Owner: Codex; claimed 2026-09-03 on branch
+  `fix/eunomia-independent-precision-oracle`.
+- Scope: Eunomia reduced-precision integration-test oracle, manifests, ADR 0003,
+  and the E-025c completion record. The production conversion kernel and public
+  API remain unchanged.
+- Acceptance: the workspace has no `half` dependency; independent IEEE-754
+  widening/narrowing tests retain exhaustive bit-pattern and rounding-sweep
+  coverage; format, strict Clippy, Nextest, doctests, Rustdoc, and lockfile
+  gates pass.
+
 ## 0.8.0 closure refresh — 2026-08-10
 
 The Eunomia 0.8.0 provider surface is source-complete and indexed on crates.io
