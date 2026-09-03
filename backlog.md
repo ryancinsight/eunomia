@@ -217,9 +217,12 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   `default-features = false` consumers (e.g. hephaestus GPU buffers) rely on
   `eunomia::Complex: bytemuck::Pod`, so it requires consumer verification, not a
   solo eunomia commit.
-- **E-027 [arch]** Migrate consumer GPU-ABI structs (hephaestus ~130, coeus
-  ~115, …) onto the E-026 vocabulary while preserving the `bytemuck::Pod` wgpu
-  contract via the bridge; add eunomia as a direct hephaestus dep. Dep: E-026.
+- **E-027 [arch] — in-progress; owner: Codex; branch:
+  `feat/eunomia-layout-derives`.** Add the provider-owned `Pod`/`Zeroable`
+  derives required by the consumer GPU-ABI migration, then migrate consumer
+  GPU-ABI structs (hephaestus ~130, coeus ~115, …) onto the E-026 vocabulary
+  while preserving the `bytemuck::Pod` wgpu contract via the bridge; add
+  eunomia as a direct hephaestus dep. Dep: E-026.
 - **E-028 [patch] — done** Fixed `packed/unpack/arch.rs` no_std AVX-512 detection
   (G-C1). The `"avx512bw"`→`"avx512f"` copy-paste was already corrected under
   E-023; restored the `avx512vl` guard both no_std branches dropped, matching the
