@@ -5,8 +5,9 @@
 //! are `unsafe` marker traits (the compiler cannot verify the layout facts they
 //! assert); every impl carries a `// SAFETY:` justification, and the scalar
 //! wrappers' `const _` size/alignment assertions ([`crate::types`]) pin the
-//! layout the impls rely on. The `bytemuck` feature bridges these to
-//! `bytemuck::{Pod, Zeroable}` for GPU/FFI boundaries that fix that contract.
+//! layout the impls rely on. Eunomia-owned types also implement
+//! `bytemuck::{Pod, Zeroable}` here for GPU/FFI boundaries that fix that
+//! contract.
 
 use crate::types::{Bf16, Bf4, Bf8, Complex, F16, F32, F4, F64, F8, I16, I32, I8};
 
@@ -36,13 +37,28 @@ pub unsafe trait Zeroable: Sized {
 ///   or references.
 pub unsafe trait Pod: Zeroable + Copy + 'static {}
 
-macro_rules! impl_pod {
+macro_rules! impl_layout_markers {
     ($($t:ty),* $(,)?) => {$(
         // SAFETY: a primitive or `#[repr(transparent)]`/`#[repr(C)]` wrapper over
         // one with no invalid bit patterns, no padding, and no interior
         // mutability; all-zeroes is a valid value.
         unsafe impl Zeroable for $t {}
         // SAFETY: see the `Zeroable` impl; additionally `Copy + 'static`.
+        unsafe impl Pod for $t {}
+        // SAFETY: the same representation proof satisfies bytemuck's marker
+        // contract; the type is owned by Eunomia and layout-asserted below.
+        unsafe impl bytemuck::Zeroable for $t {}
+        // SAFETY: see the `bytemuck::Zeroable` impl; additionally `Copy + 'static`.
+        unsafe impl bytemuck::Pod for $t {}
+    )*};
+}
+
+macro_rules! impl_pod {
+    ($($t:ty),* $(,)?) => {$(
+        // SAFETY: primitive scalar types have no invalid bit patterns or
+        // padding, and all-zeroes is a valid value.
+        unsafe impl Zeroable for $t {}
+        // SAFETY: see the `Zeroable` impl; primitive scalars are `Copy + 'static`.
         unsafe impl Pod for $t {}
     )*};
 }
@@ -51,10 +67,21 @@ macro_rules! impl_pod {
 // invalid bit patterns and are therefore not `Pod`.
 impl_pod!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
+// SAFETY: arrays are contiguous repetitions of their element representation;
+// a zeroable element makes every array element valid at zeroes.
+unsafe impl<T: Zeroable, const N: usize> Zeroable for [T; N] {}
+// SAFETY: see the `Zeroable` impl; a `Pod` element has no padding or invalid
+// bit patterns, so the repeated array representation has the same properties.
+unsafe impl<T: Pod, const N: usize> Pod for [T; N] {}
+
 // eunomia scalar wrappers (`#[repr(transparent)]`, layout pinned in `types`).
-impl_pod!(F16, F32, F64, Bf16, Bf8, Bf4, F8, F4, I8, I16, I32);
+impl_layout_markers!(F16, F32, F64, Bf16, Bf8, Bf4, F8, F4, I8, I16, I32);
 
 // SAFETY: `Complex<T>` is `#[repr(C)]` with two `T` fields, so its all-zero
 // pattern is valid, and it is padding-free plain-old-data, exactly when `T` is.
 unsafe impl<T: Zeroable> Zeroable for Complex<T> {}
 unsafe impl<T: Pod> Pod for Complex<T> {}
+// SAFETY: `Complex<T>` is `#[repr(C)]` with two `T` fields, so its all-zero
+// pattern is valid, and it is padding-free plain-old-data, exactly when `T` is.
+unsafe impl<T: bytemuck::Zeroable> bytemuck::Zeroable for Complex<T> {}
+unsafe impl<T: bytemuck::Pod> bytemuck::Pod for Complex<T> {}

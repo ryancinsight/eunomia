@@ -14,7 +14,8 @@ use core::mem::{align_of, size_of};
 pub enum PodCastError {
     /// The source pointer is not aligned for the destination type.
     TargetAlignmentMismatch,
-    /// The source byte length is not an exact multiple of the destination size.
+    /// The source byte length cannot be represented or is not an exact multiple
+    /// of the destination size.
     SizeMismatch,
 }
 
@@ -52,15 +53,18 @@ pub fn bytes_of_mut<T: Pod>(value: &mut T) -> &mut [u8] {
 /// `size_of::<A>()` bytes as `B`, or the reason it cannot be done.
 #[inline]
 fn cast_len<A, B>(src_len: usize) -> Result<usize, PodCastError> {
-    let src_bytes = size_of::<A>() * src_len;
-    if size_of::<B>() == 0 {
+    let target_size = size_of::<B>();
+    if target_size == 0 {
         // A slice of ZSTs carries no bytes; the only sound target length is 0.
         return Ok(0);
     }
-    if !src_bytes.is_multiple_of(size_of::<B>()) {
+    let src_bytes = size_of::<A>()
+        .checked_mul(src_len)
+        .ok_or(PodCastError::SizeMismatch)?;
+    if !src_bytes.is_multiple_of(target_size) {
         return Err(PodCastError::SizeMismatch);
     }
-    Ok(src_bytes / size_of::<B>())
+    Ok(src_bytes / target_size)
 }
 
 /// Reinterpret a slice of one [`Pod`] type as a slice of another, fallibly.
@@ -71,7 +75,7 @@ fn cast_len<A, B>(src_len: usize) -> Result<usize, PodCastError> {
 /// pointer is not aligned for `B`.
 pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], PodCastError> {
     let new_len = cast_len::<A, B>(a.len())?;
-    if !(a.as_ptr() as usize).is_multiple_of(align_of::<B>()) {
+    if !a.as_ptr().addr().is_multiple_of(align_of::<B>()) {
         return Err(PodCastError::TargetAlignmentMismatch);
     }
     // SAFETY: the byte length divides evenly into `new_len` `B`s, the source is
@@ -86,7 +90,7 @@ pub fn try_cast_slice<A: Pod, B: Pod>(a: &[A]) -> Result<&[B], PodCastError> {
 /// As [`try_cast_slice`].
 pub fn try_cast_slice_mut<A: Pod, B: Pod>(a: &mut [A]) -> Result<&mut [B], PodCastError> {
     let new_len = cast_len::<A, B>(a.len())?;
-    if !(a.as_ptr() as usize).is_multiple_of(align_of::<B>()) {
+    if !a.as_ptr().addr().is_multiple_of(align_of::<B>()) {
         return Err(PodCastError::TargetAlignmentMismatch);
     }
     // SAFETY: as [`try_cast_slice`]; the exclusive borrow is preserved because
@@ -129,7 +133,7 @@ pub fn try_from_bytes<T: Pod>(bytes: &[u8]) -> Result<&T, PodCastError> {
     if bytes.len() != size_of::<T>() {
         return Err(PodCastError::SizeMismatch);
     }
-    if !(bytes.as_ptr() as usize).is_multiple_of(align_of::<T>()) {
+    if !bytes.as_ptr().addr().is_multiple_of(align_of::<T>()) {
         return Err(PodCastError::TargetAlignmentMismatch);
     }
     // SAFETY: length equals `size_of::<T>()`, the pointer is aligned for `T`, and
@@ -154,16 +158,41 @@ pub fn from_bytes<T: Pod>(bytes: &[u8]) -> &T {
 ///
 /// Copies `size_of::<T>()` bytes out by value, so the source need not be aligned.
 ///
+/// # Errors
+/// [`PodCastError::SizeMismatch`] if `bytes.len() < size_of::<T>()`.
+pub fn try_pod_read_unaligned<T: Pod>(bytes: &[u8]) -> Result<T, PodCastError> {
+    if bytes.len() < size_of::<T>() {
+        return Err(PodCastError::SizeMismatch);
+    }
+    // SAFETY: the length is checked, `read_unaligned` needs no alignment, and
+    // `T: Pod` makes any `size_of::<T>()`-byte pattern a valid owned `T`.
+    Ok(unsafe { bytes.as_ptr().cast::<T>().read_unaligned() })
+}
+
+/// Read a [`Pod`] value out of a byte slice without any alignment requirement.
+///
+/// This is the infallible convenience form of [`try_pod_read_unaligned`].
+///
 /// # Panics
 /// If `bytes.len() < size_of::<T>()`.
 #[inline]
 #[must_use]
 pub fn pod_read_unaligned<T: Pod>(bytes: &[u8]) -> T {
-    assert!(
-        bytes.len() >= size_of::<T>(),
-        "pod_read_unaligned: buffer shorter than the target type",
-    );
-    // SAFETY: the length is checked, `read_unaligned` needs no alignment, and
-    // `T: Pod` makes any `size_of::<T>()`-byte pattern a valid owned `T`.
-    unsafe { bytes.as_ptr().cast::<T>().read_unaligned() }
+    match try_pod_read_unaligned(bytes) {
+        Ok(value) => value,
+        Err(error) => panic!("pod_read_unaligned: {error}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{cast_len, PodCastError};
+
+    #[test]
+    fn cast_len_rejects_source_byte_count_overflow() {
+        assert_eq!(
+            cast_len::<u128, u8>(usize::MAX),
+            Err(PodCastError::SizeMismatch),
+        );
+    }
 }

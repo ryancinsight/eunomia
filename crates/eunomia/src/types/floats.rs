@@ -102,6 +102,10 @@ impl F16 {
     pub const ZERO: Self = Self(0x0000);
     /// The value `1.0`.
     pub const ONE: Self = Self(0x3C00);
+    /// The distance from `1.0` to the next larger binary16 value.
+    pub const EPSILON: Self = Self(0x1400);
+    /// The smallest positive normal binary16 value.
+    pub const MIN_POSITIVE: Self = Self(0x0400);
     /// A quiet not-a-number.
     pub const NAN: Self = Self(0x7E00);
     /// Positive infinity.
@@ -170,7 +174,9 @@ impl F16 {
     }
 
     /// Widen a slice of `F16` into `f32` — F16C-accelerated on x86-64, scalar
-    /// elsewhere. Writes `min(src.len(), dst.len())` elements.
+    /// elsewhere. Finite values and infinities are bit-exact; hardware may
+    /// quiet signaling NaNs while preserving their NaN value class. Writes
+    /// `min(src.len(), dst.len())` elements.
     #[inline]
     pub fn widen_slice(src: &[Self], dst: &mut [f32]) {
         // `F16` is `#[repr(transparent)]` over `u16`, so the reinterpret is a
@@ -197,6 +203,10 @@ impl Bf16 {
     pub const ZERO: Self = Self(0x0000);
     /// The value `1.0`.
     pub const ONE: Self = Self(0x3F80);
+    /// The distance from `1.0` to the next larger bfloat16 value.
+    pub const EPSILON: Self = Self(0x3C00);
+    /// The smallest positive normal bfloat16 value.
+    pub const MIN_POSITIVE: Self = Self(0x0080);
     /// A quiet not-a-number.
     pub const NAN: Self = Self(0x7FC0);
     /// Positive infinity.
