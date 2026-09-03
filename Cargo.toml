@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/eunomia"]
+members = ["crates/eunomia", "crates/eunomia-derive"]
 
 [workspace.package]
 version = "0.8.0"
@@ -68,6 +68,10 @@ too_many_lines = "allow"           # 1  (0 prod) table-driven conformance test
 
 [workspace.dependencies]
 eunomia = { path = "crates/eunomia" }
+eunomia-derive = { version = "0.8.0", path = "crates/eunomia-derive" }
 bytemuck = { version = "1.14", features = ["derive"] }
 libm = { version = "0.2.8", default-features = false }
 rkyv = { version = "0.8", default-features = false }
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }

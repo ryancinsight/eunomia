@@ -217,9 +217,25 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   `default-features = false` consumers (e.g. hephaestus GPU buffers) rely on
   `eunomia::Complex: bytemuck::Pod`, so it requires consumer verification, not a
   solo eunomia commit.
-- **E-027 [arch]** Migrate consumer GPU-ABI structs (hephaestus ~130, coeus
-  ~115, …) onto the E-026 vocabulary while preserving the `bytemuck::Pod` wgpu
-  contract via the bridge; add eunomia as a direct hephaestus dep. Dep: E-026.
+- **E-027 [arch] — in-progress; owner: Codex; branch:
+  `feat/eunomia-layout-derives`.** Add the provider-owned `Pod`/`Zeroable`
+  derives required by the consumer GPU-ABI migration, then migrate consumer
+  GPU-ABI structs (hephaestus ~130, coeus ~115, …) onto the E-026 vocabulary
+  while preserving the `bytemuck::Pod` wgpu contract via the bridge; add
+  eunomia as a direct hephaestus dep. Dep: E-026.
+- **Provider increment (2026-09-03).** Added the `eunomia-derive` proc-macro
+  member and re-exported `Pod`/`Zeroable` derives from `eunomia`. Derives
+  require `repr(C)` or `repr(transparent)`, reject packed/default layouts,
+  add field marker bounds, and emit a concrete padding assertion. Generic
+  marker bounds remain monomorphized; stable Rust cannot evaluate arbitrary
+  generic `size_of` expressions in a module-level const assertion.
+- **Evidence.** Locked all-target check, strict all-target Clippy, format,
+  143/143 all-feature Nextest, 9/9 doctests, warning-denied Rustdoc, and
+  no-default-feature check pass offline. `eunomia-derive` packages and
+  verifies locally; full `eunomia` tarball verification requires the derive
+  package to exist in the registry first, so release order is derive then
+  provider. Consumer migration remains open until Hephaestus adopts the
+  provider derive and marker bounds.
 - **E-028 [patch] — done** Fixed `packed/unpack/arch.rs` no_std AVX-512 detection
   (G-C1). The `"avx512bw"`→`"avx512f"` copy-paste was already corrected under
   E-023; restored the `avx512vl` guard both no_std branches dropped, matching the
