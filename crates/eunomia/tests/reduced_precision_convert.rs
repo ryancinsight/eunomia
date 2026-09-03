@@ -2,12 +2,13 @@
 //! ([`eunomia::convert`]) against the `half` crate — the authoritative
 //! `binary16`/`bfloat16` reference this kernel replaces.
 //!
-//! Widening is verified **exhaustively** (all 2¹⁶ bit patterns) and bit-exactly.
-//! Narrowing is verified by (a) an exhaustive round-trip identity over every
-//! finite value and (b) a near-exhaustive `f32` differential sweep covering
-//! every exponent regime and every round/guard/sticky rounding decision. NaN
-//! outputs are checked for NaN-ness (payload bits are implementation-defined),
-//! everything else for exact bit equality.
+//! Widening is verified **exhaustively** (all 2¹⁶ bit patterns): finite,
+//! infinite, zero, and non-NaN values are bit-exact, while NaNs are checked for
+//! their value class because payload bits are implementation-defined. Narrowing
+//! is verified by (a) an exhaustive round-trip identity over every finite value
+//! and (b) a near-exhaustive `f32` differential sweep covering every exponent
+//! regime and every round/guard/sticky rounding decision. NaN outputs are
+//! checked for NaN-ness, everything else for exact bit equality.
 
 use eunomia::convert::{narrow, widen};
 

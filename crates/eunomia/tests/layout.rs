@@ -3,9 +3,9 @@
 
 use eunomia::layout::{
     bytes_of, bytes_of_mut, cast_slice, cast_slice_mut, from_bytes, pod_read_unaligned,
-    try_cast_slice, try_from_bytes, PodCastError,
+    try_cast_slice, try_from_bytes, try_pod_read_unaligned, PodCastError,
 };
-use eunomia::{Complex32, Zeroable};
+use eunomia::{Bf16, Complex32, Zeroable, F16};
 
 #[test]
 fn zeroed_is_all_zero_bytes() {
@@ -93,6 +93,23 @@ fn pod_read_unaligned_reads_from_any_offset() {
     buf[1..5].copy_from_slice(&value.to_ne_bytes());
     // Offset 1 is misaligned for `u32`; the unaligned read still succeeds.
     assert_eq!(pod_read_unaligned::<u32>(&buf[1..]), value);
+    assert_eq!(try_pod_read_unaligned::<u32>(&buf[1..]), Ok(value));
+    assert_eq!(
+        try_pod_read_unaligned::<u32>(&buf[..3]),
+        Err(PodCastError::SizeMismatch),
+    );
+}
+
+#[test]
+fn eunomia_types_satisfy_the_bytemuck_boundary_contract() {
+    fn assert_bytemuck_pod<T: bytemuck::Pod>() {}
+
+    assert_bytemuck_pod::<F16>();
+    assert_bytemuck_pod::<Bf16>();
+    assert_bytemuck_pod::<Complex32>();
+
+    let value = F16::from_bits(0x3C00);
+    assert_eq!(bytemuck::bytes_of(&value), bytes_of(&value));
 }
 
 #[test]

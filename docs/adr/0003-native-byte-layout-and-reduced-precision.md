@@ -53,10 +53,13 @@ replace, bytemuck.** Eunomia gains marker traits (`Zeroable`, `Pod`-equivalent)
 and the safe reinterpretation the stack actually uses (`cast_slice`(+mut),
 `bytes_of`, `from_bytes`, unaligned read), machine-checked for eunomia's own
 types via the existing `const _` size/align assertions + per-impl `// SAFETY:`.
-A default `bytemuck-interop` feature blanket-bridges eunomia markers ↔
-`bytemuck::{Pod,Zeroable}` so eunomia types keep satisfying the wgpu/metal/cuda
-`bytemuck::Pod` contract. Scope is bounded to what the audit found consumers use
-— **no derive macro and no OCP/checked-transmute surface is built speculatively.**
+Because `bytemuck` remains a mandatory dependency for the GPU boundary, the
+interop is unconditional rather than feature-gated: Eunomia-owned wrappers and
+`Complex<T>` receive co-located implementations of both Eunomia's markers and
+`bytemuck::{Pod,Zeroable}`. A blanket bridge is not possible under Rust's orphan
+rules, and no derive macro is re-exported. Backend-owned ABI structs continue to
+own their direct `bytemuck` contracts. Scope is bounded to what the audit found
+consumers use — **no OCP/checked-transmute surface is built speculatively.**
 
 **D3 — Pin the sub-byte special-value convention explicitly; add OCP-MXFP as a
 distinct format family only when a consumer needs it.** `Bf8` (E5M2) uses the
@@ -97,14 +100,17 @@ D2's checked tier emulates on stable.
   oracle.
 - One conversion kernel replaces five implementations and fixes the
   truncation/convention defects (G-C2/G-C3/G-A3).
-- Hermes and Leto use `eunomia::F16`/`Bf16` directly. Apollo's remaining raw
-  `half::f16` FFT surface is Apollo-owned and does not require Eunomia's foreign
-  trait or cast implementations.
-- **Verified (slice 1, this change):** the native kernel is bit-exact vs `half`
-  by exhaustive widen (all 2¹⁶, both formats), exhaustive finite round-trip, a
-  ~4.2M-case rounding sweep across every exponent/round/guard/sticky decision,
-  and pinned known-value/ties-to-even cases. `fmt`/`clippy -D warnings`/`nextest`
-  (52/52)/doctest/rustdoc all clean; purely additive `pub mod convert` ([minor]).
+- Hermes, Leto, Apollo, and other Atlas consumers use `eunomia::F16`/`Bf16`
+  directly. Apollo's compact complex FFT surface uses `Complex<F16>`; no
+  consumer retains `half::f16` as a production representation. `half` remains
+  only as Eunomia's independent development oracle.
+- **Verified (slice 1, this change):** the native kernel matches `half` for
+  finite, infinite, zero, and NaN value-class semantics by exhaustive widen (all
+  2¹⁶ patterns, both formats), exhaustive finite round-trip, a ~4.2M-case
+  rounding sweep across every exponent/round/guard/sticky decision, and pinned
+  known-value/ties-to-even cases. NaN payload bits are intentionally not a
+  contract. `fmt`/`clippy -D warnings`/`nextest` (52/52)/doctest/rustdoc all
+  clean; purely additive `pub mod convert` ([minor]).
 - **Verified (slice 2):** E5M2, E2M1, E4M3, and E3M0 now instantiate the same
   kernel through monomorphized IEEE or finite-only policies. Analytical
   known-value, special-value, exhaustive finite-encoding round-trip, and
@@ -115,5 +121,20 @@ D2's checked tier emulates on stable.
   constants. A dependency-free AArch64 compile harness includes the actual
   kernel and NEON module, providing compile-time verification of that ISA path.
 - Follow-ups tracked as [backlog.md](../../backlog.md) E-022…E-030.
+
+## Revision note — 2026-09-02
+
+The original decision allowed Apollo's raw `half::f16` FFT surface to remain
+consumer-owned. The stack contract is now clarified: Eunomia owns reduced-
+precision scalar and complex representations, and Apollo's compact route is a
+consumer migration to `F16`/`Complex<F16>`. The provider implementation and
+its independent `half` oracle are unchanged.
+
+The byte-layout implementation reconciles the planned interop feature with the
+current dependency contract. Dual marker implementations now live in
+`layout::marker`, while backend-owned ABI types remain direct `bytemuck`
+contracts. Checked slice-length arithmetic rejects source-byte-count overflow,
+and fallible unaligned reads expose short input as `PodCastError` instead of
+requiring a panic at an untrusted boundary.
 
 [#129097]: https://github.com/rust-lang/rust/issues/129097
