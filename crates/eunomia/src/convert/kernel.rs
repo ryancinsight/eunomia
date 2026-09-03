@@ -8,8 +8,7 @@
 //! exponent bias `2^(E-1) - 1`. A monomorphized special-value policy selects
 //! either IEEE infinity/NaN encodings or a finite-only format that reserves the
 //! entire top exponent for NaN and saturates overflow. Narrowing rounds to
-//! nearest, ties to even, matching IEEE 754 and the `half` reference this
-//! displaces.
+//! nearest, ties to even, matching the IEEE 754 specification.
 //!
 //! The widths and policy are compile-time parameters, so each format
 //! monomorphizes without runtime width or policy dispatch while sharing one
