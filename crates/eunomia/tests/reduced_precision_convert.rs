@@ -1,6 +1,5 @@
 //! Differential verification of the native reduced-precision conversion kernel
-//! ([`eunomia::convert`]) against the `half` crate — the authoritative
-//! `binary16`/`bfloat16` reference this kernel replaces.
+//! ([`eunomia::convert`]) against an independent IEEE-754 reference.
 //!
 //! Widening is verified **exhaustively** (all 2¹⁶ bit patterns): finite,
 //! infinite, zero, and non-NaN values are bit-exact, while NaNs are checked for
@@ -10,7 +9,10 @@
 //! regime and every round/guard/sticky rounding decision. NaN outputs are
 //! checked for NaN-ness, everything else for exact bit equality.
 
+mod support;
+
 use eunomia::convert::{narrow, widen};
+use support::{is_nan, narrow as reference_narrow, widen as reference_widen};
 
 /// Assert `widen::<E, M>(bits)` reproduces the reference `f32` bit-for-bit
 /// (NaN → NaN, since NaN payloads are not contractually fixed).
@@ -61,17 +63,17 @@ fn assert_narrow<const E: u32, const M: u32>(x: f32, reference_bits: u32) {
 }
 
 #[test]
-fn widen_binary16_matches_half_exhaustively() {
+fn widen_binary16_matches_ieee_reference_exhaustively() {
     for bits in 0u32..=0xFFFF {
-        let reference = half::f16::from_bits(bits as u16).to_f32();
+        let reference = f32::from_bits(reference_widen::<5, 10>(bits));
         assert_widen::<5, 10>(bits, reference);
     }
 }
 
 #[test]
-fn widen_bfloat16_matches_half_exhaustively() {
+fn widen_bfloat16_matches_ieee_reference_exhaustively() {
     for bits in 0u32..=0xFFFF {
-        let reference = half::bf16::from_bits(bits as u16).to_f32();
+        let reference = f32::from_bits(reference_widen::<8, 7>(bits));
         assert_widen::<8, 7>(bits, reference);
     }
 }
@@ -79,15 +81,16 @@ fn widen_bfloat16_matches_half_exhaustively() {
 #[test]
 fn narrow_binary16_round_trips_every_finite_value() {
     for bits in 0u32..=0xFFFF {
-        let value = half::f16::from_bits(bits as u16);
-        if value.is_nan() {
+        if is_nan::<5, 10>(bits) {
             continue; // NaN payload is not preserved bit-for-bit by design
         }
         let widened = f32::from_bits(widen::<5, 10>(bits));
+        let native = narrow::<5, 10>(widened.to_bits());
+        assert_eq!(native, bits, "binary16 round-trip failed for {bits:#06x}");
         assert_eq!(
-            narrow::<5, 10>(widened.to_bits()),
-            bits,
-            "binary16 round-trip failed for {bits:#06x} ({value})",
+            native,
+            reference_narrow::<5, 10>(widened.to_bits()),
+            "binary16 reference disagreement for {bits:#06x}",
         );
     }
 }
@@ -95,23 +98,25 @@ fn narrow_binary16_round_trips_every_finite_value() {
 #[test]
 fn narrow_bfloat16_round_trips_every_finite_value() {
     for bits in 0u32..=0xFFFF {
-        let value = half::bf16::from_bits(bits as u16);
-        if value.is_nan() {
+        if is_nan::<8, 7>(bits) {
             continue;
         }
         let widened = f32::from_bits(widen::<8, 7>(bits));
+        let native = narrow::<8, 7>(widened.to_bits());
+        assert_eq!(native, bits, "bfloat16 round-trip failed for {bits:#06x}");
         assert_eq!(
-            narrow::<8, 7>(widened.to_bits()),
-            bits,
-            "bfloat16 round-trip failed for {bits:#06x} ({value})",
+            native,
+            reference_narrow::<8, 7>(widened.to_bits()),
+            "bfloat16 reference disagreement for {bits:#06x}",
         );
     }
 }
 
 /// Sweep every `f32` exponent, every combination of the kept + guard + round
 /// mantissa bits, a sticky bit, and both signs — the complete set of inputs that
-/// determine a rounding decision — comparing `narrow` to `half` bit-for-bit.
-fn sweep_narrow_against_half<const E: u32, const M: u32>(reference: impl Fn(f32) -> u32) {
+/// determine a rounding decision — comparing `narrow` to the independent
+/// reference bit-for-bit.
+fn sweep_narrow_against_reference<const E: u32, const M: u32>() {
     // Kept mantissa + guard + round bits, placed at the top of the f32 field.
     let top_bits = M + 2;
     let top_shift = 23 - top_bits;
@@ -121,7 +126,7 @@ fn sweep_narrow_against_half<const E: u32, const M: u32>(reference: impl Fn(f32)
                 for sticky in [0u32, 1] {
                     let mant = (top << top_shift) | sticky;
                     let x = f32::from_bits((sign << 31) | (exp << 23) | mant);
-                    assert_narrow::<E, M>(x, reference(x));
+                    assert_narrow::<E, M>(x, reference_narrow::<E, M>(x.to_bits()));
                 }
             }
         }
@@ -129,13 +134,13 @@ fn sweep_narrow_against_half<const E: u32, const M: u32>(reference: impl Fn(f32)
 }
 
 #[test]
-fn narrow_binary16_matches_half_across_rounding_sweep() {
-    sweep_narrow_against_half::<5, 10>(|x| half::f16::from_f32(x).to_bits() as u32);
+fn narrow_binary16_matches_ieee_reference_across_rounding_sweep() {
+    sweep_narrow_against_reference::<5, 10>();
 }
 
 #[test]
-fn narrow_bfloat16_matches_half_across_rounding_sweep() {
-    sweep_narrow_against_half::<8, 7>(|x| half::bf16::from_f32(x).to_bits() as u32);
+fn narrow_bfloat16_matches_ieee_reference_across_rounding_sweep() {
+    sweep_narrow_against_reference::<8, 7>();
 }
 
 #[test]

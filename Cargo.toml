@@ -68,7 +68,6 @@ too_many_lines = "allow"           # 1  (0 prod) table-driven conformance test
 
 [workspace.dependencies]
 eunomia = { path = "crates/eunomia" }
-half = { version = "2.3", default-features = false }
 bytemuck = { version = "1.14", features = ["derive"] }
 libm = { version = "0.2.8", default-features = false }
 rkyv = { version = "0.8", default-features = false }
