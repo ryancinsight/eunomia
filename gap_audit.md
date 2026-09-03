@@ -110,7 +110,8 @@ Safety-model spectrum: bytemuck (`unsafe` marker, silent UB) → zerocopy (deriv
 compile-checked) → std `TransmuteFrom` (compiler-proven, but nightly/unstable/
 [unsound #129097]). **`TransmuteFrom` is not adoptable** (stable pin);
 **bytemuck cannot be dropped** (wgpu/metal/cuda fix `Pod` at the buffer
-boundary); **`half` is fully replaceable** (no external lock-in, RNE oracle).
+boundary); the external reduced-precision provider is fully replaceable (no
+required lock-in; the current tests use an independent IEEE-754 oracle).
 
 ### Gaps
 
@@ -132,8 +133,10 @@ size/alignment/offset assertions in `types/mod.rs`.
 gate had landed inside a doc-comment, leaving the tests live; the stray gate is
 removed.
 
-Architecture — **G-A1 (resolved E-025c)** `half` was a removable hard runtime
-dependency; it now exists only in the differential-oracle dev graph.
+Architecture — **G-A1 (resolved E-025c/E-037)** the external reduced-precision
+provider was removable; Eunomia's provider and test source are now direct-
+dependency-free. Criterion's benchmark-only `ciborium` edge still resolves
+`half` transitively and is not used by datatype code.
 **G-A2** no eunomia byte-layout vocabulary; own markers + used cast fns at
 checked tier + bytemuck bridge (E-026/E-027). **G-A3 (resolved E-023)** all
 sub-byte scalar and packed-table conversions use the E-022 kernel.
@@ -156,7 +159,7 @@ RNE + pinned conventions + one generic home); G-A2 byte-layout vocabulary
 delivered via E-026 (native `layout` module; `bytemuck`-gating deferred to the
 E-027 consumer co-evolution); G-A1 fully resolved by E-025/E-025b/E-025c
 (`F16`/`Bf16` native `u16`, explicit bit access, foreign raw-half impls deleted,
-`half` dev-only); G-T2 resolved via E-030 (branchless NEON F8 decode +
+independent IEEE-754 test oracle); G-T2 resolved via E-030 (branchless NEON F8 decode +
 exhaustive aarch64 differential). Still open: E-027 (consumer
 bytemuck→eunomia migration).
 
@@ -192,12 +195,13 @@ bytemuck bridged not dropped.
 - Deleted Eunomia's foreign `NumericElement`, `FloatElement`, sealing, and
   `CastFrom` implementations for `half::f16`/`half::bf16`; native `F16`/`Bf16`
   remain the only reduced-precision provider types.
-- `half` moved from normal dependencies to dev-dependencies, preserving the
-  exhaustive independent conversion oracle without entering consumer graphs.
+- Eunomia's direct `half` declarations and imports were removed; an independent
+  IEEE-754 reference preserves exhaustive conversion coverage. Criterion's
+  benchmark-only serializer dependency still resolves `half` transitively.
 - Current consumer evidence shows Hermes and Leto are raw-half-free. Apollo's
   raw-half FFT type remains an Apollo-owned surface and does not depend on the
   deleted Eunomia implementations.
-- Evidence: normal `cargo tree` excludes `half`; all-feature check and
+- Evidence: direct manifests and source exclude `half`; all-feature check and
   warning-denied Clippy pass; Nextest passes 86/86; doctests pass 5/5;
   no-default check, rustdoc, and 0.5→0.6 semver classification pass. Hermes 0.4
   and Leto 0.39 pass all-target/all-feature checks. Hephaestus 0.17 passes the

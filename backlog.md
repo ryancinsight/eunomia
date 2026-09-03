@@ -2,6 +2,22 @@
 
 Sprint target: 0.8.0 (native reduced-precision provider contract).
 
+## E-037 [patch] — Remove the external reduced-precision oracle — review
+
+- Owner: Codex; claimed 2026-09-03 on branch
+  `fix/eunomia-independent-precision-oracle`.
+- Scope: Eunomia reduced-precision integration-test oracle, manifests, ADR 0003,
+  and the E-025c completion record. The production conversion kernel and public
+  API remain unchanged.
+- Acceptance: Eunomia manifests and source have no direct `half` dependency or
+  import; independent IEEE-754 widening/narrowing tests retain exhaustive
+  bit-pattern and rounding-sweep coverage; format, strict Clippy, Nextest,
+  doctests, Rustdoc, and lockfile gates pass. Criterion's benchmark-only
+  transitive `ciborium` edge is recorded, not treated as a datatype provider.
+- Evidence: feature matrix 6/6, Nextest 142/142, doctests 9/9, strict
+  all-target Clippy, Rustdoc with warnings denied, locked metadata, package
+  listing, format, and diff checks pass on the final source revision.
+
 ## 0.8.0 closure refresh — 2026-08-10
 
 The Eunomia 0.8.0 provider surface is source-complete and indexed on crates.io
@@ -160,10 +176,10 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   `F16`/`Bf16` are now native `u16`-backed (breaking `.0` field change): conversions
   route through the E-022 kernel (bit-exact vs `half`, proven exhaustively over all
   2¹⁶ patterns + an f32 narrow sweep), `PartialEq`/`PartialOrd` are manual
-  **float-semantic** (not bitwise — preserving `half`'s ±0/NaN/ordering), and the
+  **float-semantic** (not bitwise — preserving IEEE ±0/NaN/ordering), and the
   whole wrapper + packed path (scalar + AVX2/AVX-512/NEON + slice) is half-free.
-  E-025c removed the foreign raw-half trait/cast surface and moved `half` to the
-  dev-only differential-oracle graph. Completed as a **takeover** of
+  E-025c removed the foreign raw-half trait/cast surface and left the provider
+  with no external reduced-precision dependency. Completed as a **takeover** of
   a concurrent peer's packed-side WIP (dispatch/intrinsics) combined with my
   wrapper-side re-back; I also fixed the aarch64 NEON path the peer had not
   converted. Evidence: fmt / clippy-D / nextest 76/76 / doctest / rustdoc / no_std
@@ -178,13 +194,13 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   **E-025c done — owner: Codex; scope: Eunomia manifests, raw-half
   primitive/cast impls, provider tests, Rustdoc, and PM artifacts.** Hermes and
   Leto now use `eunomia::F16`/`Bf16` directly. Remove Eunomia's foreign
-  `half::f16`/`bf16` numeric and cast surface and retire `half` from the
+  `half::f16`/`bf16` numeric and cast surface and retire the external provider from the
   production dependency graph; retain it only as the independent dev-time
   differential oracle. Acceptance: production source/manifests contain no
   `half` type dependency, all Eunomia gates pass, and path-overridden Hermes and
   Leto checks remain green. Apollo's raw-half FFT surface is a separate
   Apollo-owned migration and does not require Eunomia's foreign impls.
-  Acceptance met: normal dependency graph is half-free; all producer gates pass
+  Acceptance met: Eunomia's production and test source is external-provider-free; all producer gates pass
   (86/86 Nextest, 5/5 doctests); Hermes 0.4, Leto 0.39, and Hephaestus 0.17
   compile against Eunomia 0.6. Hephaestus required its stale Hermes 0.3/Leto
   0.38 lock closure to advance to their merged native-provider defaults.

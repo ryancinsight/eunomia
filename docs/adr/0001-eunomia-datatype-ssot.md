@@ -10,7 +10,8 @@
 `hermes-numeric` declared itself *"Single Source of Truth for all numeric
 representations"* and owned the scalar wrapper types, packed sub-byte formats,
 conversion lattices, and (after the num-complex removal) `Complex<T>`. It is a
-clean leaf — its only deps are `half`, `bytemuck`, `libm`, optional `rkyv`.
+clean leaf — its runtime deps are `bytemuck` and `libm`, with optional `rkyv`,
+`serde`, `numpy`, and `pyo3` integration surfaces; Criterion is benchmark-only.
 
 But it lived **inside the hermes workspace**, alongside seven `hermes-simd-*`
 crates. Two problems follow:

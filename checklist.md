@@ -4,6 +4,19 @@ Target version: 0.8.0
 
 Sprint phase: Execution
 
+## E-037 [patch] — Remove the external reduced-precision oracle (Owner: Codex)
+
+- [x] Claim the provider-local test, manifest, ADR, and PM scope on the clean
+      default head.
+- [x] Replace the `half` dev oracle with an independent IEEE-754 reference
+      module while preserving exhaustive and rounding-boundary coverage.
+- [x] Remove the workspace and crate `half` declarations and synchronize the
+      E-025c records; retain the documented Criterion/ciborium transitive edge.
+- [x] Pass format, strict all-target/all-feature Clippy, Nextest, doctests,
+      Rustdoc, and the standalone locked lockfile check.
+- [ ] Push, merge, and refresh the Atlas provider pointer in a separate
+      convergence increment.
+
 ## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — current slice
 
 - [x] Define one real-scalar min/max contract: one NaN is ignored, two NaNs
@@ -103,8 +116,8 @@ Sprint phase: Execution
 - [x] Reconcile the live consumer graph: Hermes and Leto use native Eunomia
   reduced-precision types; Apollo's remaining raw-half FFT surface is
   Apollo-owned and does not consume Eunomia's foreign impls.
-- [x] Delete the foreign raw-half numeric/cast surface and move `half` from the
-  production graph to the differential-oracle dev graph.
+- [x] Delete the foreign raw-half numeric/cast surface and remove the external
+      reduced-precision dependency from the provider graph.
 - [x] Update provider tests, Rustdoc, README, changelog, and residual-risk
   records for the breaking 0.6.0 contract.
 - [x] Pass format, feature, warning-denied Clippy, Nextest (86/86), doctest

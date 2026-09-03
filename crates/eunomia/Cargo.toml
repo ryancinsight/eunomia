@@ -31,7 +31,6 @@ numpy = ["dep:numpy", "dep:pyo3", "std"]
 
 [dev-dependencies]
 criterion = "0.5"
-half = { workspace = true }
 
 # Reduced-precision conversion throughput: F16C-accelerated bulk paths vs the
 # scalar kernel, and the SIMD packed-unpack dispatch. Baselines gate regressions.

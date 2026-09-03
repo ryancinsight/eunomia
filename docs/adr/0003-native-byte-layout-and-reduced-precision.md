@@ -12,8 +12,8 @@
 Eunomia is the datatype law but does not fully own two datatype concerns it is
 the natural home for:
 
-1. **Reduced precision.** `F16`/`Bf16` are transparent wrappers over
-   `half::f16`/`half::bf16`; `half` is a hard runtime dependency. The sub-byte
+1. **Reduced precision.** `F16`/`Bf16` previously wrapped the external
+   `half::f16`/`half::bf16`; the provider did not own their representation. The sub-byte
    `F8`/`Bf8`/`F4`/`Bf4` are already native but hand-rolled four times, and they
    **truncate** instead of rounding to nearest-even and pin an unpinned,
    non-standard special-value convention.
@@ -29,12 +29,13 @@ The audit established the constraints that bound the decision:
 - **wgpu/metal/cuda contractually require `bytemuck::Pod`** at the buffer
   boundary (all ~530 stack sites are internal GPU-ABI structs, no cross-crate
   public `Pod` type) → bytemuck cannot be removed, only bridged.
-- **`half` has no equivalent external lock-in**; its stack surface is a bounded
-  set of conversion methods and the public `f16`/`bf16` element type in
-  hermes → leto → coeus/apollo. It is fully replaceable.
+- **The external reduced-precision implementation has no required lock-in**;
+  its stack surface was a bounded set of conversion methods and public element
+  types. It is fully replaceable by provider-owned representations.
 - The stack's entire `zerocopy` need is one call (`IntoBytes::as_bytes`, in
-  out-of-scope consus); `half` rounds round-to-nearest-ties-to-even, giving an
-  exact differential oracle for a native kernel.
+  out-of-scope consus). The earlier external reduced-precision implementation
+  supplied a differential oracle, but it is not required by Eunomia's native
+  implementation or test source.
 
 ## Decision
 
@@ -44,9 +45,10 @@ dependency.** One generic const-parameterized IEEE-754 narrow/widen kernel
 subnormals, inf/NaN, f32-subnormal handling) is the single conversion SSOT.
 `binary16` (`E=5,M=10`) and `bfloat16` (`E=8,M=7`) instantiate it; the sub-byte
 formats fold onto it, deleting the four hand-rolled copies and the truncation
-defect. `half` demotes to a **dev-dependency oracle**. The working branch is the
-consumer-migration boundary; no interop feature or bridge trait implementation
-merges into the default branch.
+defect. The implementation has no external reduced-precision dependency; its
+integration tests use an independent IEEE-754 value-level oracle. The working
+branch is the consumer-migration boundary; no interop feature or bridge trait
+implementation merges into the default branch.
 
 **D2 — Own a byte-layout vocabulary at zerocopy's checked tier; bridge, do not
 replace, bytemuck.** Eunomia gains marker traits (`Zeroable`, `Pod`-equivalent)
@@ -95,17 +97,18 @@ D2's checked tier emulates on stable.
 
 ## Consequences
 
-- Eunomia's production deps no longer include `half`; the datatype law owns its
-  reduced-precision conversions while the dev graph retains the independent
-  oracle.
+- Eunomia's production and test source contains no external reduced-precision
+  provider; the datatype law owns both the representations and conversions,
+  while tests use an independent IEEE-754 oracle. Criterion's benchmark-only
+  dependency graph still resolves `half` transitively through `ciborium`; that
+  upstream serializer edge is not imported or used by Eunomia's datatype code.
 - One conversion kernel replaces five implementations and fixes the
   truncation/convention defects (G-C2/G-C3/G-A3).
 - Hermes, Leto, Apollo, and other Atlas consumers use `eunomia::F16`/`Bf16`
   directly. Apollo's compact complex FFT surface uses `Complex<F16>`; no
-  consumer retains `half::f16` as a production representation. `half` remains
-  only as Eunomia's independent development oracle.
-- **Verified (slice 1, this change):** the native kernel matches `half` for
-  finite, infinite, zero, and NaN value-class semantics by exhaustive widen (all
+  consumer retains the external `half::f16` as a production representation.
+- **Verified (slice 1, this change):** the native kernel matches the independent
+  IEEE-754 reference for finite, infinite, zero, and NaN value-class semantics by exhaustive widen (all
   2¹⁶ patterns, both formats), exhaustive finite round-trip, a ~4.2M-case
   rounding sweep across every exponent/round/guard/sticky decision, and pinned
   known-value/ties-to-even cases. NaN payload bits are intentionally not a
@@ -128,7 +131,12 @@ The original decision allowed Apollo's raw `half::f16` FFT surface to remain
 consumer-owned. The stack contract is now clarified: Eunomia owns reduced-
 precision scalar and complex representations, and Apollo's compact route is a
 consumer migration to `F16`/`Complex<F16>`. The provider implementation and
-its independent `half` oracle are unchanged.
+its independent IEEE-754 test oracle are unchanged.
+
+The 2026-09-03 oracle cleanup removed Eunomia's direct `half` declarations and
+imports. The development tests now use the independent IEEE-754 reference
+module; the Criterion serializer's unrelated transitive edge remains visible
+in `Cargo.lock` and is not a datatype-provider contract.
 
 The byte-layout implementation reconciles the planned interop feature with the
 current dependency contract. Dual marker implementations now live in

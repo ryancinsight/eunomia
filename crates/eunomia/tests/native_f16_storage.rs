@@ -1,8 +1,11 @@
-//! E-025: `F16`/`Bf16` are native `u16`-backed (no `half` in the wrapper path).
-//! Verify the re-back is behavior-preserving vs the `half` reference and that
+//! E-025: `F16`/`Bf16` are native `u16`-backed.
+//! Verify the re-back against an independent IEEE reference and ensure that
 //! `PartialEq`/`PartialOrd` are **float-semantic** (via `f32`), not bitwise.
 
+mod support;
+
 use eunomia::{Bf16, F16};
+use support::{is_nan, narrow as reference_narrow, widen as reference_widen};
 
 #[test]
 fn native_reduced_precision_bit_patterns_round_trip_exactly() {
@@ -18,11 +21,11 @@ fn native_reduced_precision_bit_patterns_round_trip_exactly() {
 }
 
 #[test]
-fn f16_widening_matches_half_exhaustively() {
+fn f16_widening_matches_ieee_reference_exhaustively() {
     for bits in 0u16..=u16::MAX {
         let native = F16(bits).to_f32();
-        let reference = half::f16::from_bits(bits).to_f32();
-        if reference.is_nan() {
+        let reference = f32::from_bits(reference_widen::<5, 10>(u32::from(bits)));
+        if is_nan::<5, 10>(u32::from(bits)) {
             assert!(native.is_nan(), "F16({bits:#06x}) expected NaN");
         } else {
             assert_eq!(native.to_bits(), reference.to_bits(), "F16({bits:#06x})");
@@ -31,11 +34,11 @@ fn f16_widening_matches_half_exhaustively() {
 }
 
 #[test]
-fn bf16_widening_matches_half_exhaustively() {
+fn bf16_widening_matches_ieee_reference_exhaustively() {
     for bits in 0u16..=u16::MAX {
         let native = Bf16(bits).to_f32();
-        let reference = half::bf16::from_bits(bits).to_f32();
-        if reference.is_nan() {
+        let reference = f32::from_bits(reference_widen::<8, 7>(u32::from(bits)));
+        if is_nan::<8, 7>(u32::from(bits)) {
             assert!(native.is_nan(), "Bf16({bits:#06x}) expected NaN");
         } else {
             assert_eq!(native.to_bits(), reference.to_bits(), "Bf16({bits:#06x})");
@@ -44,7 +47,7 @@ fn bf16_widening_matches_half_exhaustively() {
 }
 
 #[test]
-fn f16_narrowing_matches_half_across_f32_space() {
+fn f16_narrowing_matches_ieee_reference_across_f32_space() {
     // Sweep every exponent and the rounding-relevant high mantissa bits + sticky.
     for sign in [0u32, 1] {
         for exp in 0u32..=0xFF {
@@ -52,7 +55,7 @@ fn f16_narrowing_matches_half_across_f32_space() {
                 for sticky in [0u32, 1] {
                     let x = f32::from_bits((sign << 31) | (exp << 23) | (top << 11) | sticky);
                     let native = F16::from_f32(x).0;
-                    let reference = half::f16::from_f32(x).to_bits();
+                    let reference = reference_narrow::<5, 10>(x.to_bits()) as u16;
                     if x.is_nan() {
                         // NaN → some NaN encoding (exp all ones, mantissa ≠ 0).
                         assert_eq!(native & 0x7C00, 0x7C00);
@@ -68,12 +71,19 @@ fn f16_narrowing_matches_half_across_f32_space() {
 
 #[test]
 fn f16_from_f64_is_exact_via_f32() {
-    // Double rounding f64 -> f32 -> f16 equals direct f64 -> f16 (f32's 24 bits
-    // ≥ 2·11 + 2); check against half's direct `from_f64`.
+    // Every input is constructed from an F16 value, so its f32 conversion is
+    // exact and the format-level reference can verify the narrowing result.
     for bits in 0u16..=u16::MAX {
         let value = f64::from(F16(bits).to_f32());
         let native = F16::from_f64(value).0;
-        let reference = half::f16::from_f64(value).to_bits();
+        if value.is_nan() {
+            assert!(
+                F16(native).to_f32().is_nan(),
+                "F16::from_f64 NaN for {bits:#06x}"
+            );
+            continue;
+        }
+        let reference = reference_narrow::<5, 10>((value as f32).to_bits()) as u16;
         assert_eq!(native, reference, "F16::from_f64 for {bits:#06x}");
     }
 }
@@ -110,13 +120,13 @@ fn partial_ord_is_float_semantic_not_bitwise() {
 }
 
 #[test]
-fn f16_bulk_slice_conversion_matches_half_and_scalar() {
-    // Widen every `f16` pattern (F16C path on an F16C host) vs the `half` oracle.
+fn f16_bulk_slice_conversion_matches_ieee_reference_and_scalar() {
+    // Widen every `f16` pattern (F16C path on an F16C host) vs the reference.
     let all: Vec<F16> = (0u16..=u16::MAX).map(F16).collect();
     let mut widened = vec![0.0f32; all.len()];
     F16::widen_slice(&all, &mut widened);
     for (bits, &out) in widened.iter().enumerate() {
-        let reference = half::f16::from_bits(bits as u16).to_f32();
+        let reference = f32::from_bits(reference_widen::<5, 10>(bits as u32));
         if reference.is_nan() {
             assert!(out.is_nan(), "widen_slice[{bits:#06x}]");
         } else {
@@ -128,7 +138,7 @@ fn f16_bulk_slice_conversion_matches_half_and_scalar() {
         }
     }
 
-    // Narrow a rounding-relevant `f32` sweep vs `half` and the scalar path. The
+    // Narrow a rounding-relevant `f32` sweep vs the reference and scalar path. The
     // trailing specials make the length a non-multiple of 8, exercising the
     // vector kernel's scalar remainder.
     let mut sweep: Vec<f32> = Vec::new();
@@ -149,20 +159,24 @@ fn f16_bulk_slice_conversion_matches_half_and_scalar() {
             assert_eq!(out.0 & 0x7C00, 0x7C00);
             assert_ne!(out.0 & 0x03FF, 0);
         } else {
-            assert_eq!(out.0, half::f16::from_f32(x).to_bits(), "narrow_slice({x})");
+            assert_eq!(
+                out.0,
+                reference_narrow::<5, 10>(x.to_bits()) as u16,
+                "narrow_slice({x})"
+            );
             assert_eq!(out.0, F16::from_f32(x).0, "narrow_slice vs scalar ({x})");
         }
     }
 }
 
 #[test]
-fn bf16_bulk_slice_conversion_matches_half_and_kernel() {
-    // Widen every bfloat16 pattern (a shift) vs the `half` oracle.
+fn bf16_bulk_slice_conversion_matches_ieee_reference_and_kernel() {
+    // Widen every bfloat16 pattern (a shift) vs the reference.
     let all: Vec<Bf16> = (0u16..=u16::MAX).map(Bf16).collect();
     let mut widened = vec![0.0f32; all.len()];
     Bf16::widen_slice(&all, &mut widened);
     for (bits, &out) in widened.iter().enumerate() {
-        let reference = half::bf16::from_bits(bits as u16).to_f32();
+        let reference = f32::from_bits(reference_widen::<8, 7>(bits as u32));
         if reference.is_nan() {
             assert!(out.is_nan(), "widen_slice[{bits:#06x}]");
         } else {
@@ -174,7 +188,7 @@ fn bf16_bulk_slice_conversion_matches_half_and_kernel() {
         }
     }
 
-    // Narrow an f32 sweep vs `half` AND the scalar kernel — confirming the fast
+    // Narrow an f32 sweep vs the reference AND the scalar kernel — confirming the fast
     // round-and-truncate is bit-identical to `narrow::<8, 7>`. Non-multiple-of-8
     // length exercises the tail.
     let mut sweep: Vec<f32> = Vec::new();
@@ -197,7 +211,7 @@ fn bf16_bulk_slice_conversion_matches_half_and_kernel() {
         } else {
             assert_eq!(
                 out.0,
-                half::bf16::from_f32(x).to_bits(),
+                reference_narrow::<8, 7>(x.to_bits()) as u16,
                 "narrow_slice({x})"
             );
             assert_eq!(out.0, Bf16::from_f32(x).0, "narrow_slice vs kernel ({x})");
