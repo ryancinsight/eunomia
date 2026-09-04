@@ -13,12 +13,9 @@ struct DeviceParameters {
 #[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
 struct DeviceIndex(u32);
 
-#[repr(C)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
-struct GenericParameters<T> {
-    first: T,
-    second: T,
-}
+struct GenericParameters<T>(T);
 
 #[test]
 fn derives_provide_zeroed_and_byte_views() {
@@ -44,5 +41,5 @@ fn derives_provide_zeroed_and_byte_views() {
     words.copy_from_slice(&[13, 17]);
     assert_eq!(values, [DeviceIndex(13), DeviceIndex(17)]);
 
-    assert_eq!(GenericParameters::<u32>::zeroed().first, 0);
+    assert_eq!(GenericParameters::<u32>::zeroed().0, 0);
 }

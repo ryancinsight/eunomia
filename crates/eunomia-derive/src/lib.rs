@@ -18,11 +18,14 @@ pub fn derive_zeroable(input: TokenStream) -> TokenStream {
     expand_marker(&input, Marker::Zeroable)
 }
 
-/// Derive `eunomia::Pod` for a C or transparent representation.
+/// Derive `eunomia::Pod` for a padding-free C or transparent representation.
 ///
 /// Apply [`Zeroable`](derive@Zeroable) as well: `Pod` intentionally retains
 /// Eunomia's marker-trait layering, so a type must prove both all-zero
-/// validity and arbitrary-byte validity.
+/// validity and arbitrary-byte validity. Generic C representations are
+/// rejected because stable Rust cannot prove that arbitrary generic field
+/// combinations contain no padding; generic transparent one-field wrappers
+/// remain supported.
 #[proc_macro_derive(Pod)]
 pub fn derive_pod(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
@@ -44,6 +47,16 @@ fn expand_marker(input: &DeriveInput, marker: Marker) -> TokenStream {
 
 fn expand_marker_impl(input: &DeriveInput, marker: Marker) -> Result<proc_macro2::TokenStream> {
     validate_representation(input)?;
+
+    if matches!(marker, Marker::Pod)
+        && !input.generics.params.is_empty()
+        && !has_transparent_representation(input)
+    {
+        return Err(Error::new_spanned(
+            &input.ident,
+            "generic #[repr(C)] types cannot derive Eunomia Pod because stable Rust cannot prove that their layout is padding-free; use #[repr(transparent)] for a one-field wrapper or provide a manual impl with an explicit layout proof",
+        ));
+    }
 
     let fields = match &input.data {
         Data::Struct(data) => &data.fields,
@@ -166,10 +179,10 @@ fn has_transparent_representation(input: &DeriveInput) -> bool {
 }
 
 fn layout_assertion(input: &DeriveInput, field_types: &[&syn::Type]) -> proc_macro2::TokenStream {
-    // Generic const expressions cannot yet name arbitrary generic type sizes
-    // on the stable toolchain. The field marker bounds remain active for
-    // generic types; concrete ABI structs, which are the GPU/FFI use case,
-    // receive the complete padding assertion below.
+    // Generic transparent wrappers are padding-free by representation
+    // contract. Generic C representations are rejected before reaching this
+    // function because stable Rust cannot express their size equality as a
+    // compile-time assertion.
     if !input.generics.params.is_empty() {
         return quote! {};
     }
@@ -185,5 +198,24 @@ fn layout_assertion(input: &DeriveInput, field_types: &[&syn::Type]) -> proc_mac
                 "Eunomia Pod requires a padding-free representation",
             );
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{expand_marker_impl, Marker};
+    use syn::DeriveInput;
+
+    #[test]
+    fn rejects_generic_c_pod_without_padding_proof() {
+        let input: DeriveInput =
+            syn::parse_str("#[repr(C)] struct Generic<T, U> { first: T, second: U }")
+                .expect("test input is valid Rust syntax");
+
+        let error = expand_marker_impl(&input, Marker::Pod)
+            .expect_err("generic C Pod must require a padding proof");
+        assert!(error
+            .to_string()
+            .contains("cannot derive Eunomia Pod because stable Rust cannot prove"));
     }
 }

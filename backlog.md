@@ -222,15 +222,20 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   derives required by the consumer GPU-ABI migration, then migrate consumer
   GPU-ABI structs (hephaestus ~130, coeus ~115, …) onto the E-026 vocabulary
   while preserving the `bytemuck::Pod` wgpu contract via the bridge; add
-  eunomia as a direct hephaestus dep. Dep: E-026.
+  eunomia as a direct hephaestus dep. Dep: E-026. <a id="e-027"></a>
 - **Provider increment (2026-09-03).** Added the `eunomia-derive` proc-macro
   member and re-exported `Pod`/`Zeroable` derives from `eunomia`. Derives
   require `repr(C)` or `repr(transparent)`, reject packed/default layouts,
   add field marker bounds, and emit a concrete padding assertion. Generic
-  marker bounds remain monomorphized; stable Rust cannot evaluate arbitrary
-  generic `size_of` expressions in a module-level const assertion.
+  transparent one-field wrappers remain monomorphized; generic `repr(C)` Pod
+  derives are rejected because stable Rust cannot prove arbitrary padding-free
+  layouts. Generic `Zeroable` C representations remain supported.
+- **Provider safety correction (2026-09-04).** Added a regression test for the
+  generic C padding case and changed the derive contract so only concrete C
+  Pod layouts receive the compile-time size assertion; the safe generic path is
+  transparent representation, not an unverifiable field-bound promise.
 - **Evidence.** Locked all-target check, strict all-target Clippy, format,
-  143/143 all-feature Nextest, 9/9 doctests, warning-denied Rustdoc, and
+  142/142 all-feature Nextest, 9/9 doctests, warning-denied Rustdoc, and
   no-default-feature check pass offline. `eunomia-derive` packages and
   verifies locally; full `eunomia` tarball verification requires the derive
   package to exist in the registry first, so release order is derive then

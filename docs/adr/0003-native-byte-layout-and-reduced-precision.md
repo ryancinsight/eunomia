@@ -59,9 +59,12 @@ Because `bytemuck` remains a mandatory dependency for the GPU boundary, the
 interop is unconditional rather than feature-gated: Eunomia-owned wrappers and
 `Complex<T>` receive co-located implementations of both Eunomia's markers and
 `bytemuck::{Pod,Zeroable}`. A blanket bridge is not possible under Rust's orphan
-rules, and no derive macro is re-exported. Backend-owned ABI structs continue to
-own their direct `bytemuck` contracts. Scope is bounded to what the audit found
-consumers use — **no OCP/checked-transmute surface is built speculatively.**
+rules. The re-exported derives support concrete `repr(C)` and one-field
+`repr(transparent)` ABI types; generic `repr(C)` `Pod` derives are rejected
+because stable Rust cannot prove that arbitrary field combinations contain no
+padding. Backend-owned ABI structs continue to own their direct `bytemuck`
+contracts. Scope is bounded to what the audit found consumers use — **no
+OCP/checked-transmute surface is built speculatively.**
 
 **D3 — Pin the sub-byte special-value convention explicitly; add OCP-MXFP as a
 distinct format family only when a consumer needs it.** `Bf8` (E5M2) uses the
