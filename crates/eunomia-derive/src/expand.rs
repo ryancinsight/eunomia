@@ -1,0 +1,193 @@
+//! Expansion: validating a type's representation and emitting its marker
+//! impl.
+//!
+//! Only the `#[proc_macro_derive]` entry points have to live in the crate
+//! root; everything they delegate to lives here.
+
+use super::Marker;
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::punctuated::Punctuated;
+use syn::{parse_quote, Data, DeriveInput, Error, Meta, Result, Token};
+
+pub(crate) fn expand_marker(input: &DeriveInput, marker: Marker) -> TokenStream {
+    match expand_marker_impl(input, marker) {
+        Ok(tokens) => tokens.into(),
+        Err(error) => error.into_compile_error().into(),
+    }
+}
+
+fn expand_marker_impl(input: &DeriveInput, marker: Marker) -> Result<proc_macro2::TokenStream> {
+    validate_representation(input)?;
+
+    if matches!(marker, Marker::Pod)
+        && !input.generics.params.is_empty()
+        && !has_transparent_representation(input)
+    {
+        return Err(Error::new_spanned(
+            &input.ident,
+            "generic #[repr(C)] types cannot derive Eunomia Pod because stable Rust cannot prove that their layout is padding-free; use #[repr(transparent)] for a one-field wrapper or provide a manual impl with an explicit layout proof",
+        ));
+    }
+
+    let fields = match &input.data {
+        Data::Struct(data) => &data.fields,
+        Data::Enum(_) => {
+            return Err(Error::new_spanned(
+                &input.ident,
+                "Eunomia byte-layout markers support structs only",
+            ));
+        }
+        Data::Union(_) => {
+            return Err(Error::new_spanned(
+                &input.ident,
+                "Eunomia byte-layout markers do not support unions",
+            ));
+        }
+    };
+
+    if has_transparent_representation(input) && fields.len() != 1 {
+        return Err(Error::new_spanned(
+            &input.ident,
+            "#[repr(transparent)] requires exactly one field for Eunomia byte-layout markers",
+        ));
+    }
+
+    let field_types = fields.iter().map(|field| &field.ty).collect::<Vec<_>>();
+    let trait_path = match marker {
+        Marker::Zeroable => quote!(::eunomia::Zeroable),
+        Marker::Pod => quote!(::eunomia::Pod),
+    };
+
+    let mut impl_generics = input.generics.clone();
+    {
+        let where_clause = impl_generics.make_where_clause();
+        for field_type in &field_types {
+            where_clause
+                .predicates
+                .push(parse_quote!(#field_type: #trait_path));
+        }
+        if matches!(marker, Marker::Pod) {
+            let ident = &input.ident;
+            let (_, type_generics, _) = input.generics.split_for_impl();
+            where_clause
+                .predicates
+                .push(parse_quote!(#ident #type_generics: ::eunomia::Zeroable));
+        }
+    }
+    let (impl_generics, _, where_clause) = impl_generics.split_for_impl();
+    let ident = &input.ident;
+    let (_, type_generics, _) = input.generics.split_for_impl();
+
+    let layout_assertion = layout_assertion(input, &field_types);
+    let expansion = match marker {
+        Marker::Zeroable => quote! {
+            #layout_assertion
+
+            // SAFETY: the derive requires a stable C/transparent representation;
+            // every field proves all-zero validity through the generated bounds.
+            unsafe impl #impl_generics ::eunomia::Zeroable for #ident #type_generics #where_clause {}
+        },
+        Marker::Pod => quote! {
+            #layout_assertion
+
+            // SAFETY: the derive requires a stable C/transparent representation;
+            // every field is Eunomia Pod, and the layout assertion rejects padding.
+            unsafe impl #impl_generics ::eunomia::Pod for #ident #type_generics #where_clause {}
+        },
+    };
+
+    Ok(expansion)
+}
+
+fn validate_representation(input: &DeriveInput) -> Result<()> {
+    let mut has_c = false;
+    let mut has_transparent = false;
+    let mut has_packed = false;
+
+    for attribute in &input.attrs {
+        if !attribute.path().is_ident("repr") {
+            continue;
+        }
+        let representations =
+            attribute.parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)?;
+        for representation in representations {
+            match representation {
+                Meta::Path(path) if path.is_ident("C") => has_c = true,
+                Meta::Path(path) if path.is_ident("transparent") => has_transparent = true,
+                Meta::Path(path) if path.is_ident("packed") => has_packed = true,
+                Meta::List(list) if list.path.is_ident("packed") => has_packed = true,
+                _ => {}
+            }
+        }
+    }
+
+    if has_packed {
+        return Err(Error::new_spanned(
+            &input.ident,
+            "packed representations cannot safely derive Eunomia byte-layout markers",
+        ));
+    }
+    if has_c == has_transparent {
+        return Err(Error::new_spanned(
+            &input.ident,
+            "Eunomia byte-layout markers require exactly one of #[repr(C)] or #[repr(transparent)]",
+        ));
+    }
+    Ok(())
+}
+
+fn has_transparent_representation(input: &DeriveInput) -> bool {
+    input.attrs.iter().any(|attribute| {
+        attribute.path().is_ident("repr")
+            && attribute
+                .parse_args_with(Punctuated::<Meta, Token![,]>::parse_terminated)
+                .is_ok_and(|representations| {
+                    representations.into_iter().any(|representation| {
+                        matches!(representation, Meta::Path(path) if path.is_ident("transparent"))
+                    })
+                })
+    })
+}
+
+fn layout_assertion(input: &DeriveInput, field_types: &[&syn::Type]) -> proc_macro2::TokenStream {
+    // Generic transparent wrappers are padding-free by representation
+    // contract. Generic C representations are rejected before reaching this
+    // function because stable Rust cannot express their size equality as a
+    // compile-time assertion.
+    if !input.generics.params.is_empty() {
+        return quote! {};
+    }
+
+    let ident = &input.ident;
+    let field_sizes = field_types
+        .iter()
+        .map(|field_type| quote!(::core::mem::size_of::<#field_type>()));
+    quote! {
+        const _: () = {
+            assert!(
+                ::core::mem::size_of::<#ident>() == 0usize #( + #field_sizes )*,
+                "Eunomia Pod requires a padding-free representation",
+            );
+        };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{expand_marker_impl, Marker};
+    use syn::DeriveInput;
+
+    #[test]
+    fn rejects_generic_c_pod_without_padding_proof() {
+        let input: DeriveInput =
+            syn::parse_str("#[repr(C)] struct Generic<T, U> { first: T, second: U }")
+                .expect("test input is valid Rust syntax");
+
+        let error = expand_marker_impl(&input, Marker::Pod)
+            .expect_err("generic C Pod must require a padding proof");
+        assert!(error
+            .to_string()
+            .contains("cannot derive Eunomia Pod because stable Rust cannot prove"));
+    }
+}
