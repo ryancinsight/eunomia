@@ -21,6 +21,10 @@ pub use traits::{
     CastFrom, CastTo, ComplexField, FloatElement, NumericElement, RealField, UnitScalar,
 };
 
+// Re-export the derives beside the marker traits, matching the standard
+// `serde::{Serialize, Deserialize}` consumer shape without a second import.
+pub use eunomia_derive::{Pod, Zeroable};
+
 // Re-export the relative-equality trait at the crate root so the macro can
 // resolve `eunomia::RelativeEq` and users can opt into the trait if needed.
 pub use relative_eq::RelativeEq;

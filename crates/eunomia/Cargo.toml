@@ -11,6 +11,7 @@ description = "Atlas datatype law: the Single Source of Truth for numeric/scalar
 
 [dependencies]
 bytemuck = { workspace = true }
+eunomia-derive = { workspace = true }
 libm = { version = "0.2.8", default-features = false }
 rkyv = { workspace = true, optional = true }
 serde = { version = "1", optional = true, default-features = false, features = ["derive"] }
