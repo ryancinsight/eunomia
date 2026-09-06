@@ -1,30 +1,37 @@
 # Eunomia gap audit
 
-## Scalar min/max special values — ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21
+## Apollo-facing surface — zero-cost verification, 2026-09-06 — clean
 
-The audit found a contract split in `NumericElement::min_scalar` and
-`max_scalar`: the generic path used order-dependent `PartialOrd` checks, while
-primitive `f32`/`f64` used native operations and reduced-precision wrappers
-inherited the generic path. A single NaN therefore produced different results
-by operand order and signed-zero selection was not specified. `RealField::clamp`
-composes the same operations, so the ambiguity reached field consumers.
+Method: codegen inspection of the three surfaces Apollo consumes at scale,
+chosen from an import census of Apollo's crates (503 `Complex`, 66
+`layout::Pod`, 60 `layout::cast_slice`/`cast_slice_mut`). Load-invariant, so
+the host's concurrent compiler load does not bear on the result.
 
-The fix is one provider-owned value table in the trait Rustdoc and numeric
-book: one NaN is ignored, two NaNs return NaN, minimum selects `-0`, and maximum
-selects `+0`, all independent of operand order. The default checks NaN and the
-sign bit without widening; native primitive overrides remain in place only as
-the equivalent optimized implementation. Complex retains its explicit
-lexicographic ordering and is outside the real-scalar table.
+- **Complex layout is pinned, not merely documented.** `types/mod.rs` asserts
+  size, alignment, and both field offsets for `Complex32`, `Complex64`,
+  `Complex<F16>`, and `Complex<Bf16>` in a `const _` block. Apollo reinterprets
+  `&mut [Complex64]` as `*mut f64` inside its AVX kernels, so drift here would
+  be silent; the assertions make it a build failure.
+- **Complex arithmetic crosses the target-feature boundary.** `complex/ops.rs`
+  carries `#[inline(always)]` on all 26 operator methods and `complex/mod.rs`
+  on its 5 constructors, so an Apollo kernel under
+  `#[target_feature(enable = "avx,fma")]` inlines them rather than calling out
+  (the failure mode ADR 009 records in Hermes). `complex/float.rs` uses plain
+  `#[inline]`, which is sound here: no Apollo file combines `target_feature`
+  with `conj`/`norm_sqr`, and `apollo-fft` uses neither.
+- **`cast_slice` folds to a pointer cast.** The size and alignment checks and
+  the panic path are in `try_cast_slice`/`try_cast_slice_mut`, which carry no
+  inline attribute — but they are generic, so their MIR ships and LLVM inlines
+  them on cost. Measured cross-crate in release from a dependent crate,
+  `cast_slice::<Complex64, f64>` emits `movq 8(%rcx),%rax; addq %rax,%rax;
+  retq` and the `_mut` form emits `movq (%rcx),%rax; retq` — three and two
+  instructions, no branch, and no panic string anywhere in the object. Adding
+  `#[inline]` to the `try_*` functions would buy nothing.
 
-Evidence is the generic `float_order` test instantiated for `f32`, `f64`,
-`F16`, `F32`, `F64`, `Bf16`, `Bf8`, `Bf4`, `F8`, and `F4`, plus direct
-`RealField::clamp` cases. Implementation head `ba51a16` passes format, strict
-all-target/all-feature Clippy, Nextest **138/138**, doctests **9/9**, Rustdoc,
-locked package listing, fresh staged-library `mdbook test`, and `mdbook build`.
-The direct local mdBook invocation failed only because it omitted the Cargo
-artifact staging required by mdBook 0.5.4; the workflow-equivalent fresh-stage
-run passes. Hosted provider gates and merge remain open.
-
+Conclusion: Apollo's remaining non-power-of-two and `f32`-width gaps are not
+upstream in Eunomia. Limits: this establishes emitted code for these layout
+pairs on x86-64 release; it is not a throughput measurement and says nothing
+about the reduced-precision types Apollo does not use.
 ## Strict Clippy Rustdoc closure — 2026-08-16
 
 The fetched default head `58e5715` failed the repository's denied pedantic
