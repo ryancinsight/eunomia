@@ -2,21 +2,11 @@
 
 Sprint target: 0.8.0 (native reduced-precision provider contract).
 
-## E-037 [patch] — Remove the external reduced-precision oracle — review
+## E-037 [patch] — Remove the external reduced-precision oracle — done <a id="e-037-oracle"></a>
 
-- Owner: Codex; claimed 2026-09-03 on branch
-  `fix/eunomia-independent-precision-oracle`.
-- Scope: Eunomia reduced-precision integration-test oracle, manifests, ADR 0003,
-  and the E-025c completion record. The production conversion kernel and public
-  API remain unchanged.
-- Acceptance: Eunomia manifests and source have no direct `half` dependency or
-  import; independent IEEE-754 widening/narrowing tests retain exhaustive
-  bit-pattern and rounding-sweep coverage; format, strict Clippy, Nextest,
-  doctests, Rustdoc, and lockfile gates pass. Criterion's benchmark-only
-  transitive `ciborium` edge is recorded, not treated as a datatype provider.
-- Evidence: feature matrix 6/6, Nextest 142/142, doctests 9/9, strict
-  all-target Clippy, Rustdoc with warnings denied, locked metadata, package
-  listing, format, and diff checks pass on the final source revision.
+- Landed `a296e12` (PR #85). Eunomia's manifests and source carry no `half`
+  dependency or import; the independent IEEE-754 oracle retains the exhaustive
+  bit-pattern and rounding-sweep coverage.
 
 ## 0.8.0 closure refresh — 2026-08-10
 
@@ -41,66 +31,21 @@ check, warning-denied all-target/all-feature Clippy, Nextest **117/117**
 The Nextest count continues to grow with new value-semantic tests (was
 116/116 at the clean-clone snapshot).
 
-## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — Verify the optional NumPy boundary [patch] — in progress
+## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — Verify the optional NumPy boundary [patch] — done <a id="atlas-eunomia-numpy-ci"></a>
 
-The optional `numpy` feature implements the provider's `numpy::Element`
-boundary for `Complex32` and `Complex64`. Hephaestus and Kwavers enable that
-feature from their Python binding crates, but this repository's CI previously
-excluded it because no Python runtime was provisioned.
+- The `numpy` CI job provisions pinned Python 3.13 and NumPy 2.5.1, installs
+  the pinned Nextest binary, and asserts the dtype names and item sizes for
+  `Complex32` and `Complex64`.
+- Collected: run `33840122785` at main head `02397fa`, job **NumPy feature
+  contract — success**.
 
-Scope is the provider CI workflow and the existing complex provider contract
-test. Eunomia remains a crates.io datatype provider, not a standalone Python
-package; Python packaging remains owned by its consumers.
+## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — Unify scalar NaN and signed-zero laws [major] [arch] — done <a id="atlas-eunomia-nan-contract"></a>
 
-- [x] Provision pinned Python 3.13 and NumPy 2.5.1 in a dedicated CI job.
-- [x] Run locked feature check, strict Clippy, Nextest, and doctests in that
-  job; the runtime test asserts the NumPy dtype names and item sizes for both
-  shipped complex representations.
-- [x] Install the pinned Nextest binary in the NumPy job as well as the
-  general verification job. The first hosted attempt compiled and linted the
-  feature, then failed before tests because `cargo nextest` was unavailable
-  (`32412277378`, job `96565207307`).
-- [ ] Collect the exact-head hosted job and close this item with its run ID.
-
-Local evidence at the branch head: the NumPy feature compiles and the focused
-Nextest contract passes 4/4. Locked Cargo commands are blocked by the Atlas
-development overlay adding `[patch.unused]` lock state; strict local Clippy is
-also blocked by the shared cache containing MSVC artifacts while the pinned
-Windows GNU toolchain is active. Hosted Linux verification is the acceptance
-oracle.
-
-## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — Unify scalar NaN and signed-zero laws [major] [arch] — in progress
-
-The scalar audit found that the default `NumericElement` min/max path was
-order-dependent for one NaN, while primitive float overrides and reduced-
-precision wrappers did not have one documented contract. The same split affects
-generic reductions and `RealField::clamp`.
-
-Scope: the `NumericElement` min/max default, primitive float documentation,
-real-wrapper conformance tests, `RealField::clamp` documentation, the numeric
-book, and the governing ADR. Complex ordering remains its explicit
-lexicographic contract; consumer rewrites and registry release are out of
-scope.
-
-- [x] Define one real-scalar table for one/two NaNs and `±0`.
-- [x] Implement the table without precision-changing casts or duplicate
-      wrapper implementations.
-- [x] Add generic value-semantic coverage for every shipped real scalar and
-      `RealField::clamp` cases.
-- [x] Run exact-head format, strict all-target/all-feature Clippy, Nextest
-      **138/138**, doctests **9/9**, Rustdoc, locked package listing, fresh
-      staged-library `mdbook test`, and `mdbook build`. Implementation head
-      `ba51a16` passes all listed checks. A direct mdBook run without staged
-      Cargo artifacts failed with `E0463`; the committed workflow's staging
-      path passes, so no book source change was required.
-- [ ] Collect the hosted provider PR gates at the exact pushed head and record
-      the terminal result.
-- [ ] Merge the provider change and refresh the Atlas provider pointer in a
-      separate convergence increment.
-
-Owner: Codex. Branch: `fix/eunomia-nan-contract`. Claimed scope: Eunomia
-numeric trait, primitive/wrapper numeric docs, float conformance tests, numeric
-book, ADR, and provider PM artifacts.
+- One real-scalar table for one/two NaNs and `±0` governs the `NumericElement`
+  min/max default, the primitive float overrides, the reduced-precision
+  wrappers, and `RealField::clamp`. Landed `834bd3b`; docs `8c4510e`.
+- Hosted gates green at main head `02397fa` (CI run `33840122785`); the Atlas
+  provider pointer already reads that head, closing the convergence box.
 
 ## Recently completed
 
