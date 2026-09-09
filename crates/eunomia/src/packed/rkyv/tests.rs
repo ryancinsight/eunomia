@@ -114,8 +114,19 @@ fn truncated_archive_is_rejected() {
     let original = every_code();
     let bytes = rkyv::to_bytes::<Error>(&original).expect("serialize");
     let truncated = &bytes[..bytes.len() / 2];
-    let result = rkyv::access::<super::ArchivedPacked4Vec<Bf4>, Error>(truncated);
-    assert!(result.is_err(), "truncated archive must not validate");
+    match rkyv::access::<super::ArchivedPacked4Vec<Bf4>, Error>(truncated) {
+        // The bounds check is the guard the advisory was about, so the failure
+        // must be that check and not some other validation error. The pointer
+        // values in the message vary per run; the failure kind does not.
+        Err(error) => {
+            let rendered = error.to_string();
+            assert!(
+                rendered.contains("subtree pointer overran range"),
+                "a truncated archive must fail the bounds check, got {rendered:?}"
+            );
+        }
+        Ok(_) => panic!("truncated archive must not validate"),
+    }
 }
 
 #[test]
