@@ -6,6 +6,7 @@
 //! borrowed view reads the same elements without copying, and that a corrupted
 //! archive is rejected rather than read.
 
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use crate::packed::cow::Packed4Cow;
