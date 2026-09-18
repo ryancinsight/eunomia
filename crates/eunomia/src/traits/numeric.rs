@@ -195,6 +195,62 @@ pub trait NumericElement:
     fn checked_mul(self, rhs: Self) -> Option<Self> {
         Some(self * rhs)
     }
+
+    /// Wrapping addition: `self + rhs`, wrapping around at the type's
+    /// boundary on overflow instead of panicking or saturating.
+    ///
+    /// For floats this is identical to `+` (IEEE 754 has no wraparound —
+    /// magnitudes that overflow the format saturate to infinity). Integer
+    /// implementations **must** override this with the native
+    /// `wrapping_add`; the default `self + rhs` would panic in debug / be
+    /// undefined to reason about in release on integer overflow. Every
+    /// primitive integer and integer-wrapper impl in this crate already
+    /// overrides; treat that as a hard rule when adding a new
+    /// `NumericElement` impl for an integer type.
+    #[inline(always)]
+    fn wrapping_add(self, rhs: Self) -> Self {
+        self + rhs
+    }
+
+    /// Wrapping subtraction: `self - rhs`, wrapping around at the type's
+    /// boundary on overflow instead of panicking or saturating.
+    ///
+    /// For floats this is identical to `-`. Integer implementations
+    /// **must** override this with the native `wrapping_sub`; see
+    /// [`Self::wrapping_add`] for the rationale.
+    #[inline(always)]
+    fn wrapping_sub(self, rhs: Self) -> Self {
+        self - rhs
+    }
+
+    /// Wrapping multiplication: `self * rhs`, wrapping around at the type's
+    /// boundary on overflow instead of panicking or saturating.
+    ///
+    /// For floats this is identical to `*`. Integer implementations
+    /// **must** override this with the native `wrapping_mul`; see
+    /// [`Self::wrapping_add`] for the rationale.
+    #[inline(always)]
+    fn wrapping_mul(self, rhs: Self) -> Self {
+        self * rhs
+    }
+
+    /// Checked division: `Some(self / rhs)`, or `None` when the division is
+    /// undefined for the type — a zero divisor, or (for signed integers)
+    /// `Self::MIN_VALUE / -1`, whose mathematical result overflows the
+    /// representable range.
+    ///
+    /// Float types always return `Some(self / rhs)`: IEEE 754 division by
+    /// zero produces `±∞` or `NaN`, never undefined behaviour. Integer
+    /// implementations **must** override this with the native
+    /// `checked_div`; the default `Some(self / rhs)` would panic on a zero
+    /// divisor or on `MIN_VALUE / -1`. Every primitive integer and
+    /// integer-wrapper impl in this crate already overrides; treat that as
+    /// a hard rule when adding a new `NumericElement` impl for an integer
+    /// type.
+    #[inline(always)]
+    fn checked_div(self, rhs: Self) -> Option<Self> {
+        Some(self / rhs)
+    }
 }
 
 /// Return whether a numeric element is the IEEE negative zero encoding.

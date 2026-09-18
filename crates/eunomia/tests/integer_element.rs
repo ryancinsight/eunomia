@@ -178,6 +178,48 @@ macro_rules! integer_overflow_contract {
             assert_eq!(NumericElement::checked_mul(3 as $t, 4 as $t), Some(12 as $t));
             // Signed underflow only: unsigned MIN = 0 and -1 is not representable.
             integer_overflow_contract!(@underflow $t, $is_signed);
+
+            // Wrapping arithmetic wraps at the type's boundary instead of
+            // panicking or saturating. `wrapping_add(MAX, 1) == MIN` and
+            // `wrapping_sub(MIN, 1) == MAX` hold for both signed and
+            // unsigned representations (unsigned MIN = 0, so `0 - 1` wraps
+            // to MAX exactly as `u32`'s case in the spec requires).
+            assert_eq!(
+                NumericElement::wrapping_add(<$t>::MAX, 1 as $t),
+                <$t>::MIN,
+                "wrapping_add must wrap MAX + 1 to MIN"
+            );
+            assert_eq!(
+                NumericElement::wrapping_sub(<$t>::MIN, 1 as $t),
+                <$t>::MAX,
+                "wrapping_sub must wrap MIN - 1 to MAX"
+            );
+            // wrapping_mul cross-checked against std's own `wrapping_mul` as
+            // the oracle (the exact wrapped bit pattern is width-dependent).
+            assert_eq!(
+                NumericElement::wrapping_mul(<$t>::MAX, 2 as $t),
+                (<$t>::MAX).wrapping_mul(2 as $t),
+                "wrapping_mul must match std::wrapping_mul"
+            );
+            // In-range wrapping ops match ordinary arithmetic.
+            assert_eq!(NumericElement::wrapping_add(3 as $t, 4 as $t), 7 as $t);
+            assert_eq!(NumericElement::wrapping_sub(7 as $t, 4 as $t), 3 as $t);
+            assert_eq!(NumericElement::wrapping_mul(3 as $t, 4 as $t), 12 as $t);
+
+            // Checked division: `None` on a zero divisor, `Some` otherwise;
+            // the signed `MIN / -1` overflow case is gated below (unsigned
+            // has no representable `-1`).
+            assert_eq!(
+                NumericElement::checked_div(<$t>::MAX, 0 as $t),
+                None,
+                "checked_div must return None on division by zero"
+            );
+            assert_eq!(
+                NumericElement::checked_div(12 as $t, 4 as $t),
+                Some(3 as $t),
+                "in-range checked_div matches ordinary division"
+            );
+            integer_overflow_contract!(@min_div $t, $is_signed);
         }
     };
     // Signed underflow assertion: -1 is well-formed and the result must cap at MIN.
@@ -190,6 +232,18 @@ macro_rules! integer_overflow_contract {
     };
     // Unsigned: -1 isn't a $t value, so the underflow check is vacuous.
     (@underflow $t:ty, unsigned) => {};
+    // Signed MIN / -1 overflows the representable range (the magnitude of
+    // MIN has no positive counterpart); `ALL_ONES` is `-1` for every signed
+    // `NumericElement` impl in this crate.
+    (@min_div $t:ty, signed) => {
+        assert_eq!(
+            NumericElement::checked_div(<$t>::MIN, <$t as NumericElement>::ALL_ONES),
+            None,
+            "checked_div must return None on MIN / -1 overflow"
+        );
+    };
+    // Unsigned: -1 isn't a $t value, so the MIN/-1 overflow case is vacuous.
+    (@min_div $t:ty, unsigned) => {};
 }
 
 integer_overflow_contract!(u8_overflow_contract, u8, unsigned);
@@ -320,4 +374,50 @@ mod wrapper_integer_overflow {
         assert_eq!(<I16 as NumericElement>::sqrt(I16(81)), I16(9));
         assert_eq!(<I16 as NumericElement>::sqrt(I16(-1)), I16(0));
     }
+
+    /// Shared wrapping/checked-division contract for the signed integer
+    /// wrapper types, written once and instantiated per shipped wrapper
+    /// (`I8`/`I16`/`I32`) rather than copied per type.
+    macro_rules! wrapper_wrapping_checked_div_contract {
+        ($name:ident, $w:ident, $prim:ty) => {
+            #[test]
+            fn $name() {
+                assert_eq!(
+                    NumericElement::wrapping_add($w(<$prim>::MAX), $w(1)),
+                    $w(<$prim>::MIN),
+                    "wrapping_add must wrap MAX + 1 to MIN"
+                );
+                assert_eq!(
+                    NumericElement::wrapping_sub($w(<$prim>::MIN), $w(1)),
+                    $w(<$prim>::MAX),
+                    "wrapping_sub must wrap MIN - 1 to MAX"
+                );
+                assert_eq!(
+                    NumericElement::wrapping_mul($w(<$prim>::MAX), $w(2)),
+                    $w(<$prim>::MAX.wrapping_mul(2)),
+                    "wrapping_mul must match std::wrapping_mul"
+                );
+                assert_eq!(NumericElement::wrapping_add($w(3), $w(4)), $w(7));
+                assert_eq!(
+                    NumericElement::checked_div($w(<$prim>::MAX), $w(0)),
+                    None,
+                    "checked_div must return None on division by zero"
+                );
+                assert_eq!(
+                    NumericElement::checked_div($w(12), $w(4)),
+                    Some($w(3)),
+                    "in-range checked_div matches ordinary division"
+                );
+                assert_eq!(
+                    NumericElement::checked_div($w(<$prim>::MIN), $w(-1)),
+                    None,
+                    "checked_div must return None on MIN / -1 overflow"
+                );
+            }
+        };
+    }
+
+    wrapper_wrapping_checked_div_contract!(i8_wrapper_wrapping_checked_div, I8, i8);
+    wrapper_wrapping_checked_div_contract!(i16_wrapper_wrapping_checked_div, I16, i16);
+    wrapper_wrapping_checked_div_contract!(i32_wrapper_wrapping_checked_div, I32, i32);
 }
