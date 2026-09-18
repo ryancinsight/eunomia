@@ -253,6 +253,30 @@ macro_rules! impl_numeric_element_signed {
             fn checked_mul(self, rhs: Self) -> Option<Self> {
                 self.checked_mul(rhs)
             }
+            /// Native `wrapping_add` replaces the trait's float default
+            /// `self + rhs`, which has no wraparound semantics for integers.
+            #[inline(always)]
+            fn wrapping_add(self, rhs: Self) -> Self {
+                self.wrapping_add(rhs)
+            }
+            /// Native `wrapping_sub`; see [`Self::wrapping_add`] for rationale.
+            #[inline(always)]
+            fn wrapping_sub(self, rhs: Self) -> Self {
+                self.wrapping_sub(rhs)
+            }
+            /// Native `wrapping_mul`; see [`Self::wrapping_add`] for rationale.
+            #[inline(always)]
+            fn wrapping_mul(self, rhs: Self) -> Self {
+                self.wrapping_mul(rhs)
+            }
+            /// Native `checked_div` returns `None` on a zero divisor or on
+            /// `MIN / -1` (the one signed division whose mathematical result
+            /// overflows the type), instead of the trait float default
+            /// `Some(self / rhs)`, which would panic on either.
+            #[inline(always)]
+            fn checked_div(self, rhs: Self) -> Option<Self> {
+                self.checked_div(rhs)
+            }
         }
     };
 }

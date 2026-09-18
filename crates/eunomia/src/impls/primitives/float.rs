@@ -46,12 +46,28 @@ impl FloatElement for f64 {
         libm::exp(self)
     }
     #[inline]
+    fn exp2(self) -> Self {
+        libm::exp2(self)
+    }
+    #[inline]
+    fn exp_m1(self) -> Self {
+        libm::expm1(self)
+    }
+    #[inline]
     fn ln(self) -> Self {
         libm::log(self)
     }
     #[inline]
+    fn ln_1p(self) -> Self {
+        libm::log1p(self)
+    }
+    #[inline]
     fn sin(self) -> Self {
         libm::sin(self)
+    }
+    #[inline]
+    fn asin(self) -> Self {
+        libm::asin(self)
     }
     #[inline]
     fn cos(self) -> Self {
@@ -66,16 +82,32 @@ impl FloatElement for f64 {
         libm::tan(self)
     }
     #[inline]
+    fn atan(self) -> Self {
+        libm::atan(self)
+    }
+    #[inline]
     fn sinh(self) -> Self {
         libm::sinh(self)
+    }
+    #[inline]
+    fn asinh(self) -> Self {
+        libm::asinh(self)
     }
     #[inline]
     fn cosh(self) -> Self {
         libm::cosh(self)
     }
     #[inline]
+    fn acosh(self) -> Self {
+        libm::acosh(self)
+    }
+    #[inline]
     fn tanh(self) -> Self {
         libm::tanh(self)
+    }
+    #[inline]
+    fn atanh(self) -> Self {
+        libm::atanh(self)
     }
     #[inline]
     fn atan2(self, other: Self) -> Self {
@@ -115,6 +147,10 @@ impl FloatElement for f64 {
     #[inline]
     fn round(self) -> Self {
         libm::round(self)
+    }
+    #[inline]
+    fn round_ties_even(self) -> Self {
+        libm::roundeven(self)
     }
     #[inline]
     fn trunc(self) -> Self {
@@ -230,6 +266,29 @@ macro_rules! impl_numeric_element_unsigned {
             #[inline(always)]
             fn checked_mul(self, rhs: Self) -> Option<Self> {
                 self.checked_mul(rhs)
+            }
+            /// Native `wrapping_add` replaces the trait's float default
+            /// `self + rhs`, which has no wraparound semantics for integers.
+            #[inline(always)]
+            fn wrapping_add(self, rhs: Self) -> Self {
+                self.wrapping_add(rhs)
+            }
+            /// Native `wrapping_sub`; see [`Self::wrapping_add`] for rationale.
+            #[inline(always)]
+            fn wrapping_sub(self, rhs: Self) -> Self {
+                self.wrapping_sub(rhs)
+            }
+            /// Native `wrapping_mul`; see [`Self::wrapping_add`] for rationale.
+            #[inline(always)]
+            fn wrapping_mul(self, rhs: Self) -> Self {
+                self.wrapping_mul(rhs)
+            }
+            /// Native `checked_div` returns `None` on division by zero
+            /// instead of the trait float default `Some(self / rhs)`, which
+            /// would panic for unsigned integers.
+            #[inline(always)]
+            fn checked_div(self, rhs: Self) -> Option<Self> {
+                self.checked_div(rhs)
             }
         }
     };

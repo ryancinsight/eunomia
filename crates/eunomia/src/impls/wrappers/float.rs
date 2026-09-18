@@ -57,12 +57,28 @@ impl FloatElement for F64 {
         F64(libm::exp(self.0))
     }
     #[inline]
+    fn exp2(self) -> Self {
+        F64(libm::exp2(self.0))
+    }
+    #[inline]
+    fn exp_m1(self) -> Self {
+        F64(libm::expm1(self.0))
+    }
+    #[inline]
     fn ln(self) -> Self {
         F64(libm::log(self.0))
     }
     #[inline]
+    fn ln_1p(self) -> Self {
+        F64(libm::log1p(self.0))
+    }
+    #[inline]
     fn sin(self) -> Self {
         F64(libm::sin(self.0))
+    }
+    #[inline]
+    fn asin(self) -> Self {
+        F64(libm::asin(self.0))
     }
     #[inline]
     fn cos(self) -> Self {
@@ -77,16 +93,32 @@ impl FloatElement for F64 {
         F64(libm::tan(self.0))
     }
     #[inline]
+    fn atan(self) -> Self {
+        F64(libm::atan(self.0))
+    }
+    #[inline]
     fn sinh(self) -> Self {
         F64(libm::sinh(self.0))
+    }
+    #[inline]
+    fn asinh(self) -> Self {
+        F64(libm::asinh(self.0))
     }
     #[inline]
     fn cosh(self) -> Self {
         F64(libm::cosh(self.0))
     }
     #[inline]
+    fn acosh(self) -> Self {
+        F64(libm::acosh(self.0))
+    }
+    #[inline]
     fn tanh(self) -> Self {
         F64(libm::tanh(self.0))
+    }
+    #[inline]
+    fn atanh(self) -> Self {
+        F64(libm::atanh(self.0))
     }
     #[inline]
     fn atan2(self, other: Self) -> Self {
@@ -129,6 +161,10 @@ impl FloatElement for F64 {
     #[inline]
     fn round(self) -> Self {
         F64(libm::round(self.0))
+    }
+    #[inline]
+    fn round_ties_even(self) -> Self {
+        F64(libm::roundeven(self.0))
     }
     #[inline]
     fn trunc(self) -> Self {
@@ -240,5 +276,48 @@ mod tests {
         // F64 wrapper (native impl).
         assert_eq!(FloatElement::floor(F64(2.7)).0, 2.0);
         assert_eq!(FloatElement::powi(F64(2.0), 10).0, 1024.0);
+    }
+
+    #[test]
+    fn round_ties_even_rounds_to_nearest_ties_to_even() {
+        // Ties resolve to the nearest EVEN integer, unlike `round` (half away
+        // from zero): 2.5 and 3.5 are equidistant from their neighbors, and
+        // -0.5 is equidistant from 0 and -1.
+        assert_eq!(FloatElement::round_ties_even(2.5_f64), 2.0);
+        assert_eq!(FloatElement::round_ties_even(3.5_f64), 4.0);
+        assert_eq!(
+            FloatElement::round_ties_even(-0.5_f64).to_bits(),
+            (-0.0_f64).to_bits(),
+            "-0.5 ties to -0, not 0 or -1"
+        );
+        // Non-tie values round to the nearest integer exactly as `round` does.
+        assert_eq!(FloatElement::round_ties_even(2.3_f64), 2.0);
+        assert_eq!(FloatElement::round_ties_even(2.7_f64), 3.0);
+        assert_eq!(FloatElement::round_ties_even(-2.5_f64), -2.0);
+        // Special values pass through unchanged.
+        assert!(FloatElement::round_ties_even(f64::NAN).is_nan());
+        assert_eq!(FloatElement::round_ties_even(f64::INFINITY), f64::INFINITY);
+        assert_eq!(
+            FloatElement::round_ties_even(f64::NEG_INFINITY),
+            f64::NEG_INFINITY
+        );
+        // Cross-check against std's own `f64::round_ties_even` at every case.
+        for &x in &[2.5, 3.5, -0.5, -2.5, 0.5, 4.5, 2.3, 2.7] {
+            assert_eq!(
+                FloatElement::round_ties_even(x),
+                x.round_ties_even(),
+                "round_ties_even({x}) vs std"
+            );
+        }
+        // f32 default (routes through f32 libm `roundevenf`) and F64 wrapper
+        // (native `libm::roundeven`) share the same contract.
+        assert_eq!(FloatElement::round_ties_even(2.5_f32), 2.0);
+        assert_eq!(FloatElement::round_ties_even(3.5_f32), 4.0);
+        assert_eq!(FloatElement::round_ties_even(F64(2.5)).0, 2.0);
+        assert_eq!(FloatElement::round_ties_even(F64(3.5)).0, 4.0);
+        assert_eq!(
+            FloatElement::round_ties_even(F64(-0.5)).0.to_bits(),
+            (-0.0_f64).to_bits()
+        );
     }
 }

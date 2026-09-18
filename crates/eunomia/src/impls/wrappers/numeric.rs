@@ -5,12 +5,14 @@ use crate::traits::{private, NumericElement};
 use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8, I16, I32, I8};
 
 // `impl_numeric_element!` declares the wrapper-level NumericElement body. The
-// trailing four closure args (`$sat_add`/`$sat_mul`/`$chk_add`/`$chk_mul`) are
-// OPTIONAL via `$( ... )?` — floats (F16/F32/F64/Bf16/Bf8/Bf4/F8/F4) inherit
-// the trait's float-default behaviour (`Some(self OP rhs)`/identity protection
-// already handled by IEEE 754), while integer wrappers (I8/I16/I32) provide
-// native checked/saturating overrides so overflow is detected instead of
-// silently wrapping under `+`/`*` or panicking under debug overflow checks.
+// trailing eight closure args (`$sat_add`/`$sat_mul`/`$chk_add`/`$chk_mul`/
+// `$wrap_add`/`$wrap_sub`/`$wrap_mul`/`$chk_div`) are OPTIONAL via `$( ... )?`
+// — floats (F16/F32/F64/Bf16/Bf8/Bf4/F8/F4) inherit the trait's float-default
+// behaviour (`Some(self OP rhs)`/plain op, identity protection already
+// handled by IEEE 754), while integer wrappers (I8/I16/I32) provide native
+// checked/saturating/wrapping overrides so overflow is detected or wraps
+// explicitly instead of silently wrapping under `+`/`*` or panicking under
+// debug overflow checks.
 macro_rules! impl_numeric_element {
     (
         $t:ident,
@@ -33,7 +35,7 @@ macro_rules! impl_numeric_element {
         $or:expr,
         $xor:expr,
         $count_ones:expr
-        $(, $sat_add:expr, $sat_mul:expr, $chk_add:expr, $chk_mul:expr)?
+        $(, $sat_add:expr, $sat_mul:expr, $chk_add:expr, $chk_mul:expr, $wrap_add:expr, $wrap_sub:expr, $wrap_mul:expr, $chk_div:expr)?
     ) => {
         impl private::Sealed for $t {}
 
@@ -112,6 +114,30 @@ macro_rules! impl_numeric_element {
                 #[inline(always)]
                 fn checked_mul(self, rhs: Self) -> Option<Self> {
                     $chk_mul(self, rhs)
+                }
+                /// Native `wrapping_add` replacement for the float-default
+                /// `self + rhs`, which has no wraparound semantics for
+                /// integers.
+                #[inline(always)]
+                fn wrapping_add(self, rhs: Self) -> Self {
+                    $wrap_add(self, rhs)
+                }
+                /// Native `wrapping_sub`; see [`Self::wrapping_add`].
+                #[inline(always)]
+                fn wrapping_sub(self, rhs: Self) -> Self {
+                    $wrap_sub(self, rhs)
+                }
+                /// Native `wrapping_mul`; see [`Self::wrapping_add`].
+                #[inline(always)]
+                fn wrapping_mul(self, rhs: Self) -> Self {
+                    $wrap_mul(self, rhs)
+                }
+                /// Native `checked_div` returning `None` on a zero divisor
+                /// or on `MIN / -1`, instead of the float-default
+                /// `Some(self / rhs)`, which would panic on either.
+                #[inline(always)]
+                fn checked_div(self, rhs: Self) -> Option<Self> {
+                    $chk_div(self, rhs)
                 }
             )?
         }
@@ -319,7 +345,11 @@ impl_numeric_element!(
     |x: I8, y: I8| I8(x.0.saturating_add(y.0)),
     |x: I8, y: I8| I8(x.0.saturating_mul(y.0)),
     |x: I8, y: I8| x.0.checked_add(y.0).map(I8),
-    |x: I8, y: I8| x.0.checked_mul(y.0).map(I8)
+    |x: I8, y: I8| x.0.checked_mul(y.0).map(I8),
+    |x: I8, y: I8| I8(x.0.wrapping_add(y.0)),
+    |x: I8, y: I8| I8(x.0.wrapping_sub(y.0)),
+    |x: I8, y: I8| I8(x.0.wrapping_mul(y.0)),
+    |x: I8, y: I8| x.0.checked_div(y.0).map(I8)
 );
 
 impl_numeric_element!(
@@ -352,7 +382,11 @@ impl_numeric_element!(
     |x: I16, y: I16| I16(x.0.saturating_add(y.0)),
     |x: I16, y: I16| I16(x.0.saturating_mul(y.0)),
     |x: I16, y: I16| x.0.checked_add(y.0).map(I16),
-    |x: I16, y: I16| x.0.checked_mul(y.0).map(I16)
+    |x: I16, y: I16| x.0.checked_mul(y.0).map(I16),
+    |x: I16, y: I16| I16(x.0.wrapping_add(y.0)),
+    |x: I16, y: I16| I16(x.0.wrapping_sub(y.0)),
+    |x: I16, y: I16| I16(x.0.wrapping_mul(y.0)),
+    |x: I16, y: I16| x.0.checked_div(y.0).map(I16)
 );
 
 impl_numeric_element!(
@@ -386,5 +420,9 @@ impl_numeric_element!(
     |x: I32, y: I32| I32(x.0.saturating_add(y.0)),
     |x: I32, y: I32| I32(x.0.saturating_mul(y.0)),
     |x: I32, y: I32| x.0.checked_add(y.0).map(I32),
-    |x: I32, y: I32| x.0.checked_mul(y.0).map(I32)
+    |x: I32, y: I32| x.0.checked_mul(y.0).map(I32),
+    |x: I32, y: I32| I32(x.0.wrapping_add(y.0)),
+    |x: I32, y: I32| I32(x.0.wrapping_sub(y.0)),
+    |x: I32, y: I32| I32(x.0.wrapping_mul(y.0)),
+    |x: I32, y: I32| x.0.checked_div(y.0).map(I32)
 );

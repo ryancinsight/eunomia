@@ -93,15 +93,39 @@ pub trait FloatElement: private::Sealed + NumericElement {
     fn exp(self) -> Self {
         Self::from_f32(libm::expf(self.to_f32()))
     }
+    /// `2^self`.
+    #[inline]
+    fn exp2(self) -> Self {
+        Self::from_f32(libm::exp2f(self.to_f32()))
+    }
+    /// `e^self − 1`, accurate for `self` near zero where `exp(self) - 1`
+    /// cancels to zero (`exp_m1(1e-10)` keeps full relative precision;
+    /// `exp(1e-10) - 1` loses it to subtraction of two nearly-equal values).
+    #[inline]
+    fn exp_m1(self) -> Self {
+        Self::from_f32(libm::expm1f(self.to_f32()))
+    }
     /// Natural logarithm.
     #[inline]
     fn ln(self) -> Self {
         Self::from_f32(libm::logf(self.to_f32()))
     }
+    /// `ln(1 + self)`, accurate for `self` near zero where `ln(1.0 + self)`
+    /// cancels to zero the same way [`exp_m1`](Self::exp_m1) does. Domain
+    /// `self > -1`; `NaN` at `self < -1`, `-∞` at `self == -1`.
+    #[inline]
+    fn ln_1p(self) -> Self {
+        Self::from_f32(libm::log1pf(self.to_f32()))
+    }
     /// Sine (radians).
     #[inline]
     fn sin(self) -> Self {
         Self::from_f32(libm::sinf(self.to_f32()))
+    }
+    /// Inverse sine (radians), domain `[-1, 1]` — `NaN` outside it.
+    #[inline]
+    fn asin(self) -> Self {
+        Self::from_f32(libm::asinf(self.to_f32()))
     }
     /// Cosine (radians).
     #[inline]
@@ -118,20 +142,41 @@ pub trait FloatElement: private::Sealed + NumericElement {
     fn tan(self) -> Self {
         Self::from_f32(libm::tanf(self.to_f32()))
     }
+    /// Inverse tangent (radians), defined for all reals.
+    #[inline]
+    fn atan(self) -> Self {
+        Self::from_f32(libm::atanf(self.to_f32()))
+    }
     /// Hyperbolic sine.
     #[inline]
     fn sinh(self) -> Self {
         Self::from_f32(libm::sinhf(self.to_f32()))
+    }
+    /// Inverse hyperbolic sine, defined for all reals.
+    #[inline]
+    fn asinh(self) -> Self {
+        Self::from_f32(libm::asinhf(self.to_f32()))
     }
     /// Hyperbolic cosine.
     #[inline]
     fn cosh(self) -> Self {
         Self::from_f32(libm::coshf(self.to_f32()))
     }
+    /// Inverse hyperbolic cosine, domain `[1, ∞)` — `NaN` below 1.
+    #[inline]
+    fn acosh(self) -> Self {
+        Self::from_f32(libm::acoshf(self.to_f32()))
+    }
     /// Hyperbolic tangent.
     #[inline]
     fn tanh(self) -> Self {
         Self::from_f32(libm::tanhf(self.to_f32()))
+    }
+    /// Inverse hyperbolic tangent, domain `(-1, 1)` — `±∞` at `±1`, `NaN`
+    /// outside `[-1, 1]`.
+    #[inline]
+    fn atanh(self) -> Self {
+        Self::from_f32(libm::atanhf(self.to_f32()))
     }
     /// Four-quadrant arctangent of `self / other`.
     #[inline]
@@ -200,6 +245,13 @@ pub trait FloatElement: private::Sealed + NumericElement {
     #[inline]
     fn round(self) -> Self {
         Self::from_f32(libm::roundf(self.to_f32()))
+    }
+    /// Nearest integer, ties to even (banker's rounding) — unlike
+    /// [`round`](Self::round), which rounds ties away from zero
+    /// (`round_ties_even(2.5) == 2`, `round_ties_even(3.5) == 4`).
+    #[inline]
+    fn round_ties_even(self) -> Self {
+        Self::from_f32(libm::roundevenf(self.to_f32()))
     }
     /// Integer part (toward zero).
     #[inline]
