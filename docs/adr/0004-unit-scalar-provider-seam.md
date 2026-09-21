@@ -4,6 +4,13 @@
 - Date: 2026-07-28
 - Class: [minor]
 
+Revision 2026-09-21 ([major]): add native inverse scaling for
+[EUNOMIA-UNIT-DIVISION](../../backlog.md#EUNOMIA-UNIT-DIVISION).
+Multiplication by a reciprocal can overflow before applying it to a
+subnormal value. `UnitScalar::divide_by_f64` divides in the storage precision,
+componentwise for complex values. External implementations must add this
+required method; manifests are not bumped until an authorized release.
+
 ## Context
 
 Aequitas linear-unit conversion must support Eunomia's reduced-precision real
@@ -14,7 +21,7 @@ scaled together, while the imaginary component remains quadrature data.
 
 ## Decision
 
-Eunomia owns `UnitScalar`, with a native `scale_by_f64` operation. Implementations
+Eunomia owns `UnitScalar`, with native `scale_by_f64` and `divide_by_f64` operations. Implementations
 cover every shipped real `FloatElement` storage type and `Complex32`/`Complex64`.
 Aequitas binds one generic quantity-conversion path to this provider seam. No
 imaginary-unit type or separate physical dimension is introduced.

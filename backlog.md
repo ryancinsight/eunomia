@@ -1,5 +1,17 @@
 # Eunomia backlog
 
+<a id="EUNOMIA-UNIT-DIVISION"></a>
+## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
+
+- status: review; integrator: codex-unit-composition
+- Outcome: inverse unit conversion avoids overflowing intermediate reciprocals.
+- Scope: UnitScalar, its shipped implementations, tests and contract documentation.
+- Driver: [Aequitas composition](../aequitas/backlog.md#AEQ-UNIT-COMPOSITION).
+- Acceptance: real/complex native-precision division and subnormal/zero regressions.
+- Decision and migration: [ADR 0004](docs/adr/0004-unit-scalar-provider-seam.md).
+- Verification: focused nextest, clippy, doctests and no-default-features check.
+- Evidence: 4 unit-scalar tests pass, including every shipped real storage type; package all-target Clippy passes with warnings denied.
+
 Sprint target: 0.8.0 (native reduced-precision provider contract).
 
 ## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] <a id="eunomia-structure-float-special-2026-09-21"></a>
