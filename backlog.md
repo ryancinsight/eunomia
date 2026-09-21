@@ -2,6 +2,15 @@
 
 Sprint target: 0.8.0 (native reduced-precision provider contract).
 
+## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] <a id="eunomia-structure-float-special-2026-09-21"></a>
+
+- **Outcome:** `crates/eunomia/tests/float_special.rs` (576 lines) raises
+  `oversized_files`, holding the member's pin behind the atlas sweep.
+- **Acceptance:** no Rust file exceeds the 500-line target; all 18 tests remain,
+  each body unchanged; no new test binary; the gate is green at CI's features.
+- **Non-goals:** the other `tests/*.rs` binaries (one target each, a separate
+  consolidation item) and any change to the oracles themselves.
+
 ## E-037 [patch] — Remove the external reduced-precision oracle — done <a id="e-037-oracle"></a>
 
 - Landed `a296e12` (PR #85). Eunomia's manifests and source carry no `half`
