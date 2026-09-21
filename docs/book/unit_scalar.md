@@ -24,6 +24,9 @@ coefficient — for real storage types *and* for complex phasors.
 pub trait UnitScalar: Copy {
     /// Scale this value by a real coefficient in the scalar's native precision.
     fn scale_by_f64(self, factor: f64) -> Self;
+
+    /// Divide this value by a real coefficient in the scalar's native precision.
+    fn divide_by_f64(self, factor: f64) -> Self;
 }
 ```
 
@@ -36,12 +39,17 @@ pub trait UnitScalar: Copy {
 - **Native precision.** The coefficient is applied in the scalar's native
   precision, so `F16`/`Bf16` scale through their own arithmetic rather than
   being widened first.
+- **Direct inverse conversion.** `divide_by_f64` divides each real or complex
+  component by the converted coefficient. It does not multiply by a computed
+  reciprocal: for example, an `f32` value and coefficient near `1e-40` divide
+  to one even though the coefficient's reciprocal overflows to infinity.
 
 ## Outline of this chapter
 
 - Quantities as `unit × scalar` and why the conversion belongs in the
   datatype law
-- The `scale_by_f64` contract and native-precision application
+- The `scale_by_f64` and `divide_by_f64` contracts and native-precision
+  application
 - The quadrature rule: complex imaginary parts are quadrature, never a
   second physical unit
 - How `aequitas` consumes the seam (cross-reference to the aequitas book)
