@@ -47,6 +47,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parent.parent
@@ -316,6 +317,37 @@ def check_provider_identity() -> int:
     return 0
 
 
+def indexed_first_party_dependencies() -> int:
+    """Count git providers in indexed Cargo dependency tables, without Cargo."""
+    indexed = subprocess.run(
+        ["git", "ls-files", "--cached", "-z", "--", "*Cargo.toml"],
+        cwd=REPOSITORY, capture_output=True, text=True, check=True, timeout=30,
+    )
+    count = 0
+    for path in indexed.stdout.split("\0"):
+        if not path or Path(path).name != "Cargo.toml":
+            continue
+        blob = subprocess.run(
+            ["git", "show", f":{path}"], cwd=REPOSITORY,
+            capture_output=True, text=True, check=True, timeout=30,
+        )
+        pending = [tomllib.loads(blob.stdout)]
+        while pending:
+            table = pending.pop()
+            for name, value in table.items():
+                if not isinstance(value, dict):
+                    continue
+                if name in {"dependencies", "dev-dependencies", "build-dependencies"}:
+                    count += sum(
+                        isinstance(dependency, dict)
+                        and str(dependency.get("git", "")).startswith(FIRST_PARTY_GIT.removeprefix("git+"))
+                        for dependency in value.values()
+                    )
+                else:
+                    pending.append(value)
+    return count
+
+
 def check_staged() -> int:
     """Reject a staged lock missing declared first-party git sources."""
     staged = subprocess.run(
@@ -330,13 +362,10 @@ def check_staged() -> int:
     )
     if FIRST_PARTY_SOURCE.search(blob.stdout):
         return 0
-    declared = declared_first_party_dependencies()
+    declared = indexed_first_party_dependencies()
     if declared == 0:
         return 0
-    if declared is None:
-        print("error: cannot determine declared first-party dependencies", file=sys.stderr)
-    else:
-        print("error: staged Cargo.lock omits declared first-party git sources", file=sys.stderr)
+    print("error: staged Cargo.lock omits declared first-party git sources", file=sys.stderr)
     return 1
 
 
