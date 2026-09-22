@@ -40,6 +40,24 @@ Sprint target: 0.8.0 (native reduced-precision provider contract).
   advances past this commit (co-evolution protocol) — out of this item's
   scope (eunomia-only).
 
+<a id="eunomia-type-suffixed-special-tests-2026-09-22"></a>
+## EUNOMIA-TYPE-SUFFIXED-SPECIAL-TESTS-2026-09-22 — special-function tests carried scalar type tokens in their names [patch]
+
+- status: done; integrator: claude-special-test-names; landed PR #101 (`9c62a07`).
+- **Outcome:** six `tests/float_special/references.rs` test names embedded
+  `f64`/`f32`. `atlas-conformance.py`'s `type_suffixed_fns` detector excludes
+  `tests/` from production code (its `testish`/`split_test_region` logic), so
+  the scan never counted them — the violation was invisible to the ratchet
+  rather than absent, and no conformance count moves on this fix.
+- **Fix:** rename to the property/role vocabulary PR #100 established in the
+  sibling `transcendentals.rs` — `double_precision`/`single_precision` for the
+  precision dimension. Rename only: six `fn` signature lines, no assertion,
+  tolerance, operand, doc-comment or test-count change.
+- **Acceptance:** no test identifier in the crate carries a scalar type token;
+  all 154 nextest cases pass and the six collect under their new names.
+- **Non-goal:** `F64_NATIVE_TOL` in the same file denotes the crate's `F64`
+  wrapper type, not a generic scalar dimension, and keeps its name.
+
 ## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] <a id="eunomia-structure-float-special-2026-09-21"></a>
 
 - **Outcome:** `crates/eunomia/tests/float_special.rs` (576 lines) raises
