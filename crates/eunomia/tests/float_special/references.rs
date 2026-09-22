@@ -9,7 +9,7 @@ use eunomia::{FloatElement, F64};
 use super::fixtures::close;
 
 #[test]
-fn erf_f64_matches_reference() {
+fn erf_double_precision_matches_reference() {
     close(FloatElement::erf(0.0f64), 0.0, 1e-15, "erf(0)");
     close(
         FloatElement::erf(1.0f64),
@@ -29,7 +29,7 @@ fn erf_f64_matches_reference() {
 }
 
 #[test]
-fn erfc_f64_is_one_minus_erf() {
+fn erfc_double_precision_is_one_minus_erf() {
     close(FloatElement::erfc(0.0f64), 1.0, 1e-15, "erfc(0)");
     for &x in &[0.3f64, 1.0, 2.5] {
         close(
@@ -45,7 +45,7 @@ fn erfc_f64_is_one_minus_erf() {
 }
 
 #[test]
-fn lgamma_f64_matches_reference() {
+fn lgamma_double_precision_matches_reference() {
     close(
         FloatElement::lgamma(1.0f64),
         0.0,
@@ -104,7 +104,7 @@ const F64_NATIVE_TOL: f64 = 1e-15;
 /// dropped override fails here instead of silently discarding ~9 decimal
 /// digits in every downstream generic algorithm instantiated at `F64`.
 #[test]
-fn f64_wrapper_special_functions_are_native_precision() {
+fn double_precision_wrapper_special_functions_evaluate_natively() {
     // Operands chosen so every result is O(1): the absolute bound above is then
     // equivalent to a relative one, and no assertion is weakened by scale.
     for &x in &[2.0f64, 10.0, 1000.0, 0.5] {
@@ -148,7 +148,7 @@ fn f64_wrapper_special_functions_are_native_precision() {
 /// crate does not compute — `log₁₀(1000) = 3`, `log₂(1024) = 10`,
 /// `lgamma(5) = ln 4!`, `erf(0) = 0`, `erfc(0) = 1` — at full `f64` precision.
 #[test]
-fn f64_wrapper_special_functions_match_analytic_references() {
+fn double_precision_wrapper_special_functions_match_analytic_references() {
     close(
         FloatElement::log10(F64(1000.0)).0,
         3.0,
@@ -187,7 +187,7 @@ fn f64_wrapper_special_functions_match_analytic_references() {
 }
 
 #[test]
-fn f32_special_functions_route_through_libm() {
+fn single_precision_special_functions_route_through_libm() {
     // f32 uses the trait default (single-precision libm), agreeing with the
     // analytic values within single precision.
     assert!(
