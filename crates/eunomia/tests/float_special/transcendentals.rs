@@ -8,7 +8,7 @@
 
 use eunomia::{FloatElement, F64};
 
-use super::fixtures::close_ulp32;
+use super::fixtures::assert_close_within_ulp;
 
 /// `f64` route: `libm` **is** the implementation (the trait's `f64` override
 /// and the `F64` wrapper's override both call the double-precision `libm`
@@ -24,7 +24,7 @@ use super::fixtures::close_ulp32;
 /// the native `libm::<op>(x)` result by roughly `ε₃₂ ≈ 1.2e-7` relative,
 /// which is billions of `f64` ulps — never bitwise-equal by accident.
 #[test]
-fn new_transcendentals_f64_and_f64_wrapper_wire_to_libm_bitwise() {
+fn transcendentals_double_precision_route_wires_to_libm_bitwise() {
     for &x in &[0.3, 0.7, -0.5, 0.9] {
         assert_eq!(FloatElement::asin(x), libm::asin(x), "f64 asin");
         assert_eq!(FloatElement::asin(F64(x)).0, libm::asin(x), "F64 asin");
@@ -59,7 +59,7 @@ fn new_transcendentals_f64_and_f64_wrapper_wire_to_libm_bitwise() {
 /// implementation of this family, evaluated as a table lookup / exact
 /// argument-reduction case, not the general rational-polynomial path).
 #[test]
-fn new_transcendentals_f64_analytic_reference_points() {
+fn transcendentals_double_precision_analytic_reference_points() {
     assert_eq!(FloatElement::atan(1.0f64), core::f64::consts::FRAC_PI_4);
     assert_eq!(FloatElement::exp2(10.0f64), 1024.0);
     assert_eq!(FloatElement::exp_m1(0.0f64), 0.0);
@@ -86,7 +86,8 @@ fn new_transcendentals_f64_analytic_reference_points() {
 /// reviewed methodology, marked below as an assumption rather than a
 /// citation.
 #[test]
-fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
+fn transcendentals_single_precision_route_matches_double_precision_oracle_within_documented_bound()
+{
     // Source paths cited below are relative to `libm-0.2.16/src/math/` in
     // the locked crate's registry checkout. Every oracle call casts the SAME
     // `f32` binding to `f64` (`f64::from(x)`) rather than writing a second
@@ -98,7 +99,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // asinf.rs: no documented ulp comment found in this file (checked the
     // whole file). Assumed bound: 2 ulp (1 correctly-rounded + 0.5 oracle).
     let x: f32 = 0.5;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::asin(x),
         libm::asin(f64::from(x)) as f32,
         2,
@@ -108,7 +109,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // atanf.rs: no documented ulp comment found in this file. Assumed bound:
     // 2 ulp (1 correctly-rounded + 0.5 oracle).
     let x: f32 = 1.5;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::atan(x),
         libm::atan(f64::from(x)) as f32,
         2,
@@ -119,7 +120,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // |x| < 2). Bound = floor(2.0 + 0.5) = 2. Test point kept inside the
     // documented sub-range.
     let x: f32 = 1.05;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::acosh(x),
         libm::acosh(f64::from(x)) as f32,
         2,
@@ -130,7 +131,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // [0.125,0.5] */". Bound = floor(1.6 + 0.5) = 2. Test point kept inside
     // the documented sub-range.
     let x: f32 = 0.3;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::asinh(x),
         libm::asinh(f64::from(x)) as f32,
         2,
@@ -140,7 +141,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // atanhf.rs:24 — "/* |x| < 0.5, up to 1.7ulp error */". Bound =
     // floor(1.7 + 0.5) = 2. Test point kept inside the documented branch.
     let x: f32 = 0.3;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::atanh(x),
         libm::atanh(f64::from(x)) as f32,
         2,
@@ -151,7 +152,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // whole-function claim (not branch-restricted), so any representative
     // point applies. Bound = floor(0.501 + 0.5) = 1.
     let x: f32 = 1.5;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::exp2(x),
         libm::exp2(f64::from(x)) as f32,
         1,
@@ -161,7 +162,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // expm1f.rs: no numeric ulp bound documented (only a prose accuracy
     // note). Assumed bound: 2 ulp (1 correctly-rounded + 0.5 oracle).
     let x: f32 = 1.0;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::exp_m1(x),
         libm::expm1(f64::from(x)) as f32,
         2,
@@ -172,7 +173,7 @@ fn new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound() {
     // polynomial's own error term is not a stated final-result ulp bound).
     // Assumed bound: 2 ulp (1 correctly-rounded + 0.5 oracle).
     let x: f32 = 1.0;
-    close_ulp32(
+    assert_close_within_ulp(
         FloatElement::ln_1p(x),
         libm::log1p(f64::from(x)) as f32,
         2,
