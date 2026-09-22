@@ -16,13 +16,13 @@
 //! amplifies any inter-implementation disagreement to hundreds of ulp):
 //! - `f64`/`F64` call `libm`'s `f64` entry point directly, so the correct
 //!   assertion is bitwise equality against that exact same call (wiring, not
-//!   accuracy) — see `new_transcendentals_f64_and_f64_wrapper_wire_to_libm_bitwise`.
+//!   accuracy) — see `transcendentals_double_precision_route_wires_to_libm_bitwise`.
 //! - `f32` routes through `libm`'s independent `f32` algorithm, so it is
 //!   compared against `libm`'s `f64` result rounded to `f32` (an oracle with
 //!   zero input error, since every `f32` widens to `f64` exactly), within a
 //!   bound derived from `libm`'s own documented per-function error where the
 //!   source states one — see
-//!   `new_transcendentals_f32_match_libm_f64_oracle_within_documented_bound`.
+//!   `transcendentals_single_precision_route_matches_double_precision_oracle_within_documented_bound`.
 
 mod domain_edges;
 mod fixtures;

@@ -3,7 +3,7 @@
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 
-- status: review; integrator: codex-unit-composition
+- status: done; integrator: codex-unit-composition; landed PR #97 (`71fdc60`).
 - Outcome: inverse unit conversion avoids overflowing intermediate reciprocals.
 - Scope: UnitScalar, its shipped implementations, tests and contract documentation.
 - Driver: [Aequitas composition](../aequitas/backlog.md#AEQ-UNIT-COMPOSITION).
@@ -11,8 +11,34 @@
 - Decision and migration: [ADR 0004](docs/adr/0004-unit-scalar-provider-seam.md).
 - Verification: focused nextest, clippy, doctests and no-default-features check.
 - Evidence: 4 unit-scalar tests pass, including every shipped real storage type; package all-target Clippy passes with warnings denied.
+- Follow-up: [EUNOMIA-TYPE-SUFFIXED-UNIT-METHODS-2026-09-21](#eunomia-type-suffixed-unit-methods-2026-09-21) renamed its method away from a type-suffixed name.
 
 Sprint target: 0.8.0 (native reduced-precision provider contract).
+
+<a id="eunomia-type-suffixed-unit-methods-2026-09-21"></a>
+## EUNOMIA-TYPE-SUFFIXED-UNIT-METHODS-2026-09-21 — `UnitScalar` methods carried their argument's type in the name [patch]
+
+- **Outcome:** `divide_by_f64` (added by PR #97) and its sibling
+  `scale_by_f64` raised `type_suffixed_fns` (39 → 43); atlas's pin sweep was
+  blocked on the member's own conformance count.
+- **Fix:** rename to `divide_by_factor`/`scale_by_factor` across the trait,
+  every shipped-type impl, tests, and the ADR/book docs. The coefficient's
+  concrete `f64` precision is a real ADR-0004 contract, so it stays in the
+  signature (`factor: f64`); only the redundant type token in the identifier
+  is removed. See [ADR 0004](docs/adr/0004-unit-scalar-provider-seam.md)
+  revision 2026-09-21 (cont.).
+- **Acceptance:** `type_suffixed_fns` for eunomia ≤ 39 (measured by
+  `atlas-conformance.py report --repo eunomia --member-path <checkout>
+  --worktree --json`); every `UnitScalar` test still fails when its
+  assertion is broken; no coverage lost across the shipped real/complex
+  storage types.
+- **Residual risk:** `repos/aequitas` (pinned to eunomia `71fdc60` in its own
+  `Cargo.lock`) calls the old names (`src/unit/affine.rs`, `src/unit/linear.rs`,
+  `src/quantity/construction.rs`). Its lockfile pin does not move on its own,
+  so this rename does not break Aequitas's current build; updating its call
+  sites is Aequitas's own follow-up item the next time its eunomia pin
+  advances past this commit (co-evolution protocol) — out of this item's
+  scope (eunomia-only).
 
 ## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] <a id="eunomia-structure-float-special-2026-09-21"></a>
 
