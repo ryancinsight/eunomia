@@ -37,6 +37,13 @@ All notable changes to Eunomia are documented here.
   `F64` wrapper override with native double-precision. Consumers previously
   emulated roots as `powf(x, 1/n)` / `powf(x, 0.25)` / `powf(x, 0.2)`.
 
+- `FloatElement::binary_exponent` returns the floor binary exponent of a
+  finite nonzero value; `scale_binary` scales by an integer power of two.
+  Primitive `f64` and `F64` use native double-precision libm operations, while
+  `f32` and reduced-format implementations retain their existing f32 route.
+  The exponent contract normalizes to `[1, 2)`, which all shipped formats can
+  represent exactly.
+
 ### Fixed
 
 - `NumericElement::min_scalar` and `max_scalar` now apply one shared

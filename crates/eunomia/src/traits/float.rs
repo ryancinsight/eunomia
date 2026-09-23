@@ -58,6 +58,50 @@ pub trait FloatElement: private::Sealed + NumericElement {
     /// Cast to f32.
     fn to_f32(self) -> f32;
 
+    /// Return the floor binary exponent of a finite, nonzero value.
+    ///
+    /// For a returned exponent `e`, scaling by `2^-e` yields a value whose
+    /// magnitude is in `[1, 2)`. Zero and non-finite values have no binary
+    /// exponent and return `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::FloatElement;
+    ///
+    /// assert_eq!(FloatElement::binary_exponent(12.0_f32), Some(3));
+    /// assert_eq!(FloatElement::binary_exponent(0.0_f32), None);
+    /// ```
+    #[inline]
+    fn binary_exponent(self) -> Option<i32> {
+        let value = self.to_f32();
+        if value.is_finite() && value != 0.0 {
+            Some(libm::ilogbf(value))
+        } else {
+            None
+        }
+    }
+
+    /// Scale this value by an integer power of two.
+    ///
+    /// Scaling is exact when the result is representable. Implementations
+    /// routed through `f32` use that operation and their existing conversion
+    /// semantics; `f64` implementations retain native precision. Overflow,
+    /// underflow, NaN, and signed-zero behavior follow the implementation's
+    /// floating-point format.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::FloatElement;
+    ///
+    /// assert_eq!(FloatElement::scale_binary(1.5_f32, 2), 6.0);
+    /// ```
+    #[inline]
+    fn scale_binary(self, exponent: i32) -> Self {
+        Self::from_f32(libm::scalbnf(self.to_f32(), exponent))
+    }
+
     /// Widen `self` into its [`Accumulator`](Self::Accumulator).
     ///
     /// Exact for every implementor: the accumulator is either `Self` or a
