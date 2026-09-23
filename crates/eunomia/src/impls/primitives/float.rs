@@ -40,6 +40,18 @@ impl FloatElement for f64 {
     fn to_f32(self) -> f32 {
         self as f32
     }
+    #[inline]
+    fn binary_exponent(self) -> Option<i32> {
+        if self.is_finite() && self != 0.0 {
+            Some(libm::ilogb(self))
+        } else {
+            None
+        }
+    }
+    #[inline]
+    fn scale_binary(self, exponent: i32) -> Self {
+        libm::scalbn(self, exponent)
+    }
     // Native double-precision transcendentals (override the f32-routed defaults).
     #[inline]
     fn exp(self) -> Self {

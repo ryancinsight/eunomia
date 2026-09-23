@@ -53,6 +53,18 @@ impl FloatElement for F64 {
         self.0 as f32
     }
     #[inline]
+    fn binary_exponent(self) -> Option<i32> {
+        if self.0.is_finite() && self.0 != 0.0 {
+            Some(libm::ilogb(self.0))
+        } else {
+            None
+        }
+    }
+    #[inline]
+    fn scale_binary(self, exponent: i32) -> Self {
+        F64(libm::scalbn(self.0, exponent))
+    }
+    #[inline]
     fn exp(self) -> Self {
         F64(libm::exp(self.0))
     }
@@ -236,8 +248,34 @@ impl_float_element!(
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::FloatElement;
-    use crate::types::F64;
+    use crate::traits::{FloatElement, NumericElement};
+    use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8};
+
+    fn normalized_round_trip<T: FloatElement>(value: T, expected_exponent: i32) {
+        assert_eq!(value.binary_exponent(), Some(expected_exponent));
+        let normalized = value.scale_binary(-expected_exponent);
+        let magnitude = <T as NumericElement>::abs(normalized).to_f64();
+        assert!((1.0..2.0).contains(&magnitude));
+        assert_eq!(normalized.scale_binary(expected_exponent), value);
+    }
+
+    fn signed_zero_and_nan<T: FloatElement>(negative_zero: T) {
+        assert_eq!(negative_zero.binary_exponent(), None);
+        let scaled_zero = negative_zero.scale_binary(i32::MAX);
+        assert_eq!(
+            scaled_zero.to_f64().to_bits(),
+            negative_zero.to_f64().to_bits()
+        );
+
+        let nan = T::from_f32(f32::NAN);
+        assert_eq!(nan.binary_exponent(), None);
+        assert!(nan.scale_binary(0).is_nan());
+
+        let infinity = <T as NumericElement>::INFINITY;
+        if !infinity.is_finite() {
+            assert_eq!(infinity.binary_exponent(), None);
+        }
+    }
 
     #[test]
     fn f64_wrapper_transcendentals_are_native_precision() {
@@ -319,5 +357,75 @@ mod tests {
             FloatElement::round_ties_even(F64(-0.5)).0.to_bits(),
             (-0.0_f64).to_bits()
         );
+    }
+
+    #[test]
+    fn binary_scaling_normalizes_every_float_implementation() {
+        normalized_round_trip(2.0_f32, 1);
+        normalized_round_trip(-2.0_f32, 1);
+        normalized_round_trip(2.0_f64, 1);
+        normalized_round_trip(-2.0_f64, 1);
+        normalized_round_trip(F16::from_f32(2.0), 1);
+        normalized_round_trip(F16::from_f32(-2.0), 1);
+        normalized_round_trip(F32(2.0), 1);
+        normalized_round_trip(F32(-2.0), 1);
+        normalized_round_trip(F64(2.0), 1);
+        normalized_round_trip(F64(-2.0), 1);
+        normalized_round_trip(Bf16::from_f32(2.0), 1);
+        normalized_round_trip(Bf16::from_f32(-2.0), 1);
+        normalized_round_trip(Bf8::from_f32(2.0), 1);
+        normalized_round_trip(Bf8::from_f32(-2.0), 1);
+        normalized_round_trip(Bf4::from_f32(2.0), 1);
+        normalized_round_trip(Bf4::from_f32(-2.0), 1);
+        normalized_round_trip(F8::from_f32(2.0), 1);
+        normalized_round_trip(F8::from_f32(-2.0), 1);
+        normalized_round_trip(F4::from_f32(2.0), 1);
+        normalized_round_trip(F4::from_f32(-2.0), 1);
+
+        // E2M1 represents 1.5 exactly; its normalized significand must not be
+        // forced into the unrepresentable [0.5, 1) range.
+        normalized_round_trip(Bf4::from_f32(1.5), 0);
+    }
+
+    #[test]
+    fn binary_scaling_preserves_subnormal_exponents() {
+        normalized_round_trip(f32::from_bits(1), -149);
+        normalized_round_trip(f64::from_bits(1), -1074);
+        normalized_round_trip(F32(f32::from_bits(1)), -149);
+        normalized_round_trip(F64(f64::from_bits(1)), -1074);
+        normalized_round_trip(F16::from_bits(1), -24);
+        normalized_round_trip(Bf16::from_bits(1), -133);
+        normalized_round_trip(Bf8(1), -16);
+        normalized_round_trip(Bf4(1), -1);
+        normalized_round_trip(F8(1), -9);
+        normalized_round_trip(F4(1), -2);
+    }
+
+    #[test]
+    fn binary_scaling_keeps_native_float_boundaries_and_special_values() {
+        assert_eq!(f32::MAX.binary_exponent(), Some(127));
+        normalized_round_trip(f32::MAX, 127);
+        let one_f32 = <f32 as NumericElement>::ONE;
+        assert_eq!(one_f32.scale_binary(128), f32::INFINITY);
+        assert_eq!(one_f32.scale_binary(-149).to_bits(), 1);
+        assert_eq!(one_f32.scale_binary(-150).to_bits(), 0);
+
+        assert_eq!(f64::MAX.binary_exponent(), Some(1023));
+        normalized_round_trip(f64::MAX, 1023);
+        let one_f64 = <f64 as NumericElement>::ONE;
+        assert_eq!(one_f64.scale_binary(1024), f64::INFINITY);
+        assert_eq!(one_f64.scale_binary(-1074).to_bits(), 1);
+        assert_eq!(one_f64.scale_binary(-1075).to_bits(), 0);
+
+        signed_zero_and_nan(-0.0_f32);
+        signed_zero_and_nan(-0.0_f64);
+        signed_zero_and_nan(F16::from_f32(-0.0));
+        signed_zero_and_nan(F32(-0.0));
+        signed_zero_and_nan(F64(-0.0));
+        signed_zero_and_nan(Bf16::from_f32(-0.0));
+        signed_zero_and_nan(Bf8::from_f32(-0.0));
+        signed_zero_and_nan(Bf4::from_f32(-0.0));
+        signed_zero_and_nan(F8::from_f32(-0.0));
+        signed_zero_and_nan(F4::from_f32(-0.0));
     }
 }
