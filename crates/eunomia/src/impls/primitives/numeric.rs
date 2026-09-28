@@ -270,10 +270,23 @@ where
         <T as NumericElement>::ZERO,
     );
 
+    /// Magnitude `√(re² + im²)` computed without squaring into overflow.
+    ///
+    /// The naive `(re² + im²).sqrt()` overflowed to `∞` for any component above
+    /// `√MAX` even when the magnitude itself is representable; the scaled form
+    /// `hi·√(1 + (lo/hi)²)` overflows only when the magnitude is. Measured on
+    /// f64, `Complex::new(1e200, 1e200).abs()` was `∞` against the true
+    /// `√2·1e200 ≈ 1.414e200`.
     #[inline(always)]
     fn abs(self) -> Self {
+        let (re, im) = (self.re.abs(), self.im.abs());
+        let (hi, lo) = if re >= im { (re, im) } else { (im, re) };
+        if hi == <T as NumericElement>::ZERO {
+            return Self::new(<T as NumericElement>::ZERO, <T as NumericElement>::ZERO);
+        }
+        let r = lo / hi;
         Self::new(
-            (self.re * self.re + self.im * self.im).sqrt(),
+            hi * (<T as NumericElement>::ONE + r * r).sqrt(),
             <T as NumericElement>::ZERO,
         )
     }
@@ -283,17 +296,35 @@ where
         self * b + c
     }
 
+    /// Principal complex square root.
+    ///
+    /// `√(re + im·i) = √((|z| + re)/2) ± √((|z| − re)/2)·i`, with the sign of
+    /// the imaginary part carried through. The identity is stated in terms of
+    /// the magnitude `|z|`, not its square: the previous body substituted
+    /// `re² + im²` for `|z|`, so it returned a value of magnitude `|z|` rather
+    /// than `√|z|`. Measured on f64, `NumericElement::sqrt(3 + 4i)` returned
+    /// `≈ 3.7417 + 3.3166i` (magnitude 5) instead of the correct `2 + i`; the
+    /// equivalent `Complex::<f64>::sqrt` surface was already correct.
     #[inline(always)]
     fn sqrt(self) -> Self {
-        let mag2 = self.re * self.re + self.im * self.im;
+        let magnitude = <Self as NumericElement>::abs(self).re;
         let half =
             <T as NumericElement>::ONE / (<T as NumericElement>::ONE + <T as NumericElement>::ONE);
-        let u = ((mag2 + self.re) * half).sqrt();
-        let mut v = ((mag2 - self.re) * half).sqrt();
+        let u = (magnitude * half + self.re * half).sqrt();
+        let v_squared = magnitude * half - self.re * half;
+        // `|z| ≥ re` for every input, so `v_squared` is non-negative in exact
+        // arithmetic; clamping a rounding-induced negative keeps it from
+        // producing a spurious `NaN`.
+        let v = if v_squared < <T as NumericElement>::ZERO {
+            <T as NumericElement>::ZERO
+        } else {
+            v_squared.sqrt()
+        };
         if self.im < <T as NumericElement>::ZERO {
-            v = -v;
+            Self::new(u, -v)
+        } else {
+            Self::new(u, v)
         }
-        Self::new(u, v)
     }
 
     #[inline(always)]

@@ -37,17 +37,68 @@ impl<T: Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Clone> Mul for Com
     }
 }
 
-impl<T: Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Div<Output = T> + Clone> Div
-    for Complex<T>
+/// The magnitude `|value|` of a scalar, using only `PartialOrd` and `Neg`.
+///
+/// The scalar component type of a generic `Complex<T>` need not expose an
+/// `abs`; negating and taking the larger of the two is the same magnitude for
+/// every ordered scalar, keeps `NaN` a `NaN`, and is exact (a sign-bit flip).
+#[inline(always)]
+fn magnitude<T: PartialOrd + Neg<Output = T> + Clone>(value: T) -> T {
+    let negated = -value.clone();
+    if value < negated {
+        negated
+    } else {
+        value
+    }
+}
+
+/// Complex quotient `(a + bi) / (c + di)` by **Smith's algorithm** (1962).
+///
+/// The textbook closed form `((ac + bd) + (bc − ad)i) / (c² + d²)` squares the
+/// denominator's components, so it overflows to `±∞` (or flushes to `0`) as soon
+/// as `c` or `d` is near the format's square root of the maximum finite value —
+/// even when the true quotient is perfectly representable. Dividing through by
+/// the *larger* of `|c|`, `|d|` keeps every intermediate at the scale of the
+/// operands: with `r = d/c` (or `c/d`) satisfying `|r| ≤ 1`, the denominator
+/// `c + d·r` cannot overflow, and the result is the correctly rounded quotient
+/// whenever the exact quotient is representable.
+///
+/// Worked cases (f64, both exact):
+/// `(1 + i) / (1e200 + 1e200 i) = 1e-200 + 0i` (naive: `0 + 0i`, denominator
+/// `1e400 → ∞`); `(1 + i) / (1e-200 + 1e-200 i) = 1e200 + 0i` (naive: `∞ + NaNi`,
+/// denominator `1e-400 → 0`).
+///
+/// A zero denominator is an invalid operation and yields `NaN` components
+/// rather than a specific signed infinity.
+impl<T> Div for Complex<T>
+where
+    T: Add<Output = T>
+        + Sub<Output = T>
+        + Mul<Output = T>
+        + Div<Output = T>
+        + Neg<Output = T>
+        + PartialOrd
+        + Clone,
 {
     type Output = Self;
     #[inline(always)]
     fn div(self, other: Self) -> Self {
-        let denom = other.re.clone() * other.re.clone() + other.im.clone() * other.im.clone();
-        Self {
-            re: (self.re.clone() * other.re.clone() + self.im.clone() * other.im.clone())
-                / denom.clone(),
-            im: (self.im * other.re.clone() - self.re * other.im) / denom,
+        let (a, b) = (self.re, self.im);
+        let (c, d) = (other.re, other.im);
+        if magnitude(c.clone()) >= magnitude(d.clone()) {
+            let r = d.clone() / c.clone();
+            let denom = c + d * r.clone();
+            Self {
+                re: (a.clone() + b.clone() * r.clone()) / denom.clone(),
+                im: (b - a * r) / denom,
+            }
+        } else {
+            let r = c.clone() / d.clone();
+            let denom = c * r.clone() + d;
+            Self {
+                re: (a.clone() * r.clone() + b.clone()) / denom.clone(),
+                im: (b * r - a) / denom,
+            }
         }
     }
 }

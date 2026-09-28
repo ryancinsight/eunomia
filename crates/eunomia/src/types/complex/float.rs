@@ -22,15 +22,35 @@ impl<T: FloatElement + Neg<Output = T>> Complex<T> {
     }
 
     /// Squared magnitude `re² + im²`.
+    ///
+    /// This is the exact definition; it overflows (or flushes to zero) wherever
+    /// the *squared* magnitude leaves the format's range. Use
+    /// [`norm`](Self::norm) for the magnitude itself.
     #[inline]
     pub fn norm_sqr(self) -> T {
         self.re * self.re + self.im * self.im
     }
 
-    /// Magnitude `√(re² + im²)`.
+    /// Magnitude `√(re² + im²)`, computed without the intermediate overflow of
+    /// [`norm_sqr`](Self::norm_sqr).
+    ///
+    /// Scaling by the larger component keeps every intermediate inside the
+    /// format: with `hi = max(|re|, |im|)`, `lo = min(|re|, |im|)` and
+    /// `r = lo / hi` (so `|r| ≤ 1`), the magnitude is `hi·√(1 + r²)`, which
+    /// overflows only when the magnitude itself is unrepresentable. The naive
+    /// `norm_sqr().sqrt()` instead returned `∞` as soon as `|re|` or `|im|`
+    /// exceeded `√MAX` — measured on f64, `Complex::new(1e200, 1e200).norm()`
+    /// was `∞` against the true `√2·1e200 ≈ 1.414e200`, and on f32
+    /// `Complex::new(1e20, 1e20).norm()` was `∞` against `1.414e20`.
     #[inline]
     pub fn norm(self) -> T {
-        self.norm_sqr().sqrt()
+        let (re, im) = (self.re.abs(), self.im.abs());
+        let (hi, lo) = if re >= im { (re, im) } else { (im, re) };
+        if hi == <T as NumericElement>::ZERO {
+            return <T as NumericElement>::ZERO;
+        }
+        let r = lo / hi;
+        hi * (<T as NumericElement>::ONE + r * r).sqrt()
     }
 
     /// L1 (taxicab) norm `|re| + |im|`.
