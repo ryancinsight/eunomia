@@ -76,51 +76,41 @@ impl_cast_primitive_between!(f32, f64);
 impl_cast_primitive_between!(f64, f32);
 impl_cast_primitive_between!(f64, f64);
 
-macro_rules! impl_cast_primitive_float_int {
-    ($src:ty, $dst:ty) => {
-        impl CastFrom<$src> for $dst {
-            #[inline(always)]
-            fn cast_from(val: $src) -> Self {
-                val as $dst
-            }
-        }
-    };
-}
-impl_cast_primitive_float_int!(f32, i8);
-impl_cast_primitive_float_int!(f32, i16);
-impl_cast_primitive_float_int!(f32, i32);
-impl_cast_primitive_float_int!(f64, i8);
-impl_cast_primitive_float_int!(f64, i16);
-impl_cast_primitive_float_int!(f64, i32);
-impl_cast_primitive_float_int!(i8, f32);
-impl_cast_primitive_float_int!(i8, f64);
-impl_cast_primitive_float_int!(i16, f32);
-impl_cast_primitive_float_int!(i16, f64);
-impl_cast_primitive_float_int!(i32, f32);
-impl_cast_primitive_float_int!(i32, f64);
-impl_cast_primitive_float_int!(i64, f32);
-impl_cast_primitive_float_int!(i64, f64);
-impl_cast_primitive_float_int!(u8, f32);
-impl_cast_primitive_float_int!(u8, f64);
-impl_cast_primitive_float_int!(u16, f32);
-impl_cast_primitive_float_int!(u16, f64);
-impl_cast_primitive_float_int!(u32, f32);
-impl_cast_primitive_float_int!(u32, f64);
-impl_cast_primitive_float_int!(u64, f32);
-impl_cast_primitive_float_int!(u64, f64);
+impl_cast_primitive_between!(f32, i8);
+impl_cast_primitive_between!(f32, i16);
+impl_cast_primitive_between!(f32, i32);
+impl_cast_primitive_between!(f64, i8);
+impl_cast_primitive_between!(f64, i16);
+impl_cast_primitive_between!(f64, i32);
+impl_cast_primitive_between!(i8, f32);
+impl_cast_primitive_between!(i8, f64);
+impl_cast_primitive_between!(i16, f32);
+impl_cast_primitive_between!(i16, f64);
+impl_cast_primitive_between!(i32, f32);
+impl_cast_primitive_between!(i32, f64);
+impl_cast_primitive_between!(i64, f32);
+impl_cast_primitive_between!(i64, f64);
+impl_cast_primitive_between!(u8, f32);
+impl_cast_primitive_between!(u8, f64);
+impl_cast_primitive_between!(u16, f32);
+impl_cast_primitive_between!(u16, f64);
+impl_cast_primitive_between!(u32, f32);
+impl_cast_primitive_between!(u32, f64);
+impl_cast_primitive_between!(u64, f32);
+impl_cast_primitive_between!(u64, f64);
 
-impl_cast_primitive_float_int!(f32, i64);
-impl_cast_primitive_float_int!(f32, u8);
-impl_cast_primitive_float_int!(f32, u16);
-impl_cast_primitive_float_int!(f32, u32);
-impl_cast_primitive_float_int!(f32, u64);
-impl_cast_primitive_float_int!(f32, usize);
-impl_cast_primitive_float_int!(f64, i64);
-impl_cast_primitive_float_int!(f64, u8);
-impl_cast_primitive_float_int!(f64, u16);
-impl_cast_primitive_float_int!(f64, u32);
-impl_cast_primitive_float_int!(f64, u64);
-impl_cast_primitive_float_int!(f64, usize);
+impl_cast_primitive_between!(f32, i64);
+impl_cast_primitive_between!(f32, u8);
+impl_cast_primitive_between!(f32, u16);
+impl_cast_primitive_between!(f32, u32);
+impl_cast_primitive_between!(f32, u64);
+impl_cast_primitive_between!(f32, usize);
+impl_cast_primitive_between!(f64, i64);
+impl_cast_primitive_between!(f64, u8);
+impl_cast_primitive_between!(f64, u16);
+impl_cast_primitive_between!(f64, u32);
+impl_cast_primitive_between!(f64, u64);
+impl_cast_primitive_between!(f64, usize);
 
 // Casts between wrappers and primitives
 macro_rules! impl_cast_float_wrapper_primitive {

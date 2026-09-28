@@ -3,173 +3,130 @@
 use crate::traits::{private, CastFrom, NumericElement};
 use crate::types::Complex;
 
-impl NumericElement for f32 {
-    const ZERO: Self = 0.0_f32;
-    const ONE: Self = 1.0_f32;
-    const NAN: Self = f32::NAN;
-    const INFINITY: Self = f32::INFINITY;
-    const BYTE_WIDTH: usize = 4;
-    const ALL_ONES: Self = f32::from_bits(0xFFFF_FFFF);
-    const SIGN_MASK: Self = f32::from_bits(0x8000_0000);
-    const MIN_VALUE: Self = f32::NEG_INFINITY;
-    const MAX_VALUE: Self = f32::INFINITY;
+/// Shared `NumericElement` body for the primitive float types. The two widths
+/// differ only in their constants, the `no_std` `abs` bit mask, the `libm` fused
+/// multiply-add / square-root entry points, and the `to_f64` widening (identity
+/// for `f64`); the bitwise ops, `count_ones`, and the native `min`/`max`
+/// overrides are width-independent.
+macro_rules! impl_numeric_element_float {
+    (
+        $t:ty,
+        $byte_width:expr,
+        $all_ones:expr,
+        $sign_mask:expr,
+        $abs_mask:expr,
+        $fma:path,
+        $sqrt:path,
+        $to_f64:expr
+    ) => {
+        impl NumericElement for $t {
+            const ZERO: Self = 0.0;
+            const ONE: Self = 1.0;
+            const NAN: Self = <$t>::NAN;
+            const INFINITY: Self = <$t>::INFINITY;
+            const BYTE_WIDTH: usize = $byte_width;
+            const ALL_ONES: Self = $all_ones;
+            const SIGN_MASK: Self = $sign_mask;
+            const MIN_VALUE: Self = <$t>::NEG_INFINITY;
+            const MAX_VALUE: Self = <$t>::INFINITY;
 
-    #[inline(always)]
-    fn abs(self) -> Self {
-        #[cfg(feature = "std")]
-        {
-            self.abs()
+            #[inline(always)]
+            fn abs(self) -> Self {
+                #[cfg(feature = "std")]
+                {
+                    self.abs()
+                }
+                #[cfg(not(feature = "std"))]
+                {
+                    <$t>::from_bits(self.to_bits() & $abs_mask)
+                }
+            }
+            #[inline(always)]
+            fn scalar_fmadd(self, b: Self, c: Self) -> Self {
+                #[cfg(feature = "std")]
+                {
+                    self.mul_add(b, c)
+                }
+                #[cfg(not(feature = "std"))]
+                {
+                    $fma(self, b, c)
+                }
+            }
+            #[inline(always)]
+            fn sqrt(self) -> Self {
+                #[cfg(feature = "std")]
+                {
+                    self.sqrt()
+                }
+                #[cfg(not(feature = "std"))]
+                {
+                    $sqrt(self)
+                }
+            }
+            #[inline(always)]
+            fn is_finite(self) -> bool {
+                self.is_finite()
+            }
+            #[inline(always)]
+            fn is_nan(self) -> bool {
+                self.is_nan()
+            }
+            #[inline(always)]
+            fn to_f64(self) -> f64 {
+                $to_f64(self)
+            }
+            #[inline(always)]
+            fn bitand(self, rhs: Self) -> Self {
+                Self::from_bits(self.to_bits() & rhs.to_bits())
+            }
+            #[inline(always)]
+            fn bitor(self, rhs: Self) -> Self {
+                Self::from_bits(self.to_bits() | rhs.to_bits())
+            }
+            #[inline(always)]
+            fn bitxor(self, rhs: Self) -> Self {
+                Self::from_bits(self.to_bits() ^ rhs.to_bits())
+            }
+            #[inline(always)]
+            fn count_ones(self) -> u32 {
+                self.to_bits().count_ones()
+            }
+            /// Use the native float `min`, which matches the shared NaN and
+            /// signed-zero contract.
+            #[inline(always)]
+            fn min_scalar(self, other: Self) -> Self {
+                self.min(other)
+            }
+            /// Use the native float `max`, which matches the shared NaN and
+            /// signed-zero contract.
+            #[inline(always)]
+            fn max_scalar(self, other: Self) -> Self {
+                self.max(other)
+            }
         }
-        #[cfg(not(feature = "std"))]
-        {
-            f32::from_bits(self.to_bits() & 0x7FFF_FFFF)
-        }
-    }
-    #[inline(always)]
-    fn scalar_fmadd(self, b: Self, c: Self) -> Self {
-        #[cfg(feature = "std")]
-        {
-            self.mul_add(b, c)
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            libm::fmaf(self, b, c)
-        }
-    }
-    #[inline(always)]
-    fn sqrt(self) -> Self {
-        #[cfg(feature = "std")]
-        {
-            self.sqrt()
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            libm::sqrtf(self)
-        }
-    }
-    #[inline(always)]
-    fn is_finite(self) -> bool {
-        self.is_finite()
-    }
-    #[inline(always)]
-    fn is_nan(self) -> bool {
-        self.is_nan()
-    }
-    #[inline(always)]
-    fn to_f64(self) -> f64 {
-        self as f64
-    }
-    #[inline(always)]
-    fn bitand(self, rhs: Self) -> Self {
-        Self::from_bits(self.to_bits() & rhs.to_bits())
-    }
-    #[inline(always)]
-    fn bitor(self, rhs: Self) -> Self {
-        Self::from_bits(self.to_bits() | rhs.to_bits())
-    }
-    #[inline(always)]
-    fn bitxor(self, rhs: Self) -> Self {
-        Self::from_bits(self.to_bits() ^ rhs.to_bits())
-    }
-    #[inline(always)]
-    fn count_ones(self) -> u32 {
-        self.to_bits().count_ones()
-    }
-    /// Use native `f32::min`, which matches the shared NaN and signed-zero contract.
-    #[inline(always)]
-    fn min_scalar(self, other: Self) -> Self {
-        self.min(other)
-    }
-    /// Use native `f32::max`, which matches the shared NaN and signed-zero contract.
-    #[inline(always)]
-    fn max_scalar(self, other: Self) -> Self {
-        self.max(other)
-    }
+    };
 }
 
-impl NumericElement for f64 {
-    const ZERO: Self = 0.0_f64;
-    const ONE: Self = 1.0_f64;
-    const NAN: Self = f64::NAN;
-    const INFINITY: Self = f64::INFINITY;
-    const BYTE_WIDTH: usize = 8;
-    const ALL_ONES: Self = f64::from_bits(0xFFFF_FFFF_FFFF_FFFF);
-    const SIGN_MASK: Self = f64::from_bits(0x8000_0000_0000_0000);
-    const MIN_VALUE: Self = f64::NEG_INFINITY;
-    const MAX_VALUE: Self = f64::INFINITY;
-
-    #[inline(always)]
-    fn abs(self) -> Self {
-        #[cfg(feature = "std")]
-        {
-            self.abs()
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            f64::from_bits(self.to_bits() & 0x7FFF_FFFF_FFFF_FFFF)
-        }
-    }
-    #[inline(always)]
-    fn scalar_fmadd(self, b: Self, c: Self) -> Self {
-        #[cfg(feature = "std")]
-        {
-            self.mul_add(b, c)
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            libm::fma(self, b, c)
-        }
-    }
-    #[inline(always)]
-    fn sqrt(self) -> Self {
-        #[cfg(feature = "std")]
-        {
-            self.sqrt()
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            libm::sqrt(self)
-        }
-    }
-    #[inline(always)]
-    fn is_finite(self) -> bool {
-        self.is_finite()
-    }
-    #[inline(always)]
-    fn is_nan(self) -> bool {
-        self.is_nan()
-    }
-    #[inline(always)]
-    fn to_f64(self) -> f64 {
-        self
-    }
-    #[inline(always)]
-    fn bitand(self, rhs: Self) -> Self {
-        Self::from_bits(self.to_bits() & rhs.to_bits())
-    }
-    #[inline(always)]
-    fn bitor(self, rhs: Self) -> Self {
-        Self::from_bits(self.to_bits() | rhs.to_bits())
-    }
-    #[inline(always)]
-    fn bitxor(self, rhs: Self) -> Self {
-        Self::from_bits(self.to_bits() ^ rhs.to_bits())
-    }
-    #[inline(always)]
-    fn count_ones(self) -> u32 {
-        self.to_bits().count_ones()
-    }
-    /// Use native `f64::min`, which matches the shared NaN and signed-zero contract.
-    #[inline(always)]
-    fn min_scalar(self, other: Self) -> Self {
-        self.min(other)
-    }
-    /// Use native `f64::max`, which matches the shared NaN and signed-zero contract.
-    #[inline(always)]
-    fn max_scalar(self, other: Self) -> Self {
-        self.max(other)
-    }
-}
+impl_numeric_element_float!(
+    f32,
+    4,
+    f32::from_bits(0xFFFF_FFFF),
+    f32::from_bits(0x8000_0000),
+    0x7FFF_FFFF,
+    libm::fmaf,
+    libm::sqrtf,
+    |x: f32| x as f64
+);
+impl_numeric_element_float!(
+    f64,
+    8,
+    f64::from_bits(0xFFFF_FFFF_FFFF_FFFF),
+    f64::from_bits(0x8000_0000_0000_0000),
+    0x7FFF_FFFF_FFFF_FFFF,
+    libm::fma,
+    libm::sqrt,
+    |x: f64| x
+);
 
 /// Shared `NumericElement` body for the built-in signed integer types. Differs
 /// from [`impl_numeric_element_unsigned`] only in `ALL_ONES` (-1), `SIGN_MASK`

@@ -71,72 +71,27 @@ impl_cast_between!(F4, Bf4);
 impl_cast_between!(F4, F8);
 
 // Identity casts
-impl CastFrom<F16> for F16 {
-    #[inline(always)]
-    fn cast_from(val: F16) -> Self {
-        val
-    }
+macro_rules! impl_identity_cast {
+    ($t:ident) => {
+        impl CastFrom<$t> for $t {
+            #[inline(always)]
+            fn cast_from(val: $t) -> Self {
+                val
+            }
+        }
+    };
 }
-impl CastFrom<F32> for F32 {
-    #[inline(always)]
-    fn cast_from(val: F32) -> Self {
-        val
-    }
-}
-impl CastFrom<F64> for F64 {
-    #[inline(always)]
-    fn cast_from(val: F64) -> Self {
-        val
-    }
-}
-impl CastFrom<Bf16> for Bf16 {
-    #[inline(always)]
-    fn cast_from(val: Bf16) -> Self {
-        val
-    }
-}
-impl CastFrom<Bf8> for Bf8 {
-    #[inline(always)]
-    fn cast_from(val: Bf8) -> Self {
-        val
-    }
-}
-impl CastFrom<Bf4> for Bf4 {
-    #[inline(always)]
-    fn cast_from(val: Bf4) -> Self {
-        val
-    }
-}
-impl CastFrom<F8> for F8 {
-    #[inline(always)]
-    fn cast_from(val: F8) -> Self {
-        val
-    }
-}
-impl CastFrom<F4> for F4 {
-    #[inline(always)]
-    fn cast_from(val: F4) -> Self {
-        val
-    }
-}
-impl CastFrom<I8> for I8 {
-    #[inline(always)]
-    fn cast_from(val: I8) -> Self {
-        val
-    }
-}
-impl CastFrom<I16> for I16 {
-    #[inline(always)]
-    fn cast_from(val: I16) -> Self {
-        val
-    }
-}
-impl CastFrom<I32> for I32 {
-    #[inline(always)]
-    fn cast_from(val: I32) -> Self {
-        val
-    }
-}
+impl_identity_cast!(F16);
+impl_identity_cast!(F32);
+impl_identity_cast!(F64);
+impl_identity_cast!(Bf16);
+impl_identity_cast!(Bf8);
+impl_identity_cast!(Bf4);
+impl_identity_cast!(F8);
+impl_identity_cast!(F4);
+impl_identity_cast!(I8);
+impl_identity_cast!(I16);
+impl_identity_cast!(I32);
 
 // Int-to-Int casts
 macro_rules! impl_int_to_int {
