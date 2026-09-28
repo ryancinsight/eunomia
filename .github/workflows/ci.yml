@@ -60,7 +60,14 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.1
         with:
           workspaces: .
-          shared-key: eunomia
+          # Root cause: verify and numpy shared one key ("eunomia").
+          # GitHub's cache API is immutable per key, so whichever job
+          # saved first each run won it; the other's save of its own
+          # dependency subset silently no-ops. Restores report a full
+          # match while third-party crates still recompile (confirmed
+          # 82/86 non-eunomia Compiling lines despite full match: true,
+          # run 36380942757). Split by job so each owns its save.
+          shared-key: eunomia-verify
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install cargo-nextest
@@ -137,7 +144,7 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.1
         with:
           workspaces: .
-          shared-key: eunomia
+          shared-key: eunomia-numpy
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install cargo-nextest
