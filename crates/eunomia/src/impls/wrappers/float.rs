@@ -1,6 +1,7 @@
-//! `FloatElement` impls for the wrapper float types (native f64 via the
-//! explicit F64 impl; reduced-precision types route through f32).
+//! `FloatElement` impls for the wrapper float types (native f64 via the shared
+//! native-`f64` macro; reduced-precision types route through f32).
 
+use crate::impls::native_f64::impl_float_element_native_f64;
 use crate::traits::FloatElement;
 use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8};
 
@@ -31,191 +32,12 @@ macro_rules! impl_float_element {
 // is stated once on `FloatElement::Accumulator`.
 impl_float_element!(F16, f32, F16::from_f32, F16::from_f64, F16::to_f32);
 impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0);
-// F64 wraps native `f64`, so it gets an explicit impl with native
-// double-precision transcendentals — the macro's f32-routed default would
-// widen-narrow and discard f64 precision. (F32 routes through f32 = native;
-// F16/Bf16/F8/F4/Bf8/Bf4 have no hardware transcendentals, so the f32 default is
-// their correct reduced-precision path.)
-impl FloatElement for F64 {
-    // Identity: nothing in the crate is wider than `f64`.
-    type Accumulator = Self;
-
-    #[inline(always)]
-    fn from_f32(val: f32) -> Self {
-        F64(val as f64)
-    }
-    #[inline(always)]
-    fn from_f64(val: f64) -> Self {
-        F64(val)
-    }
-    #[inline(always)]
-    fn to_f32(self) -> f32 {
-        self.0 as f32
-    }
-    #[inline]
-    fn binary_exponent(self) -> Option<i32> {
-        if self.0.is_finite() && self.0 != 0.0 {
-            Some(libm::ilogb(self.0))
-        } else {
-            None
-        }
-    }
-    #[inline]
-    fn scale_binary(self, exponent: i32) -> Self {
-        F64(libm::scalbn(self.0, exponent))
-    }
-    #[inline]
-    fn exp(self) -> Self {
-        F64(libm::exp(self.0))
-    }
-    #[inline]
-    fn exp2(self) -> Self {
-        F64(libm::exp2(self.0))
-    }
-    #[inline]
-    fn exp_m1(self) -> Self {
-        F64(libm::expm1(self.0))
-    }
-    #[inline]
-    fn ln(self) -> Self {
-        F64(libm::log(self.0))
-    }
-    #[inline]
-    fn ln_1p(self) -> Self {
-        F64(libm::log1p(self.0))
-    }
-    #[inline]
-    fn sin(self) -> Self {
-        F64(libm::sin(self.0))
-    }
-    #[inline]
-    fn asin(self) -> Self {
-        F64(libm::asin(self.0))
-    }
-    #[inline]
-    fn cos(self) -> Self {
-        F64(libm::cos(self.0))
-    }
-    #[inline]
-    fn acos(self) -> Self {
-        F64(libm::acos(self.0))
-    }
-    #[inline]
-    fn tan(self) -> Self {
-        F64(libm::tan(self.0))
-    }
-    #[inline]
-    fn atan(self) -> Self {
-        F64(libm::atan(self.0))
-    }
-    #[inline]
-    fn sinh(self) -> Self {
-        F64(libm::sinh(self.0))
-    }
-    #[inline]
-    fn asinh(self) -> Self {
-        F64(libm::asinh(self.0))
-    }
-    #[inline]
-    fn cosh(self) -> Self {
-        F64(libm::cosh(self.0))
-    }
-    #[inline]
-    fn acosh(self) -> Self {
-        F64(libm::acosh(self.0))
-    }
-    #[inline]
-    fn tanh(self) -> Self {
-        F64(libm::tanh(self.0))
-    }
-    #[inline]
-    fn atanh(self) -> Self {
-        F64(libm::atanh(self.0))
-    }
-    #[inline]
-    fn atan2(self, other: Self) -> Self {
-        F64(libm::atan2(self.0, other.0))
-    }
-    #[inline]
-    fn powf(self, n: Self) -> Self {
-        F64(libm::pow(self.0, n.0))
-    }
-    #[inline]
-    fn cbrt(self) -> Self {
-        F64(libm::cbrt(self.0))
-    }
-    #[inline]
-    fn recip(self) -> Self {
-        F64(1.0 / self.0)
-    }
-    #[inline]
-    fn nth_root(self, n: u32) -> Self {
-        if n == 0 {
-            return F64(f64::NAN);
-        }
-        if n % 2 == 1 {
-            F64(libm::copysign(
-                libm::pow(libm::fabs(self.0), 1.0 / n as f64),
-                self.0,
-            ))
-        } else {
-            F64(libm::pow(self.0, 1.0 / n as f64))
-        }
-    }
-    #[inline]
-    fn floor(self) -> Self {
-        F64(libm::floor(self.0))
-    }
-    #[inline]
-    fn ceil(self) -> Self {
-        F64(libm::ceil(self.0))
-    }
-    #[inline]
-    fn round(self) -> Self {
-        F64(libm::round(self.0))
-    }
-    #[inline]
-    fn round_ties_even(self) -> Self {
-        F64(libm::roundeven(self.0))
-    }
-    #[inline]
-    fn trunc(self) -> Self {
-        F64(libm::trunc(self.0))
-    }
-    #[inline]
-    fn signum(self) -> Self {
-        if self.0.is_nan() {
-            self
-        } else {
-            F64(libm::copysign(1.0, self.0))
-        }
-    }
-    // Native double-precision special functions, mirroring the primitive `f64`
-    // impl. Without these five the trait's `f32`-routed defaults apply and the
-    // wrapper silently evaluates at single precision — a concrete-precision
-    // contract violation, since `F64` is `#[repr(transparent)]` over `f64` and
-    // its entire contract is that arithmetic executes in `f64`.
-    #[inline]
-    fn log10(self) -> Self {
-        F64(libm::log10(self.0))
-    }
-    #[inline]
-    fn log2(self) -> Self {
-        F64(libm::log2(self.0))
-    }
-    #[inline]
-    fn erf(self) -> Self {
-        F64(libm::erf(self.0))
-    }
-    #[inline]
-    fn erfc(self) -> Self {
-        F64(libm::erfc(self.0))
-    }
-    #[inline]
-    fn lgamma(self) -> Self {
-        F64(libm::lgamma(self.0))
-    }
-}
+// F64 wraps native `f64`, so it is emitted from the shared native-`f64` macro
+// (the same table the primitive impl uses) — the `impl_float_element!` default
+// would widen-narrow it and discard f64 precision. (F32 routes through f32 =
+// native; F16/Bf16/F8/F4/Bf8/Bf4 have no hardware transcendentals, so the f32
+// default is their correct reduced-precision path.)
+impl_float_element_native_f64!(F64, |x: F64| x.0, |v: f64| F64(v));
 impl_float_element!(Bf16, f32, Bf16::from_f32, Bf16::from_f64, Bf16::to_f32);
 impl_float_element!(
     Bf8,
