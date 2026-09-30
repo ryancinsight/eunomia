@@ -8,10 +8,19 @@
 ## Governing equations
 
 Element operations are the pointwise arithmetic of the scalar vocabulary —
-the `Add`/`Sub`/`Mul`/`Div` (and their `Assign` forms) that kernels assume
-of any element. For floats these are IEEE-754 operations with their rounding
-rules; for integers, two's-complement wrap arithmetic; for complex values,
-the field operations of §3.
+the `Add`/`Sub`/`Mul`/`Div` operators kernels use for each element. Reduced
+binary formats also implement `Rem` and all compound-assignment operators.
+Their integer kernel computes exactly, then rounds once to the destination
+format using nearest, ties-to-even. IEEE formats produce infinities on
+overflow and preserve NaNs; finite-only formats saturate overflow and
+nonzero division-by-zero results to signed maximum finite, while invalid
+operations produce NaN. The rounding mode matches Berkeley SoftFloat §6.1
+([rounding modes](https://www.jhauser.us/arithmetic/SoftFloat-3/doc/SoftFloat.html)).
+`Rem` uses Rust's truncating-quotient remainder, whose sign matches the
+dividend; this differs from IEEE `remainder`
+([Rust Reference](https://doc.rust-lang.org/reference/expressions/operator-expr.html#arithmetic-and-logical-binary-operators)).
+The f32/f64 wrappers use primitive arithmetic; integer wrappers retain their
+two's-complement contract, and complex values use the field operations of §3.
 
 ## The crate's abstraction
 

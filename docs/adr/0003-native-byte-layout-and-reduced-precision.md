@@ -1,6 +1,6 @@
 # ADR 0003: Native byte-layout & reduced-precision vocabulary
 
-- Status: Accepted (native conversion and runtime dependency retirement landed)
+- Status: Accepted
 - Date: 2026-07-18
 - Class: [arch] (grows eunomia's owned surface; shrinks external deps; ripples to
   every reduced-precision / GPU-byte consumer)
@@ -39,16 +39,17 @@ The audit established the constraints that bound the decision:
 
 ## Decision
 
-**D1 — Own reduced-precision conversion natively; retire the `half` runtime
-dependency.** One generic const-parameterized IEEE-754 narrow/widen kernel
-(`convert::{narrow, widen}`, `<const E, const M>`, round-to-nearest-ties-to-even,
-subnormals, inf/NaN, f32-subnormal handling) is the single conversion SSOT.
-`binary16` (`E=5,M=10`) and `bfloat16` (`E=8,M=7`) instantiate it; the sub-byte
-formats fold onto it, deleting the four hand-rolled copies and the truncation
-defect. The implementation has no external reduced-precision dependency; its
-integration tests use an independent IEEE-754 value-level oracle. The working
-branch is the consumer-migration boundary; no interop feature or bridge trait
-implementation merges into the default branch.
+**D1 — Own reduced-precision conversion and arithmetic; retire the `half`
+runtime dependency.** One generic const-parameterized conversion kernel
+(`convert::{narrow, widen}`, `<const E, const M>`) owns nearest-ties-to-even
+narrowing, subnormals, infinities, and NaNs. Binary16, bfloat16, and sub-byte
+formats instantiate it without an external reduced-precision dependency.
+Arithmetic decodes exact integer significands, computes add, subtract,
+multiply, divide, and Rust `%` remainder, then rounds once to the destination
+format using nearest-ties-to-even. IEEE formats retain infinity and NaN
+results; finite-only formats saturate overflow and infinity results to signed
+maximum finite and preserve invalid-operation NaNs. NaN payload bits are not a
+contract. Tests use an independent value-level oracle.
 
 **D2 — Own a byte-layout vocabulary at zerocopy's checked tier; bridge, do not
 replace, bytemuck.** Eunomia gains marker traits (`Zeroable`, `Pod`-equivalent)
@@ -70,9 +71,11 @@ OCP/checked-transmute surface is built speculatively.**
 distinct format family only when a consumer needs it.** `Bf8` (E5M2) uses the
 IEEE infinity/NaN convention. `F8` (E4M3), `Bf4` (E2M1), and `F4` (E3M0) are
 finite-only: the whole top exponent is reserved for NaN, and narrowing
-saturates infinity or overflow to the signed maximum finite value. These
-contracts are documented and reference-tested. OCP-MXFP FP8/FP4 (no infinity;
-the emerging GPU-quantization standard, which Eunomia's `F4`=E3M0 matches no
+saturates infinity or overflow to the signed maximum finite value. Arithmetic
+also saturates overflow and nonzero division-by-zero results. Invalid
+operations produce NaN. These contracts are documented and reference-tested.
+OCP-MXFP FP8/FP4 (no infinity; the emerging GPU-quantization standard, which
+Eunomia's `F4`=E3M0 matches no
 format of) is added as new types selected through a public special-value policy
 parameter **when Coeus/Hephaestus quantization requires it** — not before.
 
@@ -128,24 +131,12 @@ D2's checked tier emulates on stable.
   kernel and NEON module, providing compile-time verification of that ISA path.
 - Follow-ups tracked as [backlog.md](../../backlog.md) E-022…E-030.
 
-## Revision note — 2026-09-02
+## Revision note — 2026-09-28
 
-The original decision allowed Apollo's raw `half::f16` FFT surface to remain
-consumer-owned. The stack contract is now clarified: Eunomia owns reduced-
-precision scalar and complex representations, and Apollo's compact route is a
-consumer migration to `F16`/`Complex<F16>`. The provider implementation and
-its independent IEEE-754 test oracle are unchanged.
-
-The 2026-09-03 oracle cleanup removed Eunomia's direct `half` declarations and
-imports. The development tests now use the independent IEEE-754 reference
-module; the Criterion serializer's unrelated transitive edge remains visible
-in `Cargo.lock` and is not a datatype-provider contract.
-
-The byte-layout implementation reconciles the planned interop feature with the
-current dependency contract. Dual marker implementations now live in
-`layout::marker`, while backend-owned ABI types remain direct `bytemuck`
-contracts. Checked slice-length arithmetic rejects source-byte-count overflow,
-and fallible unaligned reads expose short input as `PodCastError` instead of
-requiring a panic at an untrusted boundary.
+Reduced-format operators now compute exactly and round once; finite-only
+overflow saturates, while `%` follows Rust truncating-quotient semantics.
+Rounding follows SoftFloat §6.1; remainder follows the Rust Reference.
+The assignment regression compares `%=` with `%`: E2M1 finite-only arithmetic
+saturates `2 * 2` to its maximum finite value `3`, so `3 % 2` is `1`, not `0`.
 
 [#129097]: https://github.com/rust-lang/rust/issues/129097

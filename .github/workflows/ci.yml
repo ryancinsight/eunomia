@@ -60,15 +60,20 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.1
         with:
           workspaces: .
-          # Root cause: verify and numpy shared one key ("eunomia").
-          # GitHub's cache API is immutable per key, so whichever job
-          # saved first each run won it; the other's save of its own
-          # dependency subset silently no-ops. Restores report a full
-          # match while third-party crates still recompile (confirmed
-          # 82/86 non-eunomia Compiling lines despite full match: true,
-          # run 36380942757). Split by job so each owns its save.
-          shared-key: eunomia-verify
+          shared-key: eunomia
           save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Check out the Atlas benchmark gate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ryancinsight/atlas
+          ref: 7b14277bee0fc15f7036fa7ce7d8c655fa40c4dc
+          path: atlas
+          persist-credentials: false
+          submodules: false
+          fetch-depth: 1
+          sparse-checkout: tools/criterion-regression
+          sparse-checkout-cone-mode: true
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
@@ -116,6 +121,16 @@ jobs:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --locked --workspace --no-deps --features rkyv,serde
 
+      - name: Smoke run benchmark targets
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target
+        run: >-
+          cargo run --locked
+          --manifest-path ${{ github.workspace }}/atlas/tools/criterion-regression/Cargo.toml
+          -- enforce-budget
+          --manifest-path ${{ github.workspace }}/Cargo.toml
+          --mode smoke
+
   numpy:
     name: NumPy feature contract
     runs-on: ubuntu-latest
@@ -144,7 +159,7 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.8.1
         with:
           workspaces: .
-          shared-key: eunomia-numpy
+          shared-key: eunomia
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install cargo-nextest

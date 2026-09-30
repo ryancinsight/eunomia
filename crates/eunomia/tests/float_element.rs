@@ -1,21 +1,20 @@
-//! Value-semantic contract tests for the native float `NumericElement` /
-//! `FloatElement` impls (`F16`, `Bf16`, `F32`, `F64`).
+//! Value-semantic contract tests for the native float wrappers and reduced
+//! binary formats.
 //!
-//! The integer surface has `integer_element.rs`; this is its float analogue,
-//! cross-checking every trait operation against analytic values rather than
-//! asserting mere existence. The reduced-precision types `F16`/`Bf16` are the
-//! ones the hermes SIMD kernels bind as `SimdKernel<F16>`/`<Bf16>`, so their
-//! scalar contract is load-bearing across the Atlas stack — this file is the
-//! regression that keeps them first-class scalars, not just storage wrappers.
+//! The trait-level checks use exactly representable values. The reduced-format
+//! suite checks every 8-bit encoding pair and boundary-focused 16-bit samples
+//! against an independent value-level oracle.
 //!
-//! Every operand is exactly representable in `bfloat16` (≤3 significant bits),
-//! hence in every wider type here, so each result is exact and no assertion
-//! carries a tolerance. Calls are fully-qualified `NumericElement::…` /
-//! `FloatElement::…`: std is stabilizing same-named inherent float methods
-//! (`unstable_name_collisions`), and method syntax would silently rebind to
-//! those, changing which implementation the test verifies.
+//! Calls are fully-qualified `NumericElement::…` / `FloatElement::…`: std is
+//! stabilizing same-named inherent float methods (`unstable_name_collisions`),
+//! and method syntax could rebind to those instead of the trait contract.
 
 use eunomia::{Bf16, CastFrom, FloatElement, NumericElement, F16, F32, F64};
+
+mod support;
+
+#[path = "float_element/reduced_arithmetic.rs"]
+mod reduced_arithmetic;
 
 /// Assert the full float `NumericElement` + `FloatElement` contract for one
 /// native float wrapper type, entirely through exactly-representable operands.
