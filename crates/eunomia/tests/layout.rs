@@ -3,7 +3,7 @@
 
 use eunomia::layout::{
     bytes_of, bytes_of_mut, cast_slice, cast_slice_mut, from_bytes, pod_read_unaligned,
-    try_cast_slice, try_from_bytes, try_pod_read_unaligned, PodCastError,
+    try_cast_slice, try_cast_vec, try_from_bytes, try_pod_read_unaligned, PodCastError,
 };
 use eunomia::{Bf16, Complex32, Zeroable, F16};
 
@@ -120,4 +120,73 @@ fn complex_round_trips_through_bytes() {
     assert_eq!(*from_bytes::<Complex32>(bytes), z);
     // Layout-identical to a packed `[re, im]` pair.
     assert_eq!(cast_slice::<Complex32, f32>(&[z]), &[1.5_f32, -2.25]);
+}
+
+/// An exactly sized byte vector: `From<Box<[T]>>` keeps capacity equal to length.
+fn exact_bytes(bytes: &[u8]) -> Vec<u8> {
+    Vec::from(Box::<[u8]>::from(bytes))
+}
+
+#[test]
+fn try_cast_vec_adopts_the_allocation_and_scales_length_and_capacity() {
+    let bytes = exact_bytes(&[1, 2, 3, 4, 5, 6, 7, 8]);
+    let address = bytes.as_ptr().addr();
+    let pixels = try_cast_vec::<u8, [u8; 4]>(bytes).expect("eight bytes are two whole pixels");
+    assert_eq!(pixels, [[1, 2, 3, 4], [5, 6, 7, 8]]);
+    assert_eq!(pixels.capacity(), 2);
+    // The same allocation backs the result: nothing was copied.
+    assert_eq!(pixels.as_ptr().addr(), address);
+}
+
+#[test]
+fn try_cast_vec_round_trips_and_writes_through_the_shared_allocation() {
+    let mut pixels = try_cast_vec::<u8, [u8; 4]>(exact_bytes(&[0; 12]))
+        .expect("twelve bytes are three whole pixels");
+    pixels[1] = [9, 8, 7, 6];
+    let bytes = try_cast_vec::<[u8; 4], u8>(pixels).expect("pixels are whole bytes");
+    assert_eq!(bytes, [0, 0, 0, 0, 9, 8, 7, 6, 0, 0, 0, 0]);
+    assert_eq!(bytes.capacity(), 12);
+}
+
+#[test]
+fn try_cast_vec_rejects_a_length_that_is_not_a_whole_number_of_targets() {
+    let bytes = exact_bytes(&[1, 2, 3, 4, 5, 6]);
+    let address = bytes.as_ptr().addr();
+    let (error, returned) =
+        try_cast_vec::<u8, [u8; 4]>(bytes).expect_err("six bytes end in a partial pixel");
+    assert_eq!(error, PodCastError::SizeMismatch);
+    assert_eq!(returned, [1, 2, 3, 4, 5, 6]);
+    assert_eq!(returned.as_ptr().addr(), address);
+}
+
+#[test]
+fn try_cast_vec_rejects_a_capacity_that_is_not_a_whole_number_of_targets() {
+    // Nine bytes of capacity hold eight initialized bytes: the length divides
+    // into pixels but the allocation does not, so freeing it as two pixels
+    // would use a different layout than it was allocated with.
+    let mut bytes = exact_bytes(&[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    bytes.truncate(8);
+    assert_eq!(bytes.capacity(), 9);
+    let (error, returned) = try_cast_vec::<u8, [u8; 4]>(bytes)
+        .expect_err("nine bytes of capacity end in a partial pixel");
+    assert_eq!(error, PodCastError::SizeMismatch);
+    assert_eq!(returned.len(), 8);
+    assert_eq!(returned.capacity(), 9);
+}
+
+#[test]
+fn try_cast_vec_rejects_differing_alignment_even_when_the_sizes_divide() {
+    let bytes = exact_bytes(&[1, 2, 3, 4]);
+    let (error, returned) =
+        try_cast_vec::<u8, u16>(bytes).expect_err("a byte allocation is not aligned for u16");
+    assert_eq!(error, PodCastError::TargetAlignmentMismatch);
+    assert_eq!(returned, [1, 2, 3, 4]);
+}
+
+#[test]
+fn try_cast_vec_of_an_empty_vector_stays_empty() {
+    let pixels =
+        try_cast_vec::<u8, [u8; 4]>(Vec::new()).expect("an empty vector has no partial pixel");
+    assert!(pixels.is_empty());
+    assert_eq!(pixels.capacity(), 0);
 }

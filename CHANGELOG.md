@@ -6,6 +6,14 @@ All notable changes to Eunomia are documented here.
 
 ### Added
 
+- `layout::try_cast_vec` — reinterprets an owned `Vec<A: Pod>` as a
+  `Vec<B: Pod>` by adopting its allocation, with no copy. It requires equal
+  alignments and a byte length and capacity that are whole numbers of `B`s, and
+  returns the source vector with the error otherwise so the caller can convert
+  by copying. Added because Metis decodes PNG samples into one pixel buffer and
+  takes ownership of RGBA byte buffers as pixel storage; the owned-buffer cast
+  was the one `bytemuck` entry point this surface lacked.
+
 - `FloatElement::Accumulator` — the associated type naming the format a
   reduction over `T` accumulates in, plus `to_accumulator`/`from_accumulator`
   to move values through it. Identity for `f32`/`f64`/`F32`/`F64`; `f32` for

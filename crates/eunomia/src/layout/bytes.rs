@@ -7,7 +7,8 @@
 //! valid) plus an explicit length/alignment check.
 
 use super::Pod;
-use core::mem::{align_of, size_of};
+use alloc::vec::Vec;
+use core::mem::{align_of, size_of, ManuallyDrop};
 
 /// Why a fallible reinterpretation could not be performed.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -96,6 +97,56 @@ pub fn try_cast_slice_mut<A: Pod, B: Pod>(a: &mut [A]) -> Result<&mut [B], PodCa
     // SAFETY: as [`try_cast_slice`]; the exclusive borrow is preserved because
     // the result spans the same bytes with no aliasing.
     Ok(unsafe { core::slice::from_raw_parts_mut(a.as_mut_ptr().cast::<B>(), new_len) })
+}
+
+/// Reinterpret an owned vector of one [`Pod`] type as a vector of another,
+/// adopting its allocation instead of copying it.
+///
+/// The allocation is handed back to the allocator with the layout the
+/// destination vector would have created, so it must already fit `B`: `A` and
+/// `B` share one alignment, and the initialized length and the capacity, each
+/// measured in bytes, are whole numbers of `B`s. Zero-sized elements are
+/// rejected because such a vector owns no allocation to adopt.
+///
+/// # Errors
+/// [`PodCastError::TargetAlignmentMismatch`] when the alignments of `A` and `B`
+/// differ; [`PodCastError::SizeMismatch`] when either type is zero-sized or the
+/// byte length or capacity is not a multiple of `size_of::<B>()`. The error
+/// carries the source vector back unchanged, so the caller can convert it by
+/// copying.
+pub fn try_cast_vec<A: Pod, B: Pod>(vec: Vec<A>) -> Result<Vec<B>, (PodCastError, Vec<A>)> {
+    if align_of::<A>() != align_of::<B>() {
+        return Err((PodCastError::TargetAlignmentMismatch, vec));
+    }
+    let (source_size, target_size) = (size_of::<A>(), size_of::<B>());
+    if source_size == 0 || target_size == 0 {
+        return Err((PodCastError::SizeMismatch, vec));
+    }
+    let (Some(length_bytes), Some(capacity_bytes)) = (
+        vec.len().checked_mul(source_size),
+        vec.capacity().checked_mul(source_size),
+    ) else {
+        return Err((PodCastError::SizeMismatch, vec));
+    };
+    if !length_bytes.is_multiple_of(target_size) || !capacity_bytes.is_multiple_of(target_size) {
+        return Err((PodCastError::SizeMismatch, vec));
+    }
+    let mut vec = ManuallyDrop::new(vec);
+    // SAFETY: `vec` is never used or dropped again, so ownership of its
+    // allocation moves to the new vector. That allocation was made for
+    // `capacity_bytes` bytes at `align_of::<A>() == align_of::<B>()`, which is
+    // the layout of `capacity_bytes / target_size` elements of `B`, so it is
+    // freed with the layout it was allocated with. The first `length_bytes`
+    // bytes are initialized `A`s, and `A` and `B` being `Pod` makes them valid
+    // `B`s. The element counts divide exactly and `length <= capacity` carries
+    // over from the source.
+    Ok(unsafe {
+        Vec::from_raw_parts(
+            vec.as_mut_ptr().cast::<B>(),
+            length_bytes / target_size,
+            capacity_bytes / target_size,
+        )
+    })
 }
 
 /// Reinterpret a slice of one [`Pod`] type as a slice of another.
