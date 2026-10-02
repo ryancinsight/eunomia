@@ -23,6 +23,7 @@
 //! ```
 
 mod bulk;
+pub(crate) mod count;
 mod kernel;
 
 pub(crate) use bulk::{narrow_bf16, narrow_f16, widen_bf16, widen_f16};

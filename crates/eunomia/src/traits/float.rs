@@ -58,6 +58,59 @@ pub trait FloatElement: private::Sealed + NumericElement {
     /// Cast to f32.
     fn to_f32(self) -> f32;
 
+    /// Converts the count `n` (a length, a dimension, a position along an
+    /// axis), rounding to nearest, ties to even.
+    ///
+    /// Exact for every `n <= 2^p` within the format's range, where `p` is the
+    /// format's significand precision: 53 for `f64`/[`F64`](crate::F64), 24 for `f32`/
+    /// [`F32`](crate::F32), 11 for [`F16`](crate::F16), 8 for
+    /// [`Bf16`](crate::Bf16). Above that bound the result is the correctly
+    /// rounded value; a count past the largest finite value follows the
+    /// format's [`from_f32`](Self::from_f32) overflow rule.
+    ///
+    /// Formats narrower than `f32` round once, not twice: the count is first
+    /// rounded to odd at 24 bits, which is exact in `f32`, and then narrowed
+    /// with round-to-nearest-even (the argument is on the conversion module's
+    /// `odd_rounded_magnitude`). `f32` and `f64` types convert directly.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::{Bf16, FloatElement};
+    ///
+    /// assert_eq!(f64::from_count(7), 7.0);
+    /// // 257 lies between the bf16 neighbours 256 and 258 and rounds to even.
+    /// assert_eq!(Bf16::from_count(257), Bf16::from_f32(256.0));
+    /// ```
+    #[inline]
+    fn from_count(n: usize) -> Self {
+        Self::from_f32(crate::convert::count::odd_rounded_count(n))
+    }
+
+    /// Converts the signed integer `k`, rounding to nearest, ties to even.
+    ///
+    /// Exact for every `|k| <= 2^p` under the precisions listed on
+    /// [`from_count`](Self::from_count); the sign is preserved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::FloatElement;
+    ///
+    /// assert_eq!(f32::from_integer(-3), -3.0);
+    /// ```
+    #[inline]
+    fn from_integer(k: i64) -> Self {
+        let magnitude = Self::from_f32(crate::convert::count::odd_rounded_magnitude(
+            k.unsigned_abs(),
+        ));
+        if k < 0 {
+            Self::ZERO - magnitude
+        } else {
+            magnitude
+        }
+    }
+
     /// Return the floor binary exponent of a finite, nonzero value.
     ///
     /// For a returned exponent `e`, scaling by `2^-e` yields a value whose

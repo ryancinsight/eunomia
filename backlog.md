@@ -13,6 +13,15 @@
 - Evidence: 4 unit-scalar tests pass, including every shipped real storage type; package all-target Clippy passes with warnings denied.
 - Follow-up: [EUNOMIA-TYPE-SUFFIXED-UNIT-METHODS-2026-09-21](#eunomia-type-suffixed-unit-methods-2026-09-21) renamed its method away from a type-suffixed name.
 
+<a id="eunomia-from-f64-double-rounding"></a>
+## EUNOMIA-FROM-F64-DOUBLE-ROUNDING — `F16`/`Bf16::from_f64` round twice [patch]
+
+- status: todo; priority: correctness; basis: 684de61.
+- Outcome: `F16::from_f64`, `Bf16::from_f64` and the byte formats' `from_f64` return the correctly rounded value of every finite `f64`.
+- Evidence: each narrows `f64 -> f32 -> format` with round-to-nearest at both steps (`types/floats.rs:160`, `:261`; `impls/wrappers/float.rs` byte formats). An `f64` just above a format midpoint rounds onto the midpoint in `f32` and then ties to even, the wrong way; the count form of this defect (2^25 + 2^17 + 1 into `Bf16`) failed review of PR #143. The Rustdoc cites Figueroa's `2p + 2` bound, which covers results of arithmetic on `p`-bit operands, not arbitrary 53-bit inputs.
+- Fix: round `f64` to 24 bits with round-to-odd (truncate, set the last bit when inexact; subnormal and overflow edges included) before narrowing, as `convert::count::odd_rounded_magnitude` does for integers.
+- Acceptance: an integer-arithmetic oracle over midpoints +-1 ulp of `f64` for every format, failing on the current route.
+
 Sprint target: 0.8.0 (native reduced-precision provider contract).
 
 <a id="eunomia-type-suffixed-unit-methods-2026-09-21"></a>

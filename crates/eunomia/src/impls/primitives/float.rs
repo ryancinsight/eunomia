@@ -3,6 +3,7 @@
 
 use crate::impls::native_f64::impl_float_element_native_f64;
 use crate::traits::{FloatElement, NumericElement};
+use crate::types::F32;
 
 impl FloatElement for f32 {
     // Identity: `f32` accumulation already holds `ε₃₂ ≈ 1.2e-7`, and widening to
@@ -21,6 +22,15 @@ impl FloatElement for f32 {
     #[inline(always)]
     fn to_f32(self) -> f32 {
         self
+    }
+    // The provided bodies round to odd for formats narrower than `f32`.
+    #[inline]
+    fn from_count(n: usize) -> Self {
+        F32::from_count(n).0
+    }
+    #[inline]
+    fn from_integer(k: i64) -> Self {
+        F32::from_integer(k).0
     }
 }
 
