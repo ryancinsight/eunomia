@@ -10,6 +10,7 @@ mod marker;
 
 pub use bytes::{
     bytes_of, bytes_of_mut, cast_slice, cast_slice_mut, from_bytes, pod_read_unaligned,
-    try_cast_slice, try_cast_slice_mut, try_from_bytes, try_pod_read_unaligned, PodCastError,
+    try_cast_slice, try_cast_slice_mut, try_cast_vec, try_from_bytes, try_pod_read_unaligned,
+    PodCastError,
 };
 pub use marker::{Pod, Zeroable};
