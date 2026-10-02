@@ -1,6 +1,8 @@
 //! `FloatElement` impls for the wrapper float types (native f64 via the shared
-//! native-`f64` macro; reduced-precision types route through f32).
+//! native-`f64` macro; reduced-precision types route through f32, narrowing
+//! from `f64` once via round-to-odd).
 
+use crate::convert::odd_rounded;
 use crate::impls::native_f64::impl_float_element_native_f64;
 use crate::traits::FloatElement;
 use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8};
@@ -58,28 +60,28 @@ impl_float_element!(
     Bf8,
     f32,
     Bf8::from_f32,
-    |val| Bf8::from_f32(val as f32),
+    |val| Bf8::from_f32(odd_rounded(val)),
     |x: Bf8| x.to_f32()
 );
 impl_float_element!(
     Bf4,
     f32,
     Bf4::from_f32,
-    |val| Bf4::from_f32(val as f32),
+    |val| Bf4::from_f32(odd_rounded(val)),
     |x: Bf4| x.to_f32()
 );
 impl_float_element!(
     F8,
     f32,
     F8::from_f32,
-    |val| F8::from_f32(val as f32),
+    |val| F8::from_f32(odd_rounded(val)),
     |x: F8| x.to_f32()
 );
 impl_float_element!(
     F4,
     f32,
     F4::from_f32,
-    |val| F4::from_f32(val as f32),
+    |val| F4::from_f32(odd_rounded(val)),
     |x: F4| x.to_f32()
 );
 

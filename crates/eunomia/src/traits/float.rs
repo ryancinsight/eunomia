@@ -53,7 +53,10 @@ pub trait FloatElement: private::Sealed + NumericElement {
 
     /// Convert from f32.
     fn from_f32(val: f32) -> Self;
-    /// Convert from f64.
+    /// Convert from f64, rounding to nearest with ties to even.
+    ///
+    /// Formats narrower than `f32` round once: the `f64` is first rounded to
+    /// odd at 24 bits, so no tie is broken twice.
     fn from_f64(val: f64) -> Self;
     /// Cast to f32.
     fn to_f32(self) -> f32;

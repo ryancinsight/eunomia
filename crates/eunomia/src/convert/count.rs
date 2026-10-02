@@ -16,6 +16,7 @@
               each cast rounds to nearest, ties to even, as the methods document"
 )]
 
+use crate::convert::odd_truncated;
 use crate::traits::{CountRangeError, FloatElement, NumericElement, TryFromCount};
 use crate::types::{Complex, F32, F64, I16, I32, I8};
 
@@ -92,10 +93,7 @@ impl F64 {
 pub(crate) fn odd_rounded_magnitude(m: u64) -> f32 {
     let width = u64::BITS - m.leading_zeros();
     let kept = match width.checked_sub(f32::MANTISSA_DIGITS) {
-        Some(shift) if shift > 0 => {
-            let discarded = m & ((1_u64 << shift) - 1);
-            ((m >> shift) | u64::from(discarded != 0)) << shift
-        }
+        Some(shift) if shift > 0 => odd_truncated(m, shift) << shift,
         _ => m,
     };
     kept as f32
