@@ -7,8 +7,12 @@ use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8};
 
 macro_rules! impl_float_element {
     ($t:ident, $acc:ty, $from_f32:expr, $from_f64:expr, $to_f32:expr) => {
+        impl_float_element!($t, $acc, $from_f32, $from_f64, $to_f32, {});
+    };
+    ($t:ident, $acc:ty, $from_f32:expr, $from_f64:expr, $to_f32:expr, {$($count:item)*}) => {
         impl FloatElement for $t {
             type Accumulator = $acc;
+            $($count)*
 
             #[inline(always)]
             fn from_f32(val: f32) -> Self {
@@ -31,7 +35,18 @@ macro_rules! impl_float_element {
 // `n ≈ 1/ε`); the `f32`/`f64` wrappers accumulate in themselves. The rationale
 // is stated once on `FloatElement::Accumulator`.
 impl_float_element!(F16, f32, F16::from_f32, F16::from_f64, F16::to_f32);
-impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0);
+// The provided count conversions round to odd for formats narrower than
+// `f32`; `F32` converts directly.
+impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0, {
+    #[inline]
+    fn from_count(n: usize) -> Self {
+        F32::from_count(n)
+    }
+    #[inline]
+    fn from_integer(k: i64) -> Self {
+        F32::from_integer(k)
+    }
+});
 // F64 wraps native `f64`, so it is emitted from the shared native-`f64` macro
 // (the same table the primitive impl uses) — the `impl_float_element!` default
 // would widen-narrow it and discard f64 precision. (F32 routes through f32 =

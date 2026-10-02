@@ -37,6 +37,14 @@ macro_rules! impl_float_element_native_f64 {
                 $unwrap(self) as f32
             }
             #[inline]
+            fn from_count(n: usize) -> Self {
+                $wrap(crate::F64::from_count(n).0)
+            }
+            #[inline]
+            fn from_integer(k: i64) -> Self {
+                $wrap(crate::F64::from_integer(k).0)
+            }
+            #[inline]
             fn binary_exponent(self) -> Option<i32> {
                 let value = $unwrap(self);
                 if value.is_finite() && value != 0.0 {

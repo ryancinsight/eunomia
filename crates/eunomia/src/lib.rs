@@ -18,7 +18,8 @@ mod types;
 
 // Re-export core traits
 pub use traits::{
-    CastFrom, CastTo, ComplexField, FloatElement, NumericElement, RealField, UnitScalar,
+    CastFrom, CastTo, ComplexField, CountRangeError, FloatElement, NumericElement, RealField,
+    TryFromCount, UnitScalar,
 };
 
 // Re-export the derives beside the marker traits, matching the standard

@@ -22,6 +22,11 @@ the placement law in the foundation.
   rkyv archival, and SIMD-accelerated unpack.
 - **Conversion lattices** (`CastFrom`/`CastTo`) and **element traits**
   (`NumericElement`/`FloatElement`).
+- **Count conversions** — `FloatElement::from_count`/`from_integer` (rounded
+  to nearest, exact below each format's significand bound) and
+  `TryFromCount::try_from_count` (exact or refused for integers), the stack's
+  one home for integer-to-float conversion, with `const fn` forms on
+  `F32`/`F64`.
 - **Scalar field traits** — `RealField`/`ComplexField` (the `nalgebra` scalar
   field analogues), so generic numeric code runs over `f32`/`f64` and `Complex`.
 

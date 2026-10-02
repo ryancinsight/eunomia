@@ -1,22 +1,21 @@
 //! The core [`NumericElement`] trait — the monomorphization extension point
 //! for operations across all numeric precisions.
 
-use super::{private, CastFrom};
+use super::{private, CastFrom, TryFromCount};
 
 /// Core numeric element trait. The main extension point for monomorphized operations across all precisions.
 ///
 /// # Source constructors
 ///
+/// A count enters any element through
+/// [`try_from_count`](TryFromCount::try_from_count), which is exact for
+/// integers and refuses a count outside their range; float code calls the
+/// infallible [`FloatElement::from_count`](super::FloatElement::from_count).
 /// [`from_f64`](super::FloatElement::from_f64) lives on `FloatElement`
 /// (precision-correct for [`F16`](crate::F16) and [`Bf16`](crate::Bf16)).
-/// Integer callers
-/// use the literal `v as Self` truncating cast natively. There is no generic
-/// `from_usize` on `NumericElement` for the same reason — the per-type route
-/// is selected explicitly so callers express precision-correct construction
-/// (literal cast for ints, `FloatElement::from_f64(v as f64)` round-trip for
-/// floats).
 pub trait NumericElement:
     private::Sealed
+    + TryFromCount
     + Copy
     + Default
     + Send

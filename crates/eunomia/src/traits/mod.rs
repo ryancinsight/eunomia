@@ -9,12 +9,14 @@ pub(crate) mod private {
 }
 
 mod cast;
+mod count;
 mod field;
 mod float;
 mod numeric;
 mod unit;
 
 pub use cast::{CastFrom, CastTo};
+pub use count::{CountRangeError, TryFromCount};
 pub use field::{ComplexField, RealField};
 pub use float::FloatElement;
 pub use numeric::NumericElement;
