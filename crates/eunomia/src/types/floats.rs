@@ -1,4 +1,4 @@
-use crate::convert::{narrow, narrow_finite, widen, widen_finite};
+use crate::convert::{narrow, narrow_finite, odd_rounded, widen, widen_finite};
 
 /// IEEE 754 binary16 (half precision), stored as its raw `u16` bit pattern.
 ///
@@ -153,12 +153,29 @@ impl F16 {
     pub fn from_f32(value: f32) -> Self {
         Self(narrow::<5, 10>(value.to_bits()) as u16)
     }
-    /// Narrow from `f64` via `f32` — exact, since `f32`'s 24-bit significand
-    /// meets the `2·11 + 2` bits the double-rounding theorem requires for binary16.
+    /// Narrow from `f64`, rounding to nearest with ties to even.
+    ///
+    /// The result is the correctly rounded binary16 value of every `f64`: the
+    /// value is rounded to odd at 24 bits, which is exact in `f32`, and then
+    /// narrowed once. Rounding to nearest at the `f32` step would round twice —
+    /// an `f64` just above a binary16 midpoint can round onto the midpoint in
+    /// `f32`, and the tie then goes to the even neighbour, which may be the
+    /// wrong one. Round-to-odd is sound for any format of precision at most 22
+    /// bits (binary16 has 11).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::F16;
+    ///
+    /// // `1 + 2^-11 + 2^-52` lies just above the midpoint of `1` and `1 + 2^-10`.
+    /// let above_midpoint = f64::from_bits(0x3FF0_0200_0000_0001);
+    /// assert_eq!(F16::from_f64(above_midpoint), F16::from_bits(0x3C01));
+    /// ```
     #[inline]
     #[must_use]
     pub fn from_f64(value: f64) -> Self {
-        Self::from_f32(value as f32)
+        Self::from_f32(odd_rounded(value))
     }
     /// Whether `self` is finite (neither infinite nor NaN).
     #[inline]
@@ -254,12 +271,27 @@ impl Bf16 {
     pub fn from_f32(value: f32) -> Self {
         Self(narrow::<8, 7>(value.to_bits()) as u16)
     }
-    /// Narrow from `f64` via `f32` — exact for bfloat16 (`f32` exceeds the
-    /// `2·8 + 2` bits double rounding requires).
+    /// Narrow from `f64`, rounding to nearest with ties to even.
+    ///
+    /// The result is the correctly rounded bfloat16 value of every `f64`: the
+    /// value is rounded to odd at 24 bits, which is exact in `f32`, and then
+    /// narrowed once. Rounding to nearest at the `f32` step would round twice
+    /// and can break a tie the wrong way. Round-to-odd is sound for any format
+    /// of precision at most 22 bits (bfloat16 has 8).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::Bf16;
+    ///
+    /// // `1 + 2^-8 + 2^-52` lies just above the midpoint of `1` and `1 + 2^-7`.
+    /// let above_midpoint = f64::from_bits(0x3FF0_1000_0000_0001);
+    /// assert_eq!(Bf16::from_f64(above_midpoint), Bf16::from_bits(0x3F81));
+    /// ```
     #[inline]
     #[must_use]
     pub fn from_f64(value: f64) -> Self {
-        Self::from_f32(value as f32)
+        Self::from_f32(odd_rounded(value))
     }
     /// Whether `self` is finite (neither infinite nor NaN).
     #[inline]

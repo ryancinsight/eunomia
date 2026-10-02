@@ -70,7 +70,7 @@ fn f16_narrowing_matches_ieee_reference_across_f32_space() {
 }
 
 #[test]
-fn f16_from_f64_is_exact_via_f32() {
+fn f16_from_f64_of_representable_values_is_exact() {
     // Every input is constructed from an F16 value, so its f32 conversion is
     // exact and the format-level reference can verify the narrowing result.
     for bits in 0u16..=u16::MAX {
