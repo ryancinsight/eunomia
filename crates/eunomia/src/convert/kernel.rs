@@ -17,17 +17,17 @@
 //! The policy is internal until a distinct externally required format family
 //! needs public selection (backlog E-024).
 
-trait SpecialValues {
+pub(crate) trait SpecialValues {
     const HAS_INFINITY: bool;
 }
 
-struct Ieee;
+pub(crate) struct Ieee;
 
 impl SpecialValues for Ieee {
     const HAS_INFINITY: bool = true;
 }
 
-struct Finite;
+pub(crate) struct Finite;
 
 impl SpecialValues for Finite {
     const HAS_INFINITY: bool = false;
