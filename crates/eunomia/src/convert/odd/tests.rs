@@ -290,6 +290,10 @@ fn the_oracle_encodes_known_values() {
     assert_eq!(F8_FORMAT.round(f64::NEG_INFINITY), Some(0xF7));
     assert_eq!(F4_FORMAT.round(1.0), Some(0x3));
     assert_eq!(F16_FORMAT.round(f64::NAN), None);
+    // The value past the largest finite one opens the next binade, also for
+    // a format with no fraction bits, whose step doubles there.
+    assert_eq!(F16_FORMAT.magnitudes().last(), Some(&65536.0));
+    assert_eq!(F4_FORMAT.magnitudes().last(), Some(&16.0));
 }
 
 /// Round-to-odd leaves every `f32` unchanged.
@@ -369,4 +373,16 @@ fn odd_rounding_handles_the_range_edges() {
     assert_eq!(odd_rounded(f64::MIN), f32::NEG_INFINITY);
     assert_eq!(odd_rounded(f64::INFINITY), f32::INFINITY);
     assert!(odd_rounded(f64::NAN).is_nan());
+}
+
+/// A signalling NaN is quieted with its leading payload bits kept, as the
+/// hardware `f64` to `f32` narrowing does: payload bit 50 of the `f64`
+/// fraction lands on bit 21 of the `f32` fraction beside the quiet bit 22.
+#[test]
+fn odd_rounding_quiets_nan_and_keeps_its_payload() {
+    let signalling = f64::from_bits(0x7FF4_0000_0000_0000);
+    assert_eq!(odd_rounded(signalling).to_bits(), 0x7FE0_0000);
+    assert_eq!(odd_rounded(-signalling).to_bits(), 0xFFE0_0000);
+    assert_eq!(<F16 as FloatElement>::from_f64(signalling).0, 0x7F00);
+    assert_eq!(<Bf16 as FloatElement>::from_f64(signalling).0, 0x7FE0);
 }

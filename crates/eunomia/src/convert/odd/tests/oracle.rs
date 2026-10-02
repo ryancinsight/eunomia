@@ -100,10 +100,7 @@ impl Format {
                 values.push(self.magnitude(field, fraction));
             }
         }
-        let [.., previous, last] = values[..] else {
-            unreachable!("invariant: every format has at least two finite values");
-        };
-        values.push(last + (last - previous));
+        values.push(self.magnitude(self.top_field(), 0));
         values
     }
 
