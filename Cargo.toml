@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/eunomia", "crates/eunomia-derive"]
 
 [workspace.package]
-version = "0.8.1"
+version = "0.9.0"
 edition = "2021"
 authors = ["Ryan Clanton <ryanclanton@outlook.com>"]
 license = "MIT OR Apache-2.0"
@@ -68,7 +68,7 @@ too_many_lines = "allow"           # 1  (0 prod) table-driven conformance test
 
 [workspace.dependencies]
 eunomia = { path = "crates/eunomia" }
-eunomia-derive = { version = "0.8.1", path = "crates/eunomia-derive" }
+eunomia-derive = { version = "0.9.0", path = "crates/eunomia-derive" }
 bytemuck = { version = "1.14", features = ["derive"] }
 libm = { version = "0.2.8", default-features = false }
 rkyv = { version = "0.8", default-features = false }
