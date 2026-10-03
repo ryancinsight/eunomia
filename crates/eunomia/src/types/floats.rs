@@ -196,16 +196,14 @@ impl F16 {
     /// `min(src.len(), dst.len())` elements.
     #[inline]
     pub fn widen_slice(src: &[Self], dst: &mut [f32]) {
-        // `F16` is `#[repr(transparent)]` over `u16`, so the reinterpret is a
-        // layout no-op (same size and alignment).
-        crate::convert::widen_f16(crate::layout::cast_slice::<Self, u16>(src), dst);
+        crate::convert::WidenToF32::widen_all(src, dst);
     }
 
     /// Narrow a slice of `f32` into `F16`, rounding to nearest with ties to even
     /// — F16C-accelerated on x86-64. Writes `min(src.len(), dst.len())` elements.
     #[inline]
     pub fn narrow_slice(src: &[f32], dst: &mut [Self]) {
-        crate::convert::narrow_f16(src, crate::layout::cast_slice_mut::<Self, u16>(dst));
+        crate::convert::NarrowFromF32::narrow_all(src, dst);
     }
 }
 
@@ -310,14 +308,14 @@ impl Bf16 {
     /// `min(src.len(), dst.len())` elements; the loop autovectorizes.
     #[inline]
     pub fn widen_slice(src: &[Self], dst: &mut [f32]) {
-        crate::convert::widen_bf16(crate::layout::cast_slice::<Self, u16>(src), dst);
+        crate::convert::WidenToF32::widen_all(src, dst);
     }
 
     /// Narrow a slice of `f32` into `Bf16`, rounding to nearest with ties to
     /// even. Writes `min(src.len(), dst.len())` elements; the loop autovectorizes.
     #[inline]
     pub fn narrow_slice(src: &[f32], dst: &mut [Self]) {
-        crate::convert::narrow_bf16(src, crate::layout::cast_slice_mut::<Self, u16>(dst));
+        crate::convert::NarrowFromF32::narrow_all(src, dst);
     }
 }
 

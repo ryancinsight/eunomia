@@ -27,7 +27,7 @@ pub(crate) mod count;
 mod kernel;
 mod odd;
 
-pub(crate) use bulk::{narrow_bf16, narrow_f16, widen_bf16, widen_f16};
+pub(crate) use bulk::{NarrowFromF32, WidenToF32};
 pub use kernel::{narrow, widen};
 pub(crate) use kernel::{narrow_finite, widen_finite, widen_finite_high_word, widen_high_word};
 pub(crate) use odd::{odd_rounded, odd_truncated};

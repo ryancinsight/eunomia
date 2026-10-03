@@ -276,22 +276,6 @@ impl<T: Packable4> Packed4Slice<'_, T> {
     }
 }
 
-impl Packed4Slice<'_, Bf4> {
-    /// Unpack all elements into a destination slice of Bf16.
-    #[inline]
-    pub fn unpack_to_bf16(&self, dest: &mut [Bf16]) {
-        self.unpack(dest);
-    }
-}
-
-impl Packed4Slice<'_, F4> {
-    /// Unpack all elements into a destination slice of F32.
-    #[inline]
-    pub fn unpack_to_f32(&self, dest: &mut [F32]) {
-        self.unpack(dest);
-    }
-}
-
 /// Type alias for a read-only view over a packed slice of Bf4 values.
 pub type PackedBf4Slice<'a> = Packed4Slice<'a, Bf4>;
 /// Type alias for a mutable view over a packed slice of Bf4 values.
