@@ -1,14 +1,5 @@
 # Eunomia backlog
 
-<a id="eunomia-castfrom-retire"></a>
-## EUNOMIA-CASTFROM-RETIRE — Retire `CastFrom`/`CastTo` [arch] [major]
-
-- status: todo; priority: architecture; basis: 600ca39.
-- Outcome: no `CastFrom`/`CastTo` in the stack; each site converts through std (`From`, `TryFrom`, `cast_signed`, `to_bits`) or a named eunomia method stating its contract (atlas:0005). `CastFrom<T>` is a generic `as` between any primitive pair, the helper class the stack cast rule bans.
-- Scope (`git grep -c -E '\b(cast_from|cast_to|CastFrom|CastTo)\b' -- '*.rs'` at each origin/main, 2026-10-02): eunomia 87, ritk 56, hermes 25, apollo 16, CFDrs 9, leto 2, helios 1.
-- Order: consumer migrations first (one member item each), then the deletion here, which drops `NumericElement: CastFrom<i32>` and is the [major].
-- Acceptance: the grep is empty stack-wide; `cargo-semver-checks` records the break. Next: classify eunomia's own 87 sites by conversion kind.
-
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 

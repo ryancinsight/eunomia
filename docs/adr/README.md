@@ -15,3 +15,4 @@
 | [0004](0004-unit-scalar-provider-seam.md) | Provider-Owned Unit Scalar Scaling | Accepted |
 | [0005](0005-real-scalar-min-max-special-values.md) | Real-scalar minimum and maximum special values | Accepted |
 | [0006](0006-binary-float-scaling.md) | Binary scaling in FloatElement | Accepted |
+| [0007](0007-retire-castfrom.md) | Retire CastFrom and CastTo | Proposed |

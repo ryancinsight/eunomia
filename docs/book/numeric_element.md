@@ -25,7 +25,6 @@ pub trait NumericElement:
     + Sub<Output = Self> + SubAssign
     + Mul<Output = Self> + MulAssign
     + Div<Output = Self>
-    + CastFrom<i32>
 {
     const ZERO: Self;
     const ONE: Self;
@@ -42,17 +41,17 @@ pub trait NumericElement:
   compile time.
 - **Constants over methods.** `ZERO`/`ONE`/`NAN`/`INFINITY` are associated
   constants, so generic kernels get identities without allocating.
-- **No generic source constructors.** `from_f64` lives on `FloatElement`
-  (precision-correct for `F16`/`Bf16`); integer callers use literal casts.
-  There is no generic `from_usize`, so construction is explicit about
-  precision.
+- **Contract-named source constructors.** A count enters any element
+  through `TryFromCount::try_from_count`, which converts exactly or returns a
+  typed `CountRangeError`; `from_f64`, `from_count` and `from_integer` live on
+  `FloatElement`, each documenting how it rounds (chapter 8).
 
 ## Outline of this chapter
 
 - Why a sealed element trait, not a scalar-type-suffixed function family
 - The associated constants: identities, sentinels, byte width, masks
 - Operator supertraits: what a generic kernel may assume
-- `CastFrom<i32>` and the integer boundary
+- `TryFromCount` and the integer boundary
 - Writing a kernel once over `NumericElement` and instantiating across
   `F32`/`F64`/`F16`/`Bf16`/`I32`/`Complex32`
 
