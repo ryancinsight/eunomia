@@ -114,6 +114,44 @@ pub trait FloatElement: private::Sealed + NumericElement {
         }
     }
 
+    /// Converts the reciprocal `1/n` of the count `n` (the scale of a mean
+    /// over `n` elements), rounding to nearest, ties to even.
+    ///
+    /// Correctly rounded for every count `n >= 1` in every format: the
+    /// quotient is formed in integer arithmetic and rounded once into the
+    /// format. It never overflows, since `1/n <= 1`. `ONE / from_count(n)`
+    /// rounds twice and inherits the rounding of `n`: it drifts to about
+    /// 1.5 ulp (at `n = 2079` in [`F16`](crate::F16), `n = 269` in
+    /// [`Bf16`](crate::Bf16)), and once `n` overflows the format (`n >= 65520`
+    /// in `F16`) it returns zero. A reciprocal at or below half the smallest
+    /// subnormal rounds to zero (ties to even), as [`from_f32`](Self::from_f32)
+    /// does; `n = 0` yields the IEEE quotient `1/0`, `+inf`, under `from_f32`'s
+    /// overflow rule.
+    ///
+    /// Formats narrower than `f32` round once, not twice: the quotient is
+    /// first rounded to odd at 24 bits, which is exact in `f32`, and then
+    /// narrowed with round-to-nearest-even (the argument is on the conversion
+    /// module's `odd_rounded_magnitude`). `f32` and `f64` types round the
+    /// integer quotient to nearest directly.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::{F16, FloatElement};
+    ///
+    /// assert_eq!(f64::from_count_reciprocal(8), 0.125);
+    /// // 65520 itself overflows `F16`; its reciprocal is the subnormal
+    /// // 256 * 2^-24, the neighbour nearest 1/65520.
+    /// assert_eq!(
+    ///     F16::from_count_reciprocal(65_520),
+    ///     F16::from_f32(256.0 / 16_777_216.0)
+    /// );
+    /// ```
+    #[inline]
+    fn from_count_reciprocal(n: usize) -> Self {
+        Self::from_f32(crate::convert::count::odd_rounded_count_reciprocal(n))
+    }
+
     /// Return the floor binary exponent of a finite, nonzero value.
     ///
     /// For a returned exponent `e`, scaling by `2^-e` yields a value whose

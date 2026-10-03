@@ -48,6 +48,10 @@ impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0, {
     fn from_integer(k: i64) -> Self {
         F32::from_integer(k)
     }
+    #[inline]
+    fn from_count_reciprocal(n: usize) -> Self {
+        F32::from_count_reciprocal(n)
+    }
 });
 // F64 wraps native `f64`, so it is emitted from the shared native-`f64` macro
 // (the same table the primitive impl uses) — the `impl_float_element!` default
