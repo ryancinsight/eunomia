@@ -52,6 +52,18 @@ All notable changes to Eunomia are documented here.
   The exponent contract normalizes to `[1, 2)`, which all shipped formats can
   represent exactly.
 
+- `#[derive(Pod)]` and `#[derive(Zeroable)]` from the new `eunomia-derive`
+  crate, re-exported at the crate root, so a C or transparent representation
+  can prove the byte-layout marker traits without an `unsafe impl`. The
+  derives enforce the same contracts the manual impls do: `Pod` requires
+  `Zeroable` plus a padding-free layout, generic C representations are
+  rejected (stable Rust cannot prove that arbitrary generic field
+  combinations contain no padding), and default and packed representations
+  are refused because their layout is not a stable byte contract for GPU or
+  FFI transport. This is the crate's first published dependency, which is why
+  the manifest version moves to 0.9.0 (a new dependency is a minor change)
+  rather than 0.8.1.
+
 ### Fixed
 
 - `NumericElement::min_scalar` and `max_scalar` now apply one shared
@@ -118,6 +130,21 @@ All notable changes to Eunomia are documented here.
   value, verified by an exhaustive phase-and-length differential test on
   aarch64. The `unsafe_intrinsics` re-export now includes aarch64, matching
   the inner module gate.
+
+### Breaking
+
+- `UnitScalar::scale_by_f64` and `divide_by_f64` are renamed
+  `scale_by_factor` and `divide_by_factor`. The coefficient's concrete `f64`
+  precision is a real ADR-0004 contract, so it stays in the signature
+  (`factor: f64`); only the redundant type token in the identifier is
+  removed. The old names raised the stack's `type_suffixed_fns` count from
+  39 to 43 and blocked its pin sweep.
+
+### Migration
+
+- Call sites and `UnitScalar` impls rename `scale_by_f64` to `scale_by_factor`
+  and `divide_by_f64` to `divide_by_factor`. The semantics are unchanged; the
+  failure mode is a compile error naming the missing method.
 
 ## [0.7.0] - 2026-07-21
 
