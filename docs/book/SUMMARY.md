@@ -19,7 +19,7 @@
 
 # Part III — Conversion and Casting
 
-- [8. The Cast Lattice: CastFrom and CastTo](cast_lattice.md)
+- [8. Conversions: Std Traits and the Conversion Module](conversions.md)
 - [9. The Native Conversion Kernel](conversion_kernel.md)
   - [Example: Rounding Behaviour](examples/rounding_behaviour.md)
 

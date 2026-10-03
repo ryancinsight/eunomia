@@ -28,7 +28,7 @@ FIGURES = (
     Figure("ch05/fig01_5_floatelement_the_transcendental_surface.svg", "5. FloatElement: The Transcendental Surface", ("exp / log", "sqrt", "trigonometry")),
     Figure("ch06/fig01_6_scalar_fields_realfield_and_complexfield.svg", "6. Scalar Fields: RealField and ComplexField", ("RealField", "ComplexField", "field laws")),
     Figure("ch07/fig01_7_unitscalar_the_physical_unit_seam.svg", "7. UnitScalar: The Physical-Unit Seam", ("value", "unit", "quantity")),
-    Figure("ch08/fig01_8_the_cast_lattice_castfrom_and_castto.svg", "8. The Cast Lattice: CastFrom and CastTo", ("From", "TryFrom", "CastFrom", "CastTo")),
+    Figure("ch08/fig01_8_conversions_std_traits_and_the_conversion_module.svg", "8. Conversions: Std Traits and the Conversion Module", ("From / TryFrom", "try_from_count", "from_count", "to_f64 / from_f64")),
     Figure("ch09/fig01_9_the_native_conversion_kernel.svg", "9. The Native Conversion Kernel", ("validate", "convert", "preserve")),
     Figure("ch09/fig02_example_rounding_behaviour.svg", "Example: Rounding Behaviour", ("value", "round", "error bound")),
     Figure("ch10/fig01_10_byte_layout_pod_and_zeroable.svg", "10. Byte Layout: Pod and Zeroable", ("layout", "Pod", "Zeroable")),

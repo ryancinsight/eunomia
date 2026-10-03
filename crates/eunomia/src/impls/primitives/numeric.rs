@@ -1,6 +1,6 @@
 //! `NumericElement` impls for primitive floats and signed/unsigned integers.
 
-use crate::traits::{private, CastFrom, NumericElement};
+use crate::traits::{private, NumericElement};
 use crate::types::Complex;
 
 /// Shared `NumericElement` body for the primitive float types. The two widths
@@ -246,7 +246,7 @@ impl_numeric_element_signed!(isize, core::mem::size_of::<isize>());
 
 impl<T> NumericElement for Complex<T>
 where
-    T: NumericElement + CastFrom<i32> + core::ops::Neg<Output = T>,
+    T: NumericElement + core::ops::Neg<Output = T>,
 {
     const ZERO: Self = Self::new(<T as NumericElement>::ZERO, <T as NumericElement>::ZERO);
     const ONE: Self = Self::new(<T as NumericElement>::ONE, <T as NumericElement>::ZERO);
@@ -347,16 +347,6 @@ where
         } else {
             other
         }
-    }
-}
-
-impl<T> CastFrom<i32> for Complex<T>
-where
-    T: NumericElement,
-{
-    #[inline(always)]
-    fn cast_from(val: i32) -> Self {
-        Self::new(T::cast_from(val), <T as NumericElement>::ZERO)
     }
 }
 

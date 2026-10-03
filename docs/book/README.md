@@ -19,7 +19,8 @@ eunomia decides *what* data is.
   third-party `num_complex::Complex` across the stack.
 - **Packed sub-byte formats** — `Packed4`/`PackedBf4`/`PackedF4` storage,
   COW buffers, rkyv archival, and SIMD-accelerated unpack.
-- **Conversion lattices** — `CastFrom`/`CastTo`.
+- **Conversions** — std `From`/`TryFrom` plus the contract-named methods
+  of the conversion module.
 - **Element traits** — `NumericElement`, `FloatElement`.
 - **Scalar field traits** — `RealField`/`ComplexField` (the `nalgebra`
   scalar-field analogues), so generic numeric code runs over `f32`/`f64` and

@@ -1,6 +1,5 @@
 //! Integer-to-float conversions: the crate's home for converting a count or
-//! a signed integer into a float format. (`CastFrom`'s generic casts retire
-//! under the stack's `CastFrom` retirement item.)
+//! a signed integer into a float format.
 //!
 //! Std has no lossless trait for these (`f64: From<usize>` does not exist,
 //! since `usize` can exceed `f64`'s 53-bit significand), so the casts live

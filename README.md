@@ -20,7 +20,8 @@ the placement law in the foundation.
   third-party `num_complex::Complex` across the stack.
 - **Packed sub-byte formats** — `Packed4`/`PackedBf4`/`PackedF4` storage, COW,
   rkyv archival, and SIMD-accelerated unpack.
-- **Conversion lattices** (`CastFrom`/`CastTo`) and **element traits**
+- **Contract-named conversions** (std `From`/`TryFrom`, the conversion
+  module) and **element traits**
   (`NumericElement`/`FloatElement`).
 - **Count conversions** — `FloatElement::from_count`/`from_integer` (rounded
   to nearest, exact below each format's significand bound) and

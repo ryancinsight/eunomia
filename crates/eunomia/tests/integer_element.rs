@@ -4,7 +4,7 @@
 //! `u64`) implementations, cross-checking every trait operation against `std`
 //! semantics rather than asserting mere existence.
 
-use eunomia::{CastFrom, NumericElement};
+use eunomia::{NumericElement, TryFromCount};
 
 /// Assert the full integer `NumericElement` contract for one type.
 ///
@@ -67,8 +67,8 @@ macro_rules! integer_element_contract {
             // Sign-dependent absolute value.
             assert_eq!(NumericElement::abs($abs_in as $t), $abs_out as $t);
 
-            // CastFrom<i32> maps an in-range value exactly.
-            assert_eq!(<$t as CastFrom<i32>>::cast_from(5_i32), 5 as $t);
+            // An in-range count converts exactly.
+            assert_eq!(<$t as TryFromCount>::try_from_count(5), Ok(5));
         }
     };
 }
@@ -116,20 +116,6 @@ fn signed_integer_sqrt_of_negative_is_zero() {
     assert_eq!(NumericElement::sqrt(-4_i32), 0_i32);
     assert_eq!(NumericElement::sqrt(-1_i64), 0_i64);
     assert_eq!(NumericElement::sqrt(i64::MIN), 0_i64);
-}
-
-/// Cross-width `CastFrom` round-trips for an in-range value preserve it exactly.
-#[test]
-fn cross_width_cast_round_trip() {
-    let v: u8 = 200;
-    let widened = u32::cast_from(v);
-    assert_eq!(widened, 200_u32);
-    assert_eq!(u8::cast_from(widened), v);
-
-    let s: i64 = -42;
-    let narrowed = i32::cast_from(s);
-    assert_eq!(narrowed, -42_i32);
-    assert_eq!(i64::cast_from(narrowed), s);
 }
 
 /// Overflow regressions for every integer `NumericElement` impl (primitive
