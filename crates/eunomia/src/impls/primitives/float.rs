@@ -32,6 +32,10 @@ impl FloatElement for f32 {
     fn from_integer(k: i64) -> Self {
         F32::from_integer(k).0
     }
+    #[inline]
+    fn from_count_reciprocal(n: usize) -> Self {
+        F32::from_count_reciprocal(n).0
+    }
 }
 
 // The primitive `f64` and the `F64` wrapper are one native-`f64` body, emitted

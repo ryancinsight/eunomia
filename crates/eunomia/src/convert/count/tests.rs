@@ -245,3 +245,193 @@ fn complex_counts_embed_as_the_real_part() {
         200
     );
 }
+
+/// `value = m * 2^e` for a finite non-negative `f64`, `m` its integer
+/// significand.
+fn significand(value: f64) -> (u128, i32) {
+    let bits = value.to_bits();
+    let field = i32::try_from(bits >> 52).expect("invariant: a non-negative f64 has no sign bit");
+    let fraction = u128::from(bits & ((1_u64 << 52) - 1));
+    if field == 0 {
+        (fraction, -1074)
+    } else {
+        (fraction | (1 << 52), field - 1075)
+    }
+}
+
+/// `|a * n - 1| * 2^-scale` in exact integer arithmetic, for a grid value `a`
+/// whose exponent is at least `scale`.
+fn scaled_distance(a: f64, n: usize, scale: i32) -> u128 {
+    let (m, e) = significand(a);
+    let one =
+        1_u128 << u32::try_from(-scale).expect("invariant: reciprocals of counts are below 1");
+    if m == 0 {
+        return one;
+    }
+    let shift = u32::try_from(e - scale).expect("invariant: scale is the smallest exponent");
+    let product = (m * u128::try_from(n).expect("invariant: usize fits u128")) << shift;
+    product.abs_diff(one)
+}
+
+/// `T::from_count_reciprocal(n)` is strictly nearer to `1/n` than both of its
+/// grid neighbours. The neighbours come from the format's bit pattern and
+/// the distances from integer arithmetic, so the check shares no code with the
+/// conversion; the strict inequality also pins that `1/n` never ties.
+fn nearest_reciprocal<T: FloatElement + core::fmt::Debug>(
+    n: usize,
+    neighbours: impl Fn(T) -> (T, T),
+) {
+    let value = T::from_count_reciprocal(n);
+    let (below, above) = neighbours(value);
+    let candidates = [value.to_f64(), below.to_f64(), above.to_f64()];
+    assert!(
+        candidates[1] < candidates[0] && candidates[0] < candidates[2],
+        "count {n}: {value:?}"
+    );
+    let scale = candidates
+        .iter()
+        .filter(|&&v| v > 0.0)
+        .map(|&v| significand(v).1)
+        .min()
+        .expect("invariant: the converted reciprocal is nonzero");
+    let [nearest, low, high] = candidates.map(|v| scaled_distance(v, n, scale));
+    assert!(
+        nearest < low && nearest < high,
+        "count {n}: {value:?} is not the nearest"
+    );
+}
+
+fn f64_neighbours(x: f64) -> (f64, f64) {
+    (
+        f64::from_bits(x.to_bits() - 1),
+        f64::from_bits(x.to_bits() + 1),
+    )
+}
+
+fn f32_neighbours(x: f32) -> (f32, f32) {
+    (
+        f32::from_bits(x.to_bits() - 1),
+        f32::from_bits(x.to_bits() + 1),
+    )
+}
+
+fn half_neighbours(x: F16) -> (F16, F16) {
+    (
+        F16::from_bits(x.to_bits() - 1),
+        F16::from_bits(x.to_bits() + 1),
+    )
+}
+
+fn brain_neighbours(x: Bf16) -> (Bf16, Bf16) {
+    (
+        Bf16::from_bits(x.to_bits() - 1),
+        Bf16::from_bits(x.to_bits() + 1),
+    )
+}
+
+/// Counts at the boundaries the reciprocal must survive: just above `2^p`
+/// for each precision (where rounding `n` first costs a full ulp: 269 in
+/// `Bf16`, 2079 in `F16`), around the largest finite `F16` (65504) and the
+/// first count that overflows it (65520), and powers of two.
+const BOUNDARY_COUNTS: [usize; 14] = [
+    1,
+    2,
+    3,
+    7,
+    257,
+    269,
+    2049,
+    2079,
+    65_504,
+    65_519,
+    65_520,
+    65_536,
+    1 << 20,
+    (1 << 24) + 1,
+];
+
+/// A deterministic spread of counts across `1..2^bits` (a linear congruential
+/// sequence, so failures replay).
+fn spread(bits: u32) -> impl Iterator<Item = usize> {
+    let mut state = 0x9E37_79B9_7F4A_7C15_u64;
+    core::iter::repeat_with(move || {
+        state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        let count = usize::try_from(state >> (64 - bits)).expect("invariant: bits <= 64");
+        count.max(1)
+    })
+    .take(4096)
+}
+
+#[test]
+fn count_reciprocals_are_nearest_in_every_shipped_float() {
+    for n in BOUNDARY_COUNTS.into_iter().chain(1..=4096) {
+        nearest_reciprocal::<f64>(n, f64_neighbours);
+        nearest_reciprocal::<f32>(n, f32_neighbours);
+        nearest_reciprocal::<F16>(n, half_neighbours);
+        nearest_reciprocal::<Bf16>(n, brain_neighbours);
+        assert_eq!(
+            F64::from_count_reciprocal(n).0,
+            f64::from_count_reciprocal(n)
+        );
+        assert_eq!(
+            F32::from_count_reciprocal(n).0,
+            f32::from_count_reciprocal(n)
+        );
+    }
+}
+
+/// Counts up to `2^25 - 1`, where the `F16` reciprocal is still above half
+/// its smallest subnormal `2^-24`; the full `usize` range for the others.
+#[test]
+fn count_reciprocals_are_nearest_across_the_count_range() {
+    for n in spread(25) {
+        nearest_reciprocal::<F16>(n, half_neighbours);
+    }
+    for n in spread(64).chain([(1 << 53) + 1, (1 << 63) + 12_345, usize::MAX]) {
+        nearest_reciprocal::<f64>(n, f64_neighbours);
+        nearest_reciprocal::<f32>(n, f32_neighbours);
+        nearest_reciprocal::<Bf16>(n, brain_neighbours);
+    }
+}
+
+/// `1/2^25` is the midpoint between zero and the smallest `F16` subnormal
+/// `2^-24`; it ties to the even neighbour, zero. One count less lies above
+/// the midpoint and rounds to the subnormal.
+#[test]
+fn f16_count_reciprocals_underflow_at_half_the_smallest_subnormal() {
+    let smallest = F16::from_bits(1);
+    assert_eq!(F16::from_count_reciprocal((1 << 25) - 1), smallest);
+    assert_eq!(F16::from_count_reciprocal(1 << 25), F16::ZERO);
+    assert_eq!(F16::from_count_reciprocal(usize::MAX), F16::ZERO);
+}
+
+/// The overflow the reciprocal avoids: `F16::from_count(65520)` is infinite,
+/// so `ONE / from_count` is zero there, while the reciprocal is the nearest
+/// subnormal `256 * 2^-24`.
+#[test]
+fn f16_count_reciprocal_survives_count_overflow() {
+    assert_eq!(F16::ONE / F16::from_count(65_520), F16::ZERO);
+    assert_eq!(F16::from_count_reciprocal(65_520), F16::from_bits(256));
+}
+
+#[test]
+fn zero_count_reciprocal_is_the_ieee_quotient() {
+    assert_eq!(f64::from_count_reciprocal(0), f64::INFINITY);
+    assert_eq!(f32::from_count_reciprocal(0), f32::INFINITY);
+    assert_eq!(F16::from_count_reciprocal(0), F16::from_f32(f32::INFINITY));
+    assert_eq!(F8::from_count_reciprocal(0), F8::from_f32(f32::INFINITY));
+}
+
+/// The byte formats share the narrow default with `F16` and `Bf16`; their
+/// grids are small enough to check against `from_f32` of exact reciprocals.
+#[test]
+fn byte_format_count_reciprocals_round_exact_powers_of_two() {
+    for exponent in 0..4 {
+        let n = 1_usize << exponent;
+        let exact = 1.0 / f32::from(u8::try_from(n).expect("invariant: n <= 8"));
+        assert_eq!(F8::from_count_reciprocal(n), F8::from_f32(exact));
+        assert_eq!(Bf8::from_count_reciprocal(n), Bf8::from_f32(exact));
+    }
+}
