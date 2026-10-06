@@ -1,4 +1,4 @@
-use eunomia::{Complex32, Complex64, ComplexField};
+use eunomia::{Complex32, Complex64, ComplexField, NumericElement};
 
 #[test]
 fn complex_layout_round_trips_through_plain_arrays() {
@@ -7,6 +7,50 @@ fn complex_layout_round_trips_through_plain_arrays() {
 
     assert_eq!(bytemuck::cast::<Complex32, [f32; 2]>(single), [1.25, -2.5]);
     assert_eq!(bytemuck::cast::<Complex64, [f64; 2]>(double), [-3.5, 7.25]);
+}
+
+#[test]
+fn numeric_element_sqrt_is_the_principal_root() {
+    // Exact small cases over the rectangular form: sqrt(3+4i) = 2+i,
+    // sqrt(-4) = 2i, sqrt(0) = 0.
+    let z = Complex64::new(3.0, 4.0);
+    assert_eq!(
+        <Complex64 as NumericElement>::sqrt(z),
+        Complex64::new(2.0, 1.0)
+    );
+    let neg = Complex64::new(-4.0, 0.0);
+    assert_eq!(
+        <Complex64 as NumericElement>::sqrt(neg),
+        Complex64::new(0.0, 2.0)
+    );
+    let zero = Complex64::new(0.0, 0.0);
+    assert_eq!(<Complex64 as NumericElement>::sqrt(zero), zero);
+    let z32 = Complex32::new(3.0, 4.0);
+    assert_eq!(
+        <Complex32 as NumericElement>::sqrt(z32),
+        Complex32::new(2.0, 1.0)
+    );
+
+    // Differential: the rectangular trait form agrees with the inherent
+    // polar oracle to a few ulps (different rounding paths), and each root
+    // squares back to its input.
+    for (re, im) in [(0.5, -1.25), (-2.5, 0.75), (100.0, 100.0), (1e-8, 3e-8)] {
+        let w = Complex64::new(re, im);
+        let a = <Complex64 as NumericElement>::sqrt(w);
+        let b = w.sqrt();
+        let scale = a.re.abs().max(a.im.abs()).max(1.0);
+        let tol = 8.0 * f64::EPSILON * scale;
+        assert!(
+            (a.re - b.re).abs() <= tol && (a.im - b.im).abs() <= tol,
+            "trait {a:?} vs inherent {b:?} at {w:?}"
+        );
+        let back = a * a;
+        let tol2 = 16.0 * f64::EPSILON * re.abs().max(im.abs()).max(1.0);
+        assert!(
+            (back.re - re).abs() <= tol2 && (back.im - im).abs() <= tol2,
+            "round-trip {back:?} vs {w:?}"
+        );
+    }
 }
 
 #[test]
