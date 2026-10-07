@@ -96,6 +96,23 @@ macro_rules! float_element_contract {
             assert_eq!(g(FloatElement::powi(f(2.0), 3)), 8.0, "2^3");
             assert_eq!(g(FloatElement::powi(f(2.0), 0)), 1.0, "2^0");
             assert_eq!(g(FloatElement::powi(f(2.0), -1)), 0.5, "2^-1");
+            // `i32::MIN` has no positive `i32` negation: the exponent must be
+            // widened (unsigned), never negated. All three results are exact.
+            assert_eq!(
+                g(FloatElement::powi(f(2.0), i32::MIN)),
+                0.0,
+                "2^MIN underflows to +0"
+            );
+            assert_eq!(
+                g(FloatElement::powi(f(2.0), i32::MAX)),
+                f32::INFINITY,
+                "2^MAX overflows to +inf"
+            );
+            assert_eq!(
+                g(FloatElement::powi(f(-1.0), i32::MIN)),
+                1.0,
+                "(-1)^MIN (even exponent)"
+            );
 
             // ── Transcendental defaults at exact points (0/1 land on values
             //    every precision here represents exactly) ──

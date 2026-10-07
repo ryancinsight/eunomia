@@ -373,19 +373,22 @@ pub trait FloatElement: private::Sealed + NumericElement {
     /// [`powf`](Self::powf)). A default over the [`NumericElement`] arithmetic —
     /// no per-type implementation needed, so no precision is lost.
     #[inline]
-    fn powi(self, mut n: i32) -> Self {
+    fn powi(self, n: i32) -> Self {
         let mut base = self;
         if n < 0 {
             base = <Self as NumericElement>::ONE / base;
-            n = -n;
         }
+        // `unsigned_abs`, never `-n`: `i32::MIN` has no positive `i32`
+        // negation (`-n` panics in debug, wraps to `MIN` and returns `ONE` in
+        // release). `u32` holds 2^31 exactly.
+        let mut exp = n.unsigned_abs();
         let mut acc = <Self as NumericElement>::ONE;
-        while n > 0 {
-            if n & 1 == 1 {
+        while exp > 0 {
+            if exp & 1 == 1 {
                 acc *= base;
             }
             base *= base;
-            n >>= 1;
+            exp >>= 1;
         }
         acc
     }
