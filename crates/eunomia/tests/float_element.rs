@@ -182,6 +182,29 @@ float_element_contract!(bf16_element_contract, Bf16);
 float_element_contract!(f32_wrapper_element_contract, F32);
 float_element_contract!(f64_wrapper_element_contract, F64);
 
+/// `powi` inverts last for accuracy (`1 / x^|n|` rounds once) but recomputes
+/// working downward when the upward power overflows, preserving IEEE
+/// gradual underflow instead of flushing (`(-2)^-130` is the subnormal
+/// 2^-130 in f32, normal in f64 — either way nonzero and equal to `2^-130`
+/// by the even exponent). F32 exercises the recompute path, F64 the direct
+/// path; halves cannot represent 2^-130 and are excluded.
+fn assert_powi_underflows_gradually<T: FloatElement + PartialEq + core::fmt::Debug>() {
+    let up = FloatElement::powi(<T as FloatElement>::from_f32(2.0), -130);
+    let down = FloatElement::powi(<T as FloatElement>::from_f32(-2.0), -130);
+    assert_eq!(up, down, "(-2)^-130 == 2^-130 (even exponent)");
+    assert_ne!(
+        FloatElement::to_f32(up),
+        0.0,
+        "not flushed to +0 (gradual underflow)"
+    );
+}
+
+#[test]
+fn powi_preserves_gradual_underflow() {
+    assert_powi_underflows_gradually::<F32>();
+    assert_powi_underflows_gradually::<F64>();
+}
+
 /// The reduced-precision types must also *round* through their native kernel,
 /// not merely construct: a value between two representable grid points quantizes
 /// to the nearest, ties to even. `0.1` is unrepresentable in every finite binary
