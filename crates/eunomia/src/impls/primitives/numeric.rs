@@ -285,11 +285,13 @@ where
 
     #[inline(always)]
     fn sqrt(self) -> Self {
-        let mag2 = self.re * self.re + self.im * self.im;
+        // Principal root over |z| (not |z|²): u = √((|z|+re)/2),
+        // v = sgn(im)·√((|z|−re)/2). Matches the inherent polar `sqrt`.
+        let mag = (self.re * self.re + self.im * self.im).sqrt();
         let half =
             <T as NumericElement>::ONE / (<T as NumericElement>::ONE + <T as NumericElement>::ONE);
-        let u = ((mag2 + self.re) * half).sqrt();
-        let mut v = ((mag2 - self.re) * half).sqrt();
+        let u = ((mag + self.re) * half).sqrt();
+        let mut v = ((mag - self.re) * half).sqrt();
         if self.im < <T as NumericElement>::ZERO {
             v = -v;
         }
