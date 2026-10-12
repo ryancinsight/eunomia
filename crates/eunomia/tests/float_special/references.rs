@@ -4,7 +4,7 @@
 //! are known in closed form, and the `F64` wrapper is checked to compute
 //! in its own precision rather than widening.
 
-use eunomia::{FloatElement, F64};
+use eunomia::{FloatElement, RealField, F64};
 
 use super::fixtures::close;
 
@@ -92,17 +92,19 @@ fn lgamma_double_precision_matches_reference() {
 /// implementations unambiguously rather than merely admitting the correct one.
 const F64_NATIVE_TOL: f64 = 1e-15;
 
-/// The five special functions the `F64` wrapper must evaluate natively.
+/// The seven special functions the `F64` wrapper must evaluate natively.
 ///
 /// `F64`'s whole contract is `f64` precision, but its `FloatElement` impl
 /// inherits any method it does not override from the trait's `f32`-routed
 /// defaults (`Self::from_f32(libm::<op>f(self.to_f32()))`). That default is
 /// correct for `F16`/`Bf16`, which have no hardware transcendentals, and a HARD
 /// precision-contract violation for `F64`, which does. This test pins each of
-/// the five against the primitive `f64` impl — the same trait, the same
+/// the seven against the primitive `f64` impl — the same trait, the same
 /// operation, the type whose native routing is already established — so a
 /// dropped override fails here instead of silently discarding ~9 decimal
 /// digits in every downstream generic algorithm instantiated at `F64`.
+/// (`bessel_k0` is exempt by construction: it has no `libm` entry point, so
+/// the generic A&S program monomorphized at `f64` *is* its native path.)
 #[test]
 fn double_precision_wrapper_special_functions_evaluate_natively() {
     // Operands chosen so every result is O(1): the absolute bound above is then
@@ -139,6 +141,18 @@ fn double_precision_wrapper_special_functions_evaluate_natively() {
             FloatElement::erfc(x),
             F64_NATIVE_TOL,
             "F64 erfc",
+        );
+        close(
+            RealField::bessel_j0(F64(x)).0,
+            RealField::bessel_j0(x),
+            F64_NATIVE_TOL,
+            "F64 bessel_j0",
+        );
+        close(
+            RealField::bessel_j1(F64(x)).0,
+            RealField::bessel_j1(x),
+            F64_NATIVE_TOL,
+            "F64 bessel_j1",
         );
     }
 }

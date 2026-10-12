@@ -90,6 +90,73 @@ pub trait RealField: FloatElement + PartialOrd + Neg<Output = Self> {
     fn to_degrees(self) -> Self {
         self * (Self::from_f64(180.0) / Self::PI)
     }
+
+    /// Bessel function of the first kind, order zero, `J₀(self)`.
+    ///
+    /// Default routes through `f32` via `libm::j0f`; native-precision types
+    /// override with `libm::j0` (the
+    /// [`FloatElement::erf`](super::FloatElement::erf) pattern). `J₀` is even:
+    /// `bessel_j0(-x) == bessel_j0(x)`.
+    #[inline]
+    fn bessel_j0(self) -> Self {
+        Self::from_f32(libm::j0f(self.to_f32()))
+    }
+
+    /// Bessel function of the first kind, order one, `J₁(self)`.
+    ///
+    /// Default routes through `f32` via `libm::j1f`; native-precision types
+    /// override with `libm::j1`. `J₁` is odd: `bessel_j1(-x) == -bessel_j1(x)`.
+    #[inline]
+    fn bessel_j1(self) -> Self {
+        Self::from_f32(libm::j1f(self.to_f32()))
+    }
+
+    /// Modified Bessel function of the second kind, order zero, `K₀(self)`
+    /// for `self > 0`.
+    ///
+    /// Abramowitz & Stegun 9.8.5 for `0 < x ≤ 2` and 9.8.6 for `x > 2`,
+    /// evaluated in the precision of `Self` (monomorphized per implementor,
+    /// not widen-narrowed; libm 0.2.16 provides no `k0`). Both polynomial
+    /// forms carry an absolute error below `1e-7` on their stated domains.
+    /// `K₀` diverges at the origin and is undefined for `x ≤ 0`, so
+    /// non-positive and non-finite arguments return `NaN`.
+    #[inline]
+    fn bessel_k0(self) -> Self {
+        if !(self.is_finite() && self > <Self as NumericElement>::ZERO) {
+            return <Self as NumericElement>::NAN;
+        }
+        if self <= Self::from_f64(2.0) {
+            // A&S 9.8.5: K₀(x) = −ln(x/2)·I₀(x) + Σ cₙ (x/2)^{2n}.
+            let t1 = (self / Self::from_f64(3.75)) * (self / Self::from_f64(3.75));
+            let i0 = <Self as NumericElement>::ONE
+                + t1 * (Self::from_f64(3.515_622_9)
+                    + t1 * (Self::from_f64(3.089_942_4)
+                        + t1 * (Self::from_f64(1.206_749_2)
+                            + t1 * (Self::from_f64(0.265_973_2)
+                                + t1 * (Self::from_f64(0.036_076_8)
+                                    + t1 * Self::from_f64(0.004_581_3))))));
+            let t2 = (self * Self::from_f64(0.5)) * (self * Self::from_f64(0.5));
+            let correction = Self::from_f64(-0.577_215_66)
+                + t2 * (Self::from_f64(0.422_784_20)
+                    + t2 * (Self::from_f64(0.230_697_56)
+                        + t2 * (Self::from_f64(0.034_885_90)
+                            + t2 * (Self::from_f64(0.002_626_98)
+                                + t2 * (Self::from_f64(0.000_107_50)
+                                    + t2 * Self::from_f64(7.4e-6))))));
+            (self * Self::from_f64(0.5)).ln() * -i0 + correction
+        } else {
+            // A&S 9.8.6: K₀(x) = e^{-x}/√x · Σ dₙ (2/x)^n.
+            let t = Self::from_f64(2.0) / self;
+            let series = Self::from_f64(1.253_314_14)
+                + t * (Self::from_f64(-0.078_323_58)
+                    + t * (Self::from_f64(0.021_895_68)
+                        + t * (Self::from_f64(-0.010_624_46)
+                            + t * (Self::from_f64(0.005_878_72)
+                                + t * (Self::from_f64(-0.002_515_40)
+                                    + t * Self::from_f64(0.000_532_08))))));
+            (-self).exp() / self.sqrt() * series
+        }
+    }
 }
 
 /// A scalar **field** that may be real or complex — the `nalgebra::ComplexField`
