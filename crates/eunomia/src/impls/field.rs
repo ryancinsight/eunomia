@@ -7,6 +7,7 @@
 
 use crate::traits::{ComplexField, FloatElement, NumericElement, RealField};
 use crate::types::Complex;
+use crate::types::{F32, F64};
 
 impl RealField for f32 {
     const PI: Self = core::f32::consts::PI;
@@ -43,6 +44,63 @@ impl RealField for f64 {
     #[inline]
     fn is_sign_positive(self) -> bool {
         f64::is_sign_positive(self)
+    }
+    #[inline]
+    fn bessel_j0(self) -> Self {
+        libm::j0(self)
+    }
+    #[inline]
+    fn bessel_j1(self) -> Self {
+        libm::j1(self)
+    }
+}
+
+/// `F32` is transparent over `f32`, so its field is the `f32` field exactly.
+impl RealField for F32 {
+    const PI: Self = F32(core::f32::consts::PI);
+    const TAU: Self = F32(core::f32::consts::TAU);
+    const FRAC_PI_2: Self = F32(core::f32::consts::FRAC_PI_2);
+    const E: Self = F32(core::f32::consts::E);
+    const LN_2: Self = F32(core::f32::consts::LN_2);
+    const SQRT_2: Self = F32(core::f32::consts::SQRT_2);
+    const EPSILON: Self = F32(f32::EPSILON);
+
+    #[inline]
+    fn copysign(self, sign: Self) -> Self {
+        F32(libm::copysignf(self.0, sign.0))
+    }
+    #[inline]
+    fn is_sign_positive(self) -> bool {
+        f32::is_sign_positive(self.0)
+    }
+}
+
+/// `F64` is transparent over `f64`, so its field is the `f64` field exactly,
+/// including the native double-precision `j0`/`j1` overrides.
+impl RealField for F64 {
+    const PI: Self = F64(core::f64::consts::PI);
+    const TAU: Self = F64(core::f64::consts::TAU);
+    const FRAC_PI_2: Self = F64(core::f64::consts::FRAC_PI_2);
+    const E: Self = F64(core::f64::consts::E);
+    const LN_2: Self = F64(core::f64::consts::LN_2);
+    const SQRT_2: Self = F64(core::f64::consts::SQRT_2);
+    const EPSILON: Self = F64(f64::EPSILON);
+
+    #[inline]
+    fn copysign(self, sign: Self) -> Self {
+        F64(libm::copysign(self.0, sign.0))
+    }
+    #[inline]
+    fn is_sign_positive(self) -> bool {
+        f64::is_sign_positive(self.0)
+    }
+    #[inline]
+    fn bessel_j0(self) -> Self {
+        F64(libm::j0(self.0))
+    }
+    #[inline]
+    fn bessel_j1(self) -> Self {
+        F64(libm::j1(self.0))
     }
 }
 
