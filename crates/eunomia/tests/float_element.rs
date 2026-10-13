@@ -1,20 +1,21 @@
-//! Value-semantic contract tests for the native float wrappers and reduced
-//! binary formats.
+//! Value-semantic contract tests for the native float `NumericElement` /
+//! `FloatElement` impls (`F16`, `Bf16`, `F32`, `F64`).
 //!
-//! The trait-level checks use exactly representable values. The reduced-format
-//! suite checks every 8-bit encoding pair and boundary-focused 16-bit samples
-//! against an independent value-level oracle.
+//! The integer surface has `integer_element.rs`; this is its float analogue,
+//! cross-checking every trait operation against analytic values rather than
+//! asserting mere existence. The reduced-precision types `F16`/`Bf16` are the
+//! ones the hermes SIMD kernels bind as `SimdKernel<F16>`/`<Bf16>`, so their
+//! scalar contract is load-bearing across the Atlas stack — this file is the
+//! regression that keeps them first-class scalars, not just storage wrappers.
 //!
-//! Calls are fully-qualified `NumericElement::…` / `FloatElement::…`: std is
-//! stabilizing same-named inherent float methods (`unstable_name_collisions`),
-//! and method syntax could rebind to those instead of the trait contract.
+//! Every operand is exactly representable in `bfloat16` (≤3 significant bits),
+//! hence in every wider type here, so each result is exact and no assertion
+//! carries a tolerance. Calls are fully-qualified `NumericElement::…` /
+//! `FloatElement::…`: std is stabilizing same-named inherent float methods
+//! (`unstable_name_collisions`), and method syntax would silently rebind to
+//! those, changing which implementation the test verifies.
 
-use eunomia::{Bf16, CastFrom, FloatElement, NumericElement, F16, F32, F64};
-
-mod support;
-
-#[path = "float_element/reduced_arithmetic.rs"]
-mod reduced_arithmetic;
+use eunomia::{Bf16, FloatElement, NumericElement, F16, F32, F64};
 
 /// Assert the full float `NumericElement` + `FloatElement` contract for one
 /// native float wrapper type, entirely through exactly-representable operands.
@@ -149,11 +150,11 @@ macro_rules! float_element_contract {
                 "nth_root(-8, 3) is not NaN (powf(1/3) would be)"
             );
 
-            // ── CastFrom<i32> maps an in-range integer to its float value ──
+            // ── a signed integer within every format's significand converts exactly ──
             assert_eq!(
-                g(<$t as CastFrom<i32>>::cast_from(5_i32)),
-                5.0,
-                "cast_from(5)"
+                g(<$t as FloatElement>::from_integer(-5)),
+                -5.0,
+                "from_integer(-5)"
             );
         }
     };
