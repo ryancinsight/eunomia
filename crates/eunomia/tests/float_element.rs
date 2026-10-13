@@ -1,21 +1,20 @@
-//! Value-semantic contract tests for the native float `NumericElement` /
-//! `FloatElement` impls (`F16`, `Bf16`, `F32`, `F64`).
+//! Value-semantic contract tests for the native float wrappers and reduced
+//! binary formats.
 //!
-//! The integer surface has `integer_element.rs`; this is its float analogue,
-//! cross-checking every trait operation against analytic values rather than
-//! asserting mere existence. The reduced-precision types `F16`/`Bf16` are the
-//! ones the hermes SIMD kernels bind as `SimdKernel<F16>`/`<Bf16>`, so their
-//! scalar contract is load-bearing across the Atlas stack — this file is the
-//! regression that keeps them first-class scalars, not just storage wrappers.
+//! The trait-level checks use exactly representable values. The reduced-format
+//! suite checks every 8-bit encoding pair and boundary-focused 16-bit samples
+//! against an independent value-level oracle.
 //!
-//! Every operand is exactly representable in `bfloat16` (≤3 significant bits),
-//! hence in every wider type here, so each result is exact and no assertion
-//! carries a tolerance. Calls are fully-qualified `NumericElement::…` /
-//! `FloatElement::…`: std is stabilizing same-named inherent float methods
-//! (`unstable_name_collisions`), and method syntax would silently rebind to
-//! those, changing which implementation the test verifies.
+//! Calls are fully-qualified `NumericElement::…` / `FloatElement::…`: std is
+//! stabilizing same-named inherent float methods (`unstable_name_collisions`),
+//! and method syntax could rebind to those instead of the trait contract.
 
 use eunomia::{Bf16, CastFrom, FloatElement, NumericElement, F16, F32, F64};
+
+mod support;
+
+#[path = "float_element/reduced_arithmetic.rs"]
+mod reduced_arithmetic;
 
 /// Assert the full float `NumericElement` + `FloatElement` contract for one
 /// native float wrapper type, entirely through exactly-representable operands.
@@ -96,23 +95,6 @@ macro_rules! float_element_contract {
             assert_eq!(g(FloatElement::powi(f(2.0), 3)), 8.0, "2^3");
             assert_eq!(g(FloatElement::powi(f(2.0), 0)), 1.0, "2^0");
             assert_eq!(g(FloatElement::powi(f(2.0), -1)), 0.5, "2^-1");
-            // `i32::MIN` has no positive `i32` negation: the exponent must be
-            // widened (unsigned), never negated. All three results are exact.
-            assert_eq!(
-                g(FloatElement::powi(f(2.0), i32::MIN)),
-                0.0,
-                "2^MIN underflows to +0"
-            );
-            assert_eq!(
-                g(FloatElement::powi(f(2.0), i32::MAX)),
-                f32::INFINITY,
-                "2^MAX overflows to +inf"
-            );
-            assert_eq!(
-                g(FloatElement::powi(f(-1.0), i32::MIN)),
-                1.0,
-                "(-1)^MIN (even exponent)"
-            );
 
             // ── Transcendental defaults at exact points (0/1 land on values
             //    every precision here represents exactly) ──
@@ -181,29 +163,6 @@ float_element_contract!(f16_element_contract, F16);
 float_element_contract!(bf16_element_contract, Bf16);
 float_element_contract!(f32_wrapper_element_contract, F32);
 float_element_contract!(f64_wrapper_element_contract, F64);
-
-/// `powi` inverts last for accuracy (`1 / x^|n|` rounds once) but recomputes
-/// working downward when the upward power overflows, preserving IEEE
-/// gradual underflow instead of flushing (`(-2)^-130` is the subnormal
-/// 2^-130 in f32, normal in f64 — either way nonzero and equal to `2^-130`
-/// by the even exponent). F32 exercises the recompute path, F64 the direct
-/// path; halves cannot represent 2^-130 and are excluded.
-fn assert_powi_underflows_gradually<T: FloatElement + PartialEq + core::fmt::Debug>() {
-    let up = FloatElement::powi(<T as FloatElement>::from_f32(2.0), -130);
-    let down = FloatElement::powi(<T as FloatElement>::from_f32(-2.0), -130);
-    assert_eq!(up, down, "(-2)^-130 == 2^-130 (even exponent)");
-    assert_ne!(
-        FloatElement::to_f32(up),
-        0.0,
-        "not flushed to +0 (gradual underflow)"
-    );
-}
-
-#[test]
-fn powi_preserves_gradual_underflow() {
-    assert_powi_underflows_gradually::<F32>();
-    assert_powi_underflows_gradually::<F64>();
-}
 
 /// The reduced-precision types must also *round* through their native kernel,
 /// not merely construct: a value between two representable grid points quantizes
