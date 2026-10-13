@@ -1,7 +1,7 @@
 //! The core [`NumericElement`] trait — the monomorphization extension point
 //! for operations across all numeric precisions.
 
-use super::{private, CastFrom, TryFromCount};
+use super::{private, TryFromCount};
 
 /// Core numeric element trait. The main extension point for monomorphized operations across all precisions.
 ///
@@ -31,7 +31,6 @@ pub trait NumericElement:
     + core::ops::Mul<Output = Self>
     + core::ops::MulAssign
     + core::ops::Div<Output = Self>
-    + CastFrom<i32>
 {
     /// Additive identity.
     const ZERO: Self;
