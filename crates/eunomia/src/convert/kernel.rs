@@ -17,17 +17,17 @@
 //! The policy is internal until a distinct externally required format family
 //! needs public selection (backlog E-024).
 
-trait SpecialValues {
+pub(crate) trait SpecialValues {
     const HAS_INFINITY: bool;
 }
 
-struct Ieee;
+pub(crate) struct Ieee;
 
 impl SpecialValues for Ieee {
     const HAS_INFINITY: bool = true;
 }
 
-struct Finite;
+pub(crate) struct Finite;
 
 impl SpecialValues for Finite {
     const HAS_INFINITY: bool = false;
@@ -140,14 +140,14 @@ const fn widen_with<P: SpecialValues, const E: u32, const M: u32>(bits: u32) -> 
             f32_sign // signed zero
         } else {
             // Subnormal: shift the mantissa left until the implicit leading 1
-            // reaches bit `M`, decrementing the exponent per shift. `mant` is
-            // nonzero here, so its highest set bit `p` satisfies `p < M` and
-            // the single `leading_zeros` shift `M - p` lands that bit exactly
-            // on bit `M` — the O(1) form of the normalization loop, matching
-            // `narrow_with` below.
-            let shift = M - (u32::BITS - 1 - mant.leading_zeros());
-            let m = mant << shift;
-            let f32_exp = F32_EXP_BIAS - bias - shift.cast_signed() + 1;
+            // reaches bit `M`, decrementing the exponent per shift.
+            let mut m = mant;
+            let mut shift: i32 = 0;
+            while (m & (1 << M)) == 0 {
+                m <<= 1;
+                shift += 1;
+            }
+            let f32_exp = F32_EXP_BIAS - bias - shift + 1;
             if f32_exp > 0 {
                 // The value lands in `f32`'s normal range (always true for
                 // `binary16`; `bfloat16` shares `f32`'s exponent range and can
