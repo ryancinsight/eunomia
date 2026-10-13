@@ -4,10 +4,12 @@
 //!
 //! `binary16` uses F16C on x86-64 (one `vcvtph2ps`/`vcvtps2ph` per eight lanes),
 //! falling back to the scalar kernel elsewhere. `bfloat16` is the high 16 bits
-//! of an `f32`, so its widen is a shift and its narrow a round-and-truncate —
-//! both branch-light enough that the plain loops autovectorize, no intrinsics
-//! needed. Every path rounds `f32`→reduced to nearest, ties to even, and is
-//! verified bit-for-bit against the kernel and the `half` reference.
+//! of an `f32`: its widen is a shift the plain loop already autovectorizes
+//! (eight lanes of unpack-with-zero), while its narrow is a round-and-truncate
+//! whose loop autovectorizes only four-wide at the SSE2 baseline, so it gets
+//! an AVX2 dispatch (eight lanes) with the scalar loop as fallback. Every
+//! path rounds `f32`→reduced to nearest, ties to even, and is verified
+//! bit-for-bit against the kernel and the `half` reference.
 
 use super::{narrow, widen};
 
@@ -31,7 +33,10 @@ pub(crate) fn widen_f16(src: &[u16], dst: &mut [f32]) {
             return;
         }
     }
-    widen_f16_scalar(src, dst);
+    let n = src.len().min(dst.len());
+    for i in 0..n {
+        dst[i] = f32::from_bits(widen::<5, 10>(u32::from(src[i])));
+    }
 }
 
 /// Narrow a slice of `f32` into `binary16` bit patterns (round to nearest, ties
@@ -54,19 +59,6 @@ pub(crate) fn narrow_f16(src: &[f32], dst: &mut [u16]) {
             return;
         }
     }
-    narrow_f16_scalar(src, dst);
-}
-
-#[inline]
-fn widen_f16_scalar(src: &[u16], dst: &mut [f32]) {
-    let n = src.len().min(dst.len());
-    for i in 0..n {
-        dst[i] = f32::from_bits(widen::<5, 10>(u32::from(src[i])));
-    }
-}
-
-#[inline]
-fn narrow_f16_scalar(src: &[f32], dst: &mut [u16]) {
     let n = src.len().min(dst.len());
     for i in 0..n {
         dst[i] = narrow::<5, 10>(src[i].to_bits()) as u16;
@@ -91,7 +83,9 @@ pub(crate) fn widen_bf16(src: &[u16], dst: &mut [f32]) {
 }
 
 /// Narrow a slice of `f32` into `bfloat16` bit patterns (round to nearest, ties
-/// to even). Branchless per element so the loop autovectorizes.
+/// to even). Branchless per element; on x86-64 with AVX2 the conversion runs
+/// eight lanes per iteration, everywhere else the scalar loop (which itself
+/// autovectorizes four-wide at the SSE2 baseline).
 /// The dispatch is `#[inline]` on purpose: it is a feature probe and a call,
 /// and a consumer that already runs inside a matching `#[target_feature]`
 /// scope can then inline the accelerated body itself, keeping the converted
@@ -99,6 +93,17 @@ pub(crate) fn widen_bf16(src: &[u16], dst: &mut [f32]) {
 /// buffer. Nothing about the conversion changes; only where it may be placed.
 #[inline]
 pub(crate) fn narrow_bf16(src: &[f32], dst: &mut [u16]) {
+    #[cfg(target_arch = "x86_64")]
+    {
+        if has_avx2() {
+            // SAFETY: `has_avx2()` confirmed AVX2 support at runtime; the
+            // kernel bounds its reads/writes to the shorter of the two slices.
+            unsafe {
+                narrow_bf16_x86(src, dst);
+            }
+            return;
+        }
+    }
     let n = src.len().min(dst.len());
     for i in 0..n {
         dst[i] = round_f32_to_bf16(src[i].to_bits());
@@ -123,6 +128,20 @@ fn round_f32_to_bf16(bits: u32) -> u16 {
     let nan = high | u32::from(high & 0x7F == 0);
     let is_nan = (bits & 0x7F80_0000 == 0x7F80_0000) && (bits & 0x007F_FFFF != 0);
     (if is_nan { nan } else { rounded }) as u16
+}
+
+/// Runtime AVX2 detection (mirrors `packed::unpack::arch`).
+#[cfg(target_arch = "x86_64")]
+#[inline(always)]
+fn has_avx2() -> bool {
+    #[cfg(feature = "std")]
+    {
+        std::is_x86_feature_detected!("avx2")
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        cfg!(target_feature = "avx2")
+    }
 }
 
 /// Runtime F16C detection (mirrors `packed::unpack::arch`).
@@ -183,6 +202,68 @@ unsafe fn narrow_f16_x86(src: &[f32], dst: &mut [u16]) {
     }
     while i < n {
         dst[i] = narrow::<5, 10>(src[i].to_bits()) as u16;
+        i += 1;
+    }
+}
+
+/// # Safety
+/// The running CPU must support AVX2. Handles eight lanes per iteration with a
+/// scalar remainder; reads/writes stay within the shorter of the two slices.
+/// Bit-identical to [`round_f32_to_bf16`] per lane: the same `0x7FFF`-plus-LSB
+/// round-to-nearest-even add and truncation, and the same NaN rule (force the
+/// low mantissa bit when the retained payload is empty), replicated
+/// branchlessly with compare masks.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2")]
+unsafe fn narrow_bf16_x86(src: &[f32], dst: &mut [u16]) {
+    use core::arch::x86_64::{
+        _mm256_add_epi32, _mm256_and_si256, _mm256_blendv_epi8, _mm256_castsi256_si128,
+        _mm256_cmpeq_epi32, _mm256_loadu_si256, _mm256_or_si256, _mm256_packus_epi32,
+        _mm256_permute4x64_epi64, _mm256_set1_epi32, _mm256_srli_epi32, _mm256_xor_si256,
+        _mm_storeu_si128,
+    };
+
+    let n = src.len().min(dst.len());
+    let zero = _mm256_set1_epi32(0);
+    let ones = _mm256_cmpeq_epi32(zero, zero);
+    let round_bias = _mm256_set1_epi32(0x7FFF);
+    let one = _mm256_set1_epi32(1);
+    let payload_mask = _mm256_set1_epi32(0x7F);
+    let exp_mask = _mm256_set1_epi32(0x7F80_0000);
+    let mant_mask = _mm256_set1_epi32(0x007F_FFFF);
+    let mut i = 0;
+    while i + 8 <= n {
+        // SAFETY: the loop guard keeps eight lanes inside both slices.
+        let bits = unsafe { _mm256_loadu_si256(src.as_ptr().add(i).cast()) };
+        let high = _mm256_srli_epi32(bits, 16);
+        let lsb = _mm256_and_si256(high, one);
+        let rounded = _mm256_srli_epi32(
+            _mm256_add_epi32(_mm256_add_epi32(bits, round_bias), lsb),
+            16,
+        );
+        // NaN substitute: `high`, with the low mantissa bit forced when the
+        // retained payload (`high & 0x7F`) is empty.
+        let payload_empty = _mm256_cmpeq_epi32(_mm256_and_si256(high, payload_mask), zero);
+        let nan = _mm256_or_si256(high, _mm256_srli_epi32(payload_empty, 31));
+        let exp_full = _mm256_cmpeq_epi32(_mm256_and_si256(bits, exp_mask), exp_mask);
+        let mant_zero = _mm256_cmpeq_epi32(_mm256_and_si256(bits, mant_mask), zero);
+        let is_nan = _mm256_and_si256(exp_full, _mm256_xor_si256(mant_zero, ones));
+        let selected = _mm256_blendv_epi8(rounded, nan, is_nan);
+        // Values fit `u16` exactly, so the saturating pack is lossless;
+        // packing a vector with itself then permuting qwords undoes the
+        // 128-bit-lane interleave, leaving lanes 0..8 in the low half.
+        let packed = _mm256_permute4x64_epi64(_mm256_packus_epi32(selected, selected), 0xD8);
+        // SAFETY: the loop guard keeps eight lanes inside both slices.
+        unsafe {
+            _mm_storeu_si128(
+                dst.as_mut_ptr().add(i).cast(),
+                _mm256_castsi256_si128(packed),
+            );
+        }
+        i += 8;
+    }
+    while i < n {
+        dst[i] = round_f32_to_bf16(src[i].to_bits());
         i += 1;
     }
 }

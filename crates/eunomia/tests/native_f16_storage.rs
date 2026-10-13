@@ -218,3 +218,69 @@ fn bf16_bulk_slice_conversion_matches_ieee_reference_and_kernel() {
         }
     }
 }
+
+#[test]
+fn bf16_bulk_narrow_matches_scalar_path_on_adversarial_patterns() {
+    // The bulk path (AVX2 where available) must be bit-identical to the
+    // scalar path. One-element slices always take the scalar remainder, so
+    // they are the differential oracle for the vector lanes; non-NaN lanes
+    // additionally pin to the scalar kernel via `from_f32`.
+    let patterns: [u32; 32] = [
+        0x0000_0000, // +0
+        0x8000_0000, // -0
+        0x0000_0001, // smallest f32 subnormal
+        0x0000_8000, // f32 subnormal at the bf16 rounding boundary
+        0x0040_8000, // f32 subnormal, tie in bf16 subnormal range
+        0x007F_FFFF, // largest f32 subnormal
+        0x0080_0000, // smallest f32 normal
+        0x3F80_0000, // 1.0
+        0x3F80_7FFF, // just below the tie above 1.0
+        0x3F80_8000, // exact tie, retained LSB even (rounds down)
+        0x3F80_8001, // just above the tie (rounds up)
+        0x3F81_8000, // exact tie, retained LSB odd (rounds up)
+        0xBF80_8000, // negative tie
+        0x7F7F_FFFF, // largest finite f32
+        0xFF7F_FFFF, // most negative finite f32
+        0x7F80_0000, // +inf
+        0xFF80_0000, // -inf
+        0x7F80_0001, // NaN, payload only below the retained bits
+        0x7F80_8000, // NaN, payload at the truncation boundary
+        0x7FC0_0000, // quiet NaN
+        0xFFA0_0000, // negative NaN with retained payload
+        0x7FFF_FFFF, // NaN, full payload
+        0x0000_FFFF, // f32 subnormal, dense low bits
+        0x4B00_0001, // large normal, low bit set
+        0x3380_0000, // 2^-24
+        0x33C0_8000, // small normal tie
+        0x0080_8000, // smallest normals, tie
+        0x8080_8000, // negative smallest-normal tie
+        0x7F00_0000, // 2^127
+        0x0080_0001, // smallest normal plus one ulp-bit
+        0x3DCC_CCCD, // 0.1 bit pattern
+        0xC248_0000, // -50.0
+    ];
+    // Rotate the pattern window through every bulk length 0..=17 so the
+    // vector body and every scalar-tail length see each pattern class.
+    for len in 0..=17usize {
+        for rotation in 0..patterns.len() {
+            let src: Vec<f32> = (0..len)
+                .map(|k| f32::from_bits(patterns[(rotation + k) % patterns.len()]))
+                .collect();
+            let mut bulk = vec![Bf16::default(); len];
+            Bf16::narrow_slice(&src, &mut bulk);
+            for (k, (&x, out)) in src.iter().zip(&bulk).enumerate() {
+                let mut scalar = [Bf16::default()];
+                Bf16::narrow_slice(&[x], &mut scalar);
+                assert_eq!(
+                    out.0,
+                    scalar[0].0,
+                    "bulk vs scalar len={len} rotation={rotation} lane={k} bits={:#010x}",
+                    x.to_bits()
+                );
+                if !x.is_nan() {
+                    assert_eq!(out.0, Bf16::from_f32(x).0, "bulk vs kernel ({x})");
+                }
+            }
+        }
+    }
+}
