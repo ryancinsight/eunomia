@@ -40,7 +40,6 @@ pub fn unpack_bf8_to_bf16(packed: &[Bf8], unpacked: &mut [Bf16]) {
         unsafe {
             unsafe_intrinsics::neon::unpack_bf8_to_bf16(packed, unpacked);
         }
-        return;
     }
     #[cfg(not(target_arch = "aarch64"))]
     {
@@ -81,7 +80,6 @@ pub fn unpack_bf4_to_bf16(packed: &[Bf4], unpacked: &mut [Bf16]) {
         unsafe {
             unsafe_intrinsics::neon::unpack_bf4_to_bf16(packed, unpacked);
         }
-        return;
     }
     #[cfg(not(target_arch = "aarch64"))]
     {
@@ -123,7 +121,6 @@ pub fn unpack_bf4_to_bf16_packed(packed: &[u8], unpacked: &mut [Bf16]) {
         unsafe {
             unsafe_intrinsics::neon::unpack_bf4_to_bf16_packed(packed, unpacked);
         }
-        return;
     }
     #[cfg(not(target_arch = "aarch64"))]
     {
@@ -168,7 +165,6 @@ pub fn unpack_f4_to_f32(packed: &[F4], unpacked: &mut [F32]) {
         unsafe {
             unsafe_intrinsics::neon::unpack_f4_to_f32(packed, unpacked);
         }
-        return;
     }
     #[cfg(not(target_arch = "aarch64"))]
     {
@@ -208,7 +204,6 @@ pub fn unpack_f4_to_f32_packed(packed: &[u8], unpacked: &mut [F32]) {
         unsafe {
             unsafe_intrinsics::neon::unpack_f4_to_f32_packed(packed, unpacked);
         }
-        return;
     }
     #[cfg(not(target_arch = "aarch64"))]
     {
@@ -253,7 +248,6 @@ pub fn unpack_f8_to_f32(packed: &[F8], unpacked: &mut [F32]) {
         unsafe {
             unsafe_intrinsics::neon::unpack_f8_to_f32(packed, unpacked);
         }
-        return;
     }
     #[cfg(not(target_arch = "aarch64"))]
     {
