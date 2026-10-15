@@ -3,6 +3,7 @@
 //! from `f64` once via round-to-odd).
 
 use crate::convert::odd_rounded;
+use crate::convert::{Finite, Ieee};
 use crate::impls::native_f64::impl_float_element_native_f64;
 use crate::traits::FloatElement;
 use crate::types::{Bf16, Bf4, Bf8, F16, F32, F4, F64, F8};
@@ -36,7 +37,15 @@ macro_rules! impl_float_element {
 // has a ≤11-bit significand — and it lifts them off their stagnation point,
 // `n ≈ 1/ε`); the `f32`/`f64` wrappers accumulate in themselves. The rationale
 // is stated once on `FloatElement::Accumulator`.
-impl_float_element!(F16, f32, F16::from_f32, F16::from_f64, F16::to_f32);
+impl_float_element!(F16, f32, F16::from_f32, F16::from_f64, F16::to_f32, {
+    #[inline]
+    fn floor(self) -> Self {
+        Self(
+            u16::try_from(crate::ops::floor::<Ieee, 5, 10>(u32::from(self.0)))
+                .expect("invariant: encoded format fits storage"),
+        )
+    }
+});
 // The provided count conversions round to odd for formats narrower than
 // `f32`; `F32` converts directly.
 impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0, {
@@ -57,36 +66,81 @@ impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0, {
 // (the same table the primitive impl uses) — the `impl_float_element!` default
 // would widen-narrow it and discard f64 precision. (F32 routes through f32 =
 // native; F16/Bf16/F8/F4/Bf8/Bf4 have no hardware transcendentals, so the f32
-// default is their correct reduced-precision path.)
+// default is their correct reduced-precision path — except `floor`, which the
+// soft-float family overrides in target format as the shared audit surface.)
 impl_float_element_native_f64!(F64, |x: F64| x.0, |v: f64| F64(v));
-impl_float_element!(Bf16, f32, Bf16::from_f32, Bf16::from_f64, Bf16::to_f32);
+impl_float_element!(Bf16, f32, Bf16::from_f32, Bf16::from_f64, Bf16::to_f32, {
+    #[inline]
+    fn floor(self) -> Self {
+        Self(
+            u16::try_from(crate::ops::floor::<Ieee, 8, 7>(u32::from(self.0)))
+                .expect("invariant: encoded format fits storage"),
+        )
+    }
+});
 impl_float_element!(
     Bf8,
     f32,
     Bf8::from_f32,
     |val| Bf8::from_f32(odd_rounded(val)),
-    |x: Bf8| x.to_f32()
+    |x: Bf8| x.to_f32(),
+    {
+        #[inline]
+        fn floor(self) -> Self {
+            Self(
+                u8::try_from(crate::ops::floor::<Ieee, 5, 2>(u32::from(self.0)))
+                    .expect("invariant: encoded format fits storage"),
+            )
+        }
+    }
 );
 impl_float_element!(
     Bf4,
     f32,
     Bf4::from_f32,
     |val| Bf4::from_f32(odd_rounded(val)),
-    |x: Bf4| x.to_f32()
+    |x: Bf4| x.to_f32(),
+    {
+        #[inline]
+        fn floor(self) -> Self {
+            Self(
+                u8::try_from(crate::ops::floor::<Finite, 2, 1>(u32::from(self.0)))
+                    .expect("invariant: encoded format fits storage"),
+            )
+        }
+    }
 );
 impl_float_element!(
     F8,
     f32,
     F8::from_f32,
     |val| F8::from_f32(odd_rounded(val)),
-    |x: F8| x.to_f32()
+    |x: F8| x.to_f32(),
+    {
+        #[inline]
+        fn floor(self) -> Self {
+            Self(
+                u8::try_from(crate::ops::floor::<Finite, 4, 3>(u32::from(self.0)))
+                    .expect("invariant: encoded format fits storage"),
+            )
+        }
+    }
 );
 impl_float_element!(
     F4,
     f32,
     F4::from_f32,
     |val| F4::from_f32(odd_rounded(val)),
-    |x: F4| x.to_f32()
+    |x: F4| x.to_f32(),
+    {
+        #[inline]
+        fn floor(self) -> Self {
+            Self(
+                u8::try_from(crate::ops::floor::<Finite, 3, 0>(u32::from(self.0)))
+                    .expect("invariant: encoded format fits storage"),
+            )
+        }
+    }
 );
 
 #[cfg(test)]

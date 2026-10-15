@@ -11,4 +11,5 @@ pub(super) use add_sub::{add, sub};
 pub(super) use divide::div;
 pub(super) use multiply::mul;
 pub(super) use remainder::rem;
+pub(crate) use unary::floor;
 pub(super) use unary::neg;

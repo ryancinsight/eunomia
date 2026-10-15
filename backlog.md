@@ -1,5 +1,30 @@
 # Eunomia backlog
 
+<a id="eunomia-reduced-precision-floor"></a>
+## EUNOMIA-REDUCED-PRECISION-FLOOR — Target-format floor for the reduced-precision family [minor] — todo
+
+- status: todo; priority: correctness (provider contract); needs: none; basis: 846b2d1.
+- Outcome: `FloatElement::floor` for F16/Bf16/Bf8/Bf4/F8/F4 routes through the
+  soft-float family's target-format kernel (`integer::floor` beside `neg`),
+  not the widen-f32-libm-narrow default. The default's numerics are already
+  provably exact for these formats (widen exact, `floorf` exact, the integer
+  result at most 2^(M+1) narrows exactly); the gap is the contract: the parked
+  coeus interpolation consumer (coeus#451) records "the shared floor path" as
+  its re-open trigger alongside the landed target-format Add/Sub/Mul (#175),
+  so downstream consumers inherit one family guarantee and one audit surface.
+- Acceptance: the kernel matches the f64 oracle on the reduced-arithmetic
+  case sweep for every shipped format (exhaustive for the 8-bit formats,
+  structured-exponent plus random for the 16-bit ones); NaN canonicalizes with
+  the family's payload, ±Inf and ±0 are identities, integral magnitudes are
+  identities, negative fractional carries (floor(-1.5) = -2) encode exactly;
+  clippy -D warnings and doctests green.
+- Driver: coeus#451's re-open trigger (F16/Bf16 target-format arithmetic plus
+  the shared floor path); scope: `ops/floats/arithmetic/integer/unary.rs`,
+  `ops/floats/arithmetic/reduced.rs`, the `impls/wrappers/float.rs` routing
+  note, `tests/float_element/reduced_arithmetic.rs`.
+- next: implement `integer::floor`, wire the `FloatElement` override into the
+  wrappers' impl slots, add the oracle sweep.
+
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 
