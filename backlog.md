@@ -3,7 +3,7 @@
 <a id="eunomia-const-native-float"></a>
 ## EUNOMIA-CONST-NATIVE-FLOAT — Native const float construction [minor]
 
-- Status: in progress; priority: correctness; owner: Codex; prerequisite for Coeus #528.
+- Status: todo; priority: correctness; owner: Codex; prerequisite for Coeus #528.
 - Outcome: the consumer's public const decoder calls one provider-owned native
   narrowing factory across the complete binary64 domain without a guard waiver.
 - Implemented: `F32::from_float`; primitive/wrapper runtime trait methods share
@@ -14,8 +14,9 @@
 - Local verification: implementation head `5929293` passes six feature checks,
   strict all-feature lint, 220 native and 215 NumPy tests (zero skips), 26
   doctests in each configuration, warning-denied docs, MSRV and both packages.
-  The planned pre-1.0 minor classification skips 253 API compatibility rules;
-  an additional stricter comparison checks the additive behavior separately.
+  The planned pre-1.0 minor classification skips 253 API compatibility rules.
+  An additional stricter patch-class comparison passes all 223 applicable
+  compatibility checks (30 inapplicable rules skipped); supply-chain passes.
 - Remaining: exact final-head hosted CI/release gates/review and coordinated
   current Git consumer floors before automatic publication.
 - Decision: [ADR 0010](docs/adr/0010-const-native-float-construction.md).

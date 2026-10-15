@@ -14,6 +14,8 @@ Sprint phase: Execution
       215 NumPy tests (zero skips), 26 doctests per configuration, warning-denied
       docs, MSRV 1.95 and both standard package builds at implementation head
       `5929293`. Local NumPy 2.5.1 uses Python 3.14; hosted 3.13 remains pending.
+- [x] Pass the additional stricter additive API comparison (223 applicable
+      checks, 30 inapplicable skips) and unchanged supply-chain gate.
 - [ ] Pass final-head hosted CI and the blocking release API validation.
 - [ ] Review the exact final PR head and prepare current Git consumer floors.
 - [ ] Merge normally only when applicable gates and coordination are complete.
