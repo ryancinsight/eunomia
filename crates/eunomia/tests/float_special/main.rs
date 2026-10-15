@@ -1,5 +1,6 @@
-//! Value-semantic contract tests for the `FloatElement` special functions
-//! (`log10`, `log2`, `erf`, `erfc`, `lgamma`, plus the ADR-0061-required
+//! Value-semantic contract tests for the scalar special functions
+//! (`log10`, `log2`, `erf`, `erfc`, `lgamma` on `FloatElement`; `bessel_j0`,
+//! `bessel_j1`, `bessel_k0` on `RealField`; plus the ADR-0061-required
 //! `asin`/`atan`/`acosh`/`asinh`/`atanh`/`exp2`/`exp_m1`/`ln_1p`),
 //! cross-checked against analytic references rather than asserting mere
 //! existence.
@@ -24,6 +25,7 @@
 //!   source states one — see
 //!   `transcendentals_single_precision_route_matches_double_precision_oracle_within_documented_bound`.
 
+mod bessel;
 mod domain_edges;
 mod fixtures;
 mod references;

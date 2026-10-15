@@ -2,6 +2,15 @@
 
 All notable changes to Eunomia are documented here.
 
+## [0.9.2] - 2026-10-15
+
+### Added
+
+- Publish the existing generic `RealField::bessel_j0`, `bessel_j1`, and
+  `bessel_k0` increment from PR #173 on the compatible 0.9 maintenance
+  line. Preserve the 0.9.1 cast traits and every Bessel implementation,
+  fixture, reference, and precision contract. See ADR 0008.
+
 ## [Unreleased]
 
 ### Added
