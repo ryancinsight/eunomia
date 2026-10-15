@@ -11,9 +11,12 @@ Sprint phase: Execution
 - [x] Pass the unchanged six-way feature matrix, native/NumPy tests, strict
       all-target Clippy, documentation and doctests.
 - [x] Pass blocking API classification and verify both standard packages.
-- [ ] Coordinate consumers to the 0.10 requirement before the default merge.
-- [ ] Collect required CI at the exact final PR head, merge normally, and
+- [x] Coordinate provider-first publication with the downstream owners; consumer
+      requirements and final acceptance follow provider availability.
+- [x] Collect required CI at the exact final PR head, merge normally, and
       verify both immutable registry receipts before marking delivery complete.
+- [x] Verify both 0.10.0 archives, checksums and VCS metadata from the published
+      merge; ADR 0009 records the source, checks and publisher receipts.
 
 ## E-037 [patch] — Remove the external reduced-precision oracle (Owner: Codex)
 
