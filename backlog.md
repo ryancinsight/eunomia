@@ -1,8 +1,9 @@
 # Eunomia backlog
 
+<a id="eunomia-default-release-version"></a>
 ## EUNOMIA-DEFAULT-RELEASE-VERSION — Reconcile the current public contract [major]
 
-- Status: in progress; owner: Coeus prerequisite release integrator.
+- Status: blocked; priority: verification; owner: Coeus prerequisite release integrator.
 - Finding: default source still declares 0.9.1 after the merged CastFrom/CastTo
   retirement. The published 0.9.2 maintenance source retains those traits;
   relabeling default as 0.9.2 would misstate its API contract and cannot fix a
@@ -17,7 +18,10 @@
   advance requirements to 0.10 and use ADR 0007's named conversion APIs.
 - Evidence: 216 native and 211 NumPy tests pass with zero skips; each lane
   passes 25 doctests. Strict all-target Clippy and warning-denied docs pass.
-- Pending: API/package and final hosted gates, consumer requirement coordination,
+- Evidence: version-aware API classification and standard verification of both
+  packages pass. The major-boundary API verdict is classification, not a claim
+  of 0.9 compatibility.
+- Pending: final hosted gates, consumer requirement coordination,
   normal reviewed merge and publication.
   Draft PR #178 and the existing 0.9 maintenance release remain independent.
 
