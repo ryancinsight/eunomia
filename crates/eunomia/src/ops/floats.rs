@@ -4,3 +4,5 @@
 //! earlier f32-mediated implementations are superseded by them.
 
 mod arithmetic;
+
+pub(crate) use arithmetic::floor;

@@ -17,6 +17,10 @@
 
 use eunomia::{Bf16, FloatElement, NumericElement, F16, F32, F64};
 
+#[path = "float_element/reduced_arithmetic.rs"]
+mod reduced_arithmetic;
+mod support;
+
 /// Assert the full float `NumericElement` + `FloatElement` contract for one
 /// native float wrapper type, entirely through exactly-representable operands.
 macro_rules! float_element_contract {

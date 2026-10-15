@@ -280,3 +280,65 @@ fn reduced_arithmetic_matches_format_rounding() {
     check_reduced_arithmetic::<F8>();
     check_reduced_arithmetic::<F4>();
 }
+
+fn check_reduced_floor<T: ReducedFormat>() {
+    let cases = arithmetic_cases::<T>();
+    for &left_bits in &cases {
+        let left = T::from_raw(left_bits);
+        let left_value = T::widen(left_bits);
+        assert_arithmetic_result::<T>(left.floor().raw(), left_value.floor(), "floor");
+    }
+
+    let sign = 1 << (T::EXPONENT_BITS + T::MANTISSA_BITS);
+    assert_eq!(T::from_raw(0).floor().raw(), 0, "floor of zero is zero");
+    assert_eq!(
+        T::from_raw(sign).floor().raw(),
+        sign,
+        "floor preserves negative zero"
+    );
+
+    let half = T::from_f64(0.5);
+    assert_eq!(half.floor().raw(), 0, "floor of +0.5 is +0");
+    assert_eq!(
+        (-half).floor().raw(),
+        T::from_f64(-1.0).raw(),
+        "floor of -0.5 is -1"
+    );
+
+    let two = T::from_f64(2.0);
+    assert_eq!(
+        two.floor().raw(),
+        two.raw(),
+        "floor of a whole value is identity"
+    );
+    assert_eq!(
+        (-two).floor().raw(),
+        (-two).raw(),
+        "floor of a negative whole value is identity"
+    );
+
+    let one = T::from_f64(1.0);
+    let one_and_half = T::from_f64(1.5);
+    if T::widen(one_and_half.raw()) == 1.5 {
+        assert_eq!(
+            one_and_half.floor().raw(),
+            one.raw(),
+            "floor of +1.5 drops the fraction"
+        );
+        assert_eq!(
+            (-one_and_half).floor().raw(),
+            (-two).raw(),
+            "floor of -1.5 carries to -2"
+        );
+    }
+}
+
+#[test]
+fn reduced_floor_matches_format_semantics() {
+    check_reduced_floor::<F16>();
+    check_reduced_floor::<Bf16>();
+    check_reduced_floor::<Bf8>();
+    check_reduced_floor::<Bf4>();
+    check_reduced_floor::<F8>();
+    check_reduced_floor::<F4>();
+}
