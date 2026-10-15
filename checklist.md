@@ -10,7 +10,11 @@ Sprint phase: Execution
 - [x] Centralize native const/runtime construction without changing the guard.
 - [x] Execute analytic const and differential exponent/sign boundary regressions.
 - [x] Classify the public addition as minor; retain the unchanged derive version.
-- [ ] Pass the unchanged feature/native/NumPy/MSRV/lint/docs/package/API gates.
+- [x] Pass local six-feature checks, strict all-feature lint, 220 native and
+      215 NumPy tests (zero skips), 26 doctests per configuration, warning-denied
+      docs, MSRV 1.95 and both standard package builds at implementation head
+      `5929293`. Local NumPy 2.5.1 uses Python 3.14; hosted 3.13 remains pending.
+- [ ] Pass final-head hosted CI and the blocking release API validation.
 - [ ] Review the exact final PR head and prepare current Git consumer floors.
 - [ ] Merge normally only when applicable gates and coordination are complete.
 - [ ] Verify automatic publication and immutable archive identity/checksum.
