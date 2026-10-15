@@ -33,3 +33,20 @@ without a breaking scalar identity migration. Main's cast-trait retirement
 still requires its own compatible version boundary before publication.
 The maintenance branch accepts only compatible corrections; it is not a
 compatibility wrapper around main's removed traits.
+
+## Publication receipt
+
+Both crates are present and not yanked in the registry. Their trusted
+publisher metadata identifies source
+`06848422be64b878a5c205a976e4643d2a3e48a5`:
+
+| Crate | Registry checksum | Publisher run |
+| --- | --- | --- |
+| eunomia-derive 0.9.2 | `491320a71f4148ba6fe393f3799430cb2e0db02c7b27154b62b04288de1cb975` | [38668990691](https://github.com/ryancinsight/eunomia/actions/runs/38668990691) |
+| eunomia 0.9.2 | `b36c9a5eeec86bb06e611eec9b8bf4c781507dc7fa8d5b6e0b8c3c10f35fc82e` | [38670543920](https://github.com/ryancinsight/eunomia/actions/runs/38670543920) |
+
+Exact-source ordinary native/features/NumPy checks, strict lint, docs,
+196 API checks and standard package verification pass. The registry
+receipts close the publication item; PR #177's subsequent completion-record
+changes still require their own documentation-head checks before integration.
+Miri remains deferred and unverified.

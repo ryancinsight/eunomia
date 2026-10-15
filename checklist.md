@@ -1,8 +1,23 @@
 # Eunomia checklist
 
-Target version: 0.8.0
+Target version: 0.9.2
 
 Sprint phase: Execution
+
+## EUNOMIA-BESSEL-MAINTENANCE-RELEASE [patch] — published 2026-10-15
+
+- [x] Preserve the compatible PR #173 Bessel increment and all 0.9.1 APIs;
+      accept ADR 0008 without merging maintenance history backwards into main.
+- [x] Verify release source `06848422be64b878a5c205a976e4643d2a3e48a5`:
+      222 native and 217 NumPy cases, zero skips; six-way feature matrix,
+      strict Clippy, docs/doctests, 196 API checks and standard package gates.
+- [x] Publish and confirm registry receipts for eunomia-derive 0.9.2, then
+      eunomia 0.9.2. Both trusted publisher receipts identify the exact source;
+      hashes and release runs are recorded in ADR 0008.
+- [ ] Integrate the completion records through open PR #177 into the
+      maintenance branch after its new documentation-head checks pass.
+
+Miri remains deferred and unverified.
 
 ## E-037 [patch] — Remove the external reduced-precision oracle (Owner: Codex)
 

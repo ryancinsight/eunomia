@@ -1,22 +1,5 @@
 # Eunomia backlog
 
-<a id="eunomia-bessel-maintenance-release"></a>
-## EUNOMIA-BESSEL-MAINTENANCE-RELEASE — Publish the compatible Bessel provider increment [patch]
-
-- status: blocked; priority: verification; needs exact-head CI and the
-  dependency-ordered derive release before publication. See ADR 0008.
-- **Evidence:** published 0.9.1 lacks the Bessel methods used by current
-  Hephaestus; its package dry-run fails three E0599 errors. Main's later
-  cast-trait retirement fails two API compatibility rules against 0.9.1.
-- **Outcome:** release only the existing PR #173 Bessel increment and
-  metadata as 0.9.2 on the maintenance branch. Preserve all 0.9.1 APIs;
-  do not merge the maintenance branch backwards into main.
-- **Lint closure:** remove six terminal ARM returns; all intrinsic calls and
-  fallback bodies remain unchanged. Strict ARM lint must pass without suppressions.
-- **Acceptance:** ordinary native/features/docs, exact-head package and API
-  gates pass before uploading. Miri remains deferred and unverified.
-
-
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 
@@ -30,7 +13,7 @@
 - Evidence: 4 unit-scalar tests pass, including every shipped real storage type; package all-target Clippy passes with warnings denied.
 - Follow-up: [EUNOMIA-TYPE-SUFFIXED-UNIT-METHODS-2026-09-21](#eunomia-type-suffixed-unit-methods-2026-09-21) renamed its method away from a type-suffixed name.
 
-Sprint target: 0.8.0 (native reduced-precision provider contract).
+Sprint target: 0.9.2 (compatible Bessel provider release; receipt in ADR 0008).
 
 <a id="eunomia-type-suffixed-unit-methods-2026-09-21"></a>
 ## EUNOMIA-TYPE-SUFFIXED-UNIT-METHODS-2026-09-21 — `UnitScalar` methods carried their argument's type in the name [patch]
