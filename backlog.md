@@ -1,30 +1,5 @@
 # Eunomia backlog
 
-<a id="eunomia-default-release-version"></a>
-## EUNOMIA-DEFAULT-RELEASE-VERSION — Reconcile the current public contract [major]
-
-- Status: blocked; priority: verification; owner: Coeus prerequisite release integrator.
-- Finding: default source still declares 0.9.1 after the merged CastFrom/CastTo
-  retirement. The published 0.9.2 maintenance source retains those traits;
-  relabeling default as 0.9.2 would misstate its API contract and cannot fix a
-  consumer's fresh dependency-resolution gate.
-- Change: declare 0.10.0 for the current default contract and its derive
-  package; preserve all tests, feature coverage and native kernels; remove six
-  redundant terminal ARM returns identified by strict Clippy.
-- Acceptance: six-way feature checks, native and NumPy tests, strict Clippy,
-  docs/doctests, blocking API classification, standard package verification,
-  exact-head required CI and registry receipts for both packages.
-- Decision: [ADR 0009](docs/adr/0009-default-release-version.md). Consumers
-  advance requirements to 0.10 and use ADR 0007's named conversion APIs.
-- Evidence: 216 native and 211 NumPy tests pass with zero skips; each lane
-  passes 25 doctests. Strict all-target Clippy and warning-denied docs pass.
-- Evidence: version-aware API classification and standard verification of both
-  packages pass. The major-boundary API verdict is classification, not a claim
-  of 0.9 compatibility.
-- Pending: final hosted gates, consumer requirement coordination,
-  normal reviewed merge and publication.
-  Draft PR #178 and the existing 0.9 maintenance release remain independent.
-
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 
