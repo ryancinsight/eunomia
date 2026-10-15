@@ -14,8 +14,8 @@ Sprint phase: Execution
 - [x] Publish and confirm registry receipts for eunomia-derive 0.9.2, then
       eunomia 0.9.2. Both trusted publisher receipts identify the exact source;
       hashes and release runs are recorded in ADR 0008.
-- [ ] Integrate the completion records through open PR #177 into the
-      maintenance branch after its new documentation-head checks pass.
+
+Completion-record integration is tracked by [PR #177](https://github.com/ryancinsight/eunomia/pull/177).
 
 Miri remains deferred and unverified.
 
