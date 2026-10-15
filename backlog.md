@@ -1,5 +1,21 @@
 # Eunomia backlog
 
+<a id="eunomia-const-native-float"></a>
+## EUNOMIA-CONST-NATIVE-FLOAT — Native const float construction [minor]
+
+- Status: todo; priority: correctness; owner: Codex; prerequisite for Coeus #528.
+- Outcome: the consumer's public const decoder calls one provider-owned native
+  narrowing factory across the complete binary64 domain without a guard waiver.
+- Implemented: `F32::from_float`; primitive/wrapper runtime trait methods share
+  its native conversion. No local consumer kernel or input restriction is used.
+- Regression evidence: missing-method failure on original source; analytical
+  const boundaries and a 49,152-encoding const/runtime differential grid pass.
+- Version: facade 0.11.0 under the public-item minor rule; unchanged derive 0.10.0.
+- Remaining: final native/NumPy/feature/MSRV/lint/docs/API/package/CI/review gates,
+  and coordinated current Git consumer floors before automatic publication.
+- Decision: [ADR 0010](docs/adr/0010-const-native-float-construction.md).
+
+
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 

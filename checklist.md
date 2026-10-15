@@ -1,8 +1,19 @@
 # Eunomia checklist
 
-Target version: 0.10.0
+Target version: Eunomia 0.11.0; unchanged derive 0.10.0
 
 Sprint phase: Execution
+
+## EUNOMIA-CONST-NATIVE-FLOAT [minor] — current slice
+
+- [x] Reproduce the missing const factory and preserve the full input domain.
+- [x] Centralize native const/runtime construction without changing the guard.
+- [x] Execute analytic const and differential exponent/sign boundary regressions.
+- [x] Classify the public addition as minor; retain the unchanged derive version.
+- [ ] Pass the unchanged feature/native/NumPy/MSRV/lint/docs/package/API gates.
+- [ ] Review the exact final PR head and prepare current Git consumer floors.
+- [ ] Merge normally only when applicable gates and coordination are complete.
+- [ ] Verify automatic publication and immutable archive identity/checksum.
 
 ## EUNOMIA-DEFAULT-RELEASE-VERSION [major] — current slice
 
