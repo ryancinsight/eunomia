@@ -17,3 +17,4 @@
 | [0006](0006-binary-float-scaling.md) | Binary scaling in FloatElement | Accepted |
 | [0007](0007-retire-castfrom.md) | Retire CastFrom and CastTo | Proposed |
 | [0009](0009-default-release-version.md) | Version the current default contract as 0.10 | Accepted |
+| [0010](0010-const-native-float-construction.md) | Canonical const native float construction | Accepted |

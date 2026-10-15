@@ -17,7 +17,7 @@ impl FloatElement for f32 {
     }
     #[inline(always)]
     fn from_f64(val: f64) -> Self {
-        val as f32
+        F32::from_float(val).0
     }
     #[inline(always)]
     fn to_f32(self) -> f32 {

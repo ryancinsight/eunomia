@@ -4,6 +4,22 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.11.0] - Unreleased
+
+### Added
+
+- [minor] `F32::from_float(f64)` provides const-capable native binary64-to-binary32
+  construction over the full input domain. Preserve nearest-even rounding,
+  signed zero, overflow/underflow and Rust's NaN conversion semantics.
+
+### Changed
+
+- Primitive and wrapper `FloatElement::from_f64` delegate to the same canonical
+  native factory. The unchanged derive package remains 0.10.0.
+- Git consumers requiring 0.10 need a coordinated requirement/public-provider
+  update before this default advances to 0.11; see ADR 0010. Publication and
+  final-head acceptance remain pending.
+
 ## [0.10.0] - 2026-10-15
 
 ### Breaking
