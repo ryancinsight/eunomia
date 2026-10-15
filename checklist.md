@@ -1,8 +1,19 @@
 # Eunomia checklist
 
-Target version: 0.8.0
+Target version: 0.10.0
 
 Sprint phase: Execution
+
+## EUNOMIA-DEFAULT-RELEASE-VERSION [major] — current slice
+
+- [x] Distinguish published 0.9.2 from default's merged breaking API retirement.
+- [x] Align workspace/internal versions and record the 0.10 migration boundary.
+- [x] Pass the unchanged six-way feature matrix, native/NumPy tests, strict
+      all-target Clippy, documentation and doctests.
+- [ ] Pass blocking API classification and verify both standard packages.
+- [ ] Coordinate consumers to the 0.10 requirement before the default merge.
+- [ ] Collect required CI at the exact final PR head, merge normally, and
+      verify both immutable registry receipts before marking delivery complete.
 
 ## E-037 [patch] — Remove the external reduced-precision oracle (Owner: Codex)
 

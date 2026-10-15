@@ -4,6 +4,34 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-15
+
+### Breaking
+
+- The merged CastFrom/CastTo retirement now has its required pre-1.0 minor
+  version boundary. `eunomia::{CastFrom, CastTo}` and the
+  `NumericElement: CastFrom<i32>` supertrait are removed. The published 0.9.2
+  maintenance release retains that surface; current default source does not.
+
+### Migration
+
+- Advance Git and registry requirements to `0.10`. Replace former pair-generic
+  casts with standard `From`/`TryFrom` or the contract-named conversion APIs:
+  `TryFromCount::try_from_count`, `FloatElement::{from_count, from_integer,
+  from_f64}`, `NumericElement::to_f64`, and `convert::IntegerTarget`.
+  [ADR 0007](docs/adr/0007-retire-castfrom.md) records the complete pair table;
+  [ADR 0009](docs/adr/0009-default-release-version.md) records this release
+  reconciliation. No compatibility aliases are introduced.
+
+### Changed
+
+- Align both workspace package versions and the internal derive requirement
+  at 0.10.0. Preserve the merged native reduced-precision arithmetic and bulk
+  conversion implementations and every existing regression test unchanged. Remove six
+  redundant terminal ARM dispatch returns required by strict Clippy.
+
+## Earlier changes carried by the default branch
+
 ### Added
 
 - `layout::try_cast_vec` — reinterprets an owned `Vec<A: Pod>` as a
