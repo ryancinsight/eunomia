@@ -4,22 +4,23 @@ Target version: Eunomia 0.11.0; unchanged derive 0.10.0
 
 Sprint phase: Execution
 
-## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE [major] — isolated preparation
+## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE [major] — owner integration
 
-- [x] Record the approved0.11/0.4/binding0.2/commonFFI0.30 policy as resolved.
+- [x] Record the approved 0.11/0.4/binding 0.2/common FFI 0.30 plan as resolved.
 - [x] Stage the assessed optional NumPy/PyO30.30 requirements and lock delta in
       an isolated clone, preserving factory source/tests and package versions.
-- [x] Add explicit Breaking/Migration coverage and proposed ADR0011 without
-      changing accepted ADR0010's factory rationale.
-- [ ] Have the existing PR182 owner review and integrate the combined bundle
-      into its owner branch before any0.11 automatic publication.
+- [x] Add explicit Breaking/Migration coverage and accepted ADR 0011 without
+      changing accepted ADR 0010's factory rationale.
+- [x] Have the existing PR #182 owner review the staged bundle and accept
+      ADR 0011 for integration into the unreleased 0.11 source.
 - [ ] Renew all final-head feature/native/NumPy/MSRV/API/package/supply-chain/
       documentation gates and independent review on the integrated source.
 - [ ] Satisfy actual GitHub checks/reviews and coordinated consumer floors.
 - [ ] Merge in approved bridge-first order, then verify immutable publication.
 
 Earlier factory-only receipts below keep their original revision scope; they
-do not certify this combined bundle. This staging operation publishes nothing.
+do not certify this combined bundle. No publication is authorized before the combined final-head gates and
+bridge-first integration requirements pass.
 
 ## EUNOMIA-CONST-NATIVE-FLOAT [minor] — current slice
 

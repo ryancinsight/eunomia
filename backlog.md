@@ -3,22 +3,23 @@
 <a id="eunomia-numpy-030-unreleased-bundle"></a>
 ## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE — Bundle optional interop before 0.11 publication [major]
 
-- Status: blocked; priority: correctness; owner: existing PR182 factory owner,
-  coordinated with the Aequitas bridge owner.
-- Policy: Eunomia0.11, Aequitas0.4/binding0.2 and NumPy/PyO30.30 are approved;
-  the version decision is resolved. This local bundle needs owner integration.
-- Scope: two optional requirements, six ordinary lock records and explicit
-  breaking/migration/design coverage. All factory source/tests, accepted ADR0010,
-  facade 0.11 and derive0.10 remain unchanged.
-- Contract: NumPy/PyO30.30 has a distinct Rust trait/native-link identity and a
-  Python3.9 floor. Core datatype arithmetic and RustMSRV1.95 do not change.
-- Acceptance: fold into unreleased0.11 before automatic publication, renew the
-  final-head feature/native/NumPy/MSRV/API/package/supply-chain/docs gates and
-  independent review, and satisfy actual server review requirements.
-- Decision: [ADR0011](docs/adr/0011-numpy-030-unreleased-bundle.md), proposed for
-  owner review; the accepted factory rationale in ADR0010 is preserved.
-- Hold: no factory-only0.11 publication, owner branch update or public PR edit
-  is performed by this isolated preparation.
+- Status: todo; priority: correctness; owner: Codex (PR #182), coordinated with
+  the existing Aequitas bridge owner.
+- Policy: Eunomia 0.11, Aequitas 0.4/binding 0.2 and NumPy/PyO3 0.30 are approved
+  in bridge-first order; the normal version decision is resolved.
+- Integrated scope: two optional requirements, six ordinary lock records and
+  explicit breaking/migration/design coverage. All 93 factory Rust source/test
+  files, accepted ADR 0010, facade 0.11 and derive 0.10 remain unchanged.
+- Contract: NumPy/PyO3 0.30 has a distinct Rust trait/native-link identity and a
+  Python 3.9 floor. Core arithmetic and Rust MSRV 1.95 do not change. The prior
+  factory-only additive API comparison does not certify this optional boundary.
+- Acceptance: renew final-head feature/native/NumPy/MSRV/API/package/supply-chain/
+  docs and old/new consumer identity gates; obtain independent final-head review,
+  satisfy GitHub's required approval and coordinate canonical consumer floors.
+- Decision: [ADR 0011](docs/adr/0011-numpy-030-unreleased-bundle.md), accepted by
+  the factory owner under the approved plan; accepted ADR 0010 stays intact.
+- Hold: no factory-only 0.11 publication. Merge/publication remain pending the
+  combined gates, required review and bridge-first consumer coordination.
 
 <a id="eunomia-const-native-float"></a>
 ## EUNOMIA-CONST-NATIVE-FLOAT — Native const float construction [minor]
