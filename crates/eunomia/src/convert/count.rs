@@ -1,10 +1,12 @@
-//! Integer-to-float conversions: the crate's home for converting a count or
-//! a signed integer into a float format.
+//! Native float construction: the crate's home for converting a count,
+//! signed integer or floating-point input into a native float format.
 //!
-//! Std has no lossless trait for these (`f64: From<usize>` does not exist,
-//! since `usize` can exceed `f64`'s 53-bit significand), so the casts live
-//! here, each under the contract its caller relies on: exact while the integer
-//! fits the format's significand, rounded to nearest, ties to even, above it.
+//! Std has no lossless trait for these (`f64: From<usize>` and
+//! `f32: From<f64>` do not exist), so the casts live
+//! here under their documented contracts. Integer construction is exact while
+//! the integer fits the significand; inexact construction rounds to nearest,
+//! ties to even. Floating-point construction also preserves signed zero and
+//! follows the native format's overflow, underflow and NaN rules.
 //!
 //! The concrete forms are the inherent methods on [`F32`] and [`F64`] (`const
 //! fn` except the count reciprocal); the generic forms are
@@ -21,6 +23,31 @@ use crate::traits::{CountRangeError, FloatElement, NumericElement, TryFromCount}
 use crate::types::{Complex, F32, F64, I16, I32, I8};
 
 impl F32 {
+    /// Converts a binary64 value into binary32, rounding to nearest, ties to even.
+    ///
+    /// Every input is admitted. Signed zero is preserved; finite overflow yields
+    /// signed infinity, and underflow rounds into subnormals or signed zero.
+    /// NaNs remain NaN. Their payload and sign follow Rust's native conversion
+    /// contract and are not guaranteed to agree between const and runtime use.
+    ///
+    /// This is the const construction form of the primitive and wrapper
+    /// [`FloatElement::from_f64`] implementations. It performs the same native
+    /// conversion rather than introducing a software rounding kernel.
+    ///
+    /// ```
+    /// use eunomia::F32;
+    ///
+    /// const MIDPOINT: F32 = F32::from_float(f64::from_bits(0x3ff0_0000_1000_0000));
+    /// const NEGATIVE_ZERO: F32 = F32::from_float(-0.0);
+    /// assert_eq!(MIDPOINT.0.to_bits(), 1.0_f32.to_bits());
+    /// assert_eq!(NEGATIVE_ZERO.0.to_bits(), 0x8000_0000);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_float(value: f64) -> Self {
+        Self(value as f32)
+    }
+
     /// Converts the count `n`, rounding to nearest, ties to even.
     ///
     /// Exact for `n <= 2^24`.
@@ -268,3 +295,128 @@ impl_try_from_count_int_wrapper!(I8(i8), I16(i16), I32(i32));
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod native_float_tests {
+    use super::F32;
+    use crate::FloatElement;
+
+    // Adjacent binary64 encodings straddle each exact binary32 midpoint.
+    const BOUNDARIES: &[(u64, u32)] = &[
+        (0, 0),
+        (1, 0),
+        (0x0010_0000_0000_0000, 0),
+        (0x368f_ffff_ffff_ffff, 0),
+        (0x3690_0000_0000_0000, 0), // 2^-150 ties to even zero.
+        (0x3690_0000_0000_0001, 1),
+        (0x36a0_0000_0000_0000, 1), // Smallest binary32 subnormal.
+        (0x380f_ffff_dfff_ffff, 0x007f_ffff),
+        (0x380f_ffff_e000_0000, 0x0080_0000), // Tie to smallest normal.
+        (0x380f_ffff_e000_0001, 0x0080_0000),
+        (0x3810_0000_0000_0000, 0x0080_0000),
+        (0x3ff0_0000_0fff_ffff, 0x3f80_0000),
+        (0x3ff0_0000_1000_0000, 0x3f80_0000), // Even lower neighbour.
+        (0x3ff0_0000_1000_0001, 0x3f80_0001),
+        (0x3ff0_0000_2fff_ffff, 0x3f80_0001),
+        (0x3ff0_0000_3000_0000, 0x3f80_0002), // Even upper neighbour.
+        (0x3ff0_0000_3000_0001, 0x3f80_0002),
+        (0x47ef_ffff_e000_0000, 0x7f7f_ffff),
+        (0x47ef_ffff_efff_ffff, 0x7f7f_ffff),
+        (0x47ef_ffff_f000_0000, 0x7f80_0000), // Overflow midpoint.
+        (0x47ef_ffff_f000_0001, 0x7f80_0000),
+        (0x7fef_ffff_ffff_ffff, 0x7f80_0000),
+        (0x7ff0_0000_0000_0000, 0x7f80_0000),
+    ];
+
+    const fn boundary_values() -> [[F32; 2]; BOUNDARIES.len()] {
+        let mut output = [[F32(0.0); 2]; BOUNDARIES.len()];
+        let mut index = 0;
+        while index < BOUNDARIES.len() {
+            output[index][0] = F32::from_float(f64::from_bits(BOUNDARIES[index].0));
+            output[index][1] = F32::from_float(f64::from_bits(BOUNDARIES[index].0 | (1 << 63)));
+            index += 1;
+        }
+        output
+    }
+
+    const CONSTANT_BOUNDARIES: [[F32; 2]; BOUNDARIES.len()] = boundary_values();
+
+    // Runtime native cast is the previous primitive/wrapper conversion body.
+    // Keep it independently callable rather than constant-folding the oracle.
+    #[inline(never)]
+    fn previous_runtime_conversion(value: f64) -> f32 {
+        core::hint::black_box(value) as f32
+    }
+
+    #[test]
+    fn constant_narrowing_preserves_analytic_boundaries() {
+        for (values, (bits, expected)) in CONSTANT_BOUNDARIES.iter().zip(BOUNDARIES) {
+            for (sign, value) in values.iter().enumerate() {
+                let expected = expected | if sign == 0 { 0 } else { 1 << 31 };
+                let input = f64::from_bits(bits | if sign == 0 { 0 } else { 1 << 63 });
+                assert_eq!(value.0.to_bits(), expected);
+                assert_eq!(previous_runtime_conversion(input).to_bits(), expected);
+                assert_eq!(<f32 as FloatElement>::from_f64(input).to_bits(), expected);
+                assert_eq!(<F32 as FloatElement>::from_f64(input).0.to_bits(), expected);
+            }
+        }
+    }
+
+    const MANTISSAS: [u64; 12] = [
+        0,
+        1,
+        (1 << 28) - 1,
+        1 << 28,
+        (1 << 28) + 1,
+        (1 << 29) - 1,
+        1 << 29,
+        (1 << 29) + 1,
+        (1 << 51) - 1,
+        1 << 51,
+        (1 << 51) + 1,
+        (1 << 52) - 1,
+    ];
+    const GRID_LEN: usize = 2 * 2048 * MANTISSAS.len();
+
+    // This large grid exists only in static storage, never a runtime stack.
+    static CONSTANT_GRID: [(u64, F32); GRID_LEN] = {
+        let mut output = [(0, F32(0.0)); GRID_LEN];
+        let mut index = 0;
+        let mut exponent = 0_u64;
+        while exponent < 2048 {
+            let mut sign = 0_u64;
+            while sign < 2 {
+                let mut fraction = 0;
+                while fraction < MANTISSAS.len() {
+                    let bits = (sign << 63) | (exponent << 52) | MANTISSAS[fraction];
+                    output[index] = (bits, F32::from_float(f64::from_bits(bits)));
+                    index += 1;
+                    fraction += 1;
+                }
+                sign += 1;
+            }
+            exponent += 1;
+        }
+        output
+    };
+
+    #[test]
+    fn constant_narrowing_matches_runtime_across_every_exponent_and_sign() {
+        for &(bits, value) in &CONSTANT_GRID {
+            let input = f64::from_bits(bits);
+            let expected = previous_runtime_conversion(input);
+            let primitive = <f32 as FloatElement>::from_f64(input);
+            let wrapper = <F32 as FloatElement>::from_f64(input).0;
+            if expected.is_nan() {
+                // Rust does not promise a payload/sign across narrowing or CTFE.
+                assert!(value.0.is_nan());
+                assert!(primitive.is_nan());
+                assert!(wrapper.is_nan());
+            } else {
+                assert_eq!(value.0.to_bits(), expected.to_bits(), "{bits:#018x}");
+                assert_eq!(primitive.to_bits(), expected.to_bits(), "{bits:#018x}");
+                assert_eq!(wrapper.to_bits(), expected.to_bits(), "{bits:#018x}");
+            }
+        }
+    }
+}

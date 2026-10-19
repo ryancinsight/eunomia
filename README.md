@@ -58,8 +58,11 @@ coeus / hephaestus / apollo / …   domain
 ```
 
 Dependency direction is strictly inward: eunomia depends on nothing Atlas-local.
-Its core uses `bytemuck` and `libm`; `rkyv`, `serde`, and the NumPy/PyO3 0.29
-element boundary are optional. The `half` crate is a dev-only differential
+Its core uses `bytemuck` and `libm`; `rkyv`, `serde`, and the NumPy/PyO3 0.30
+element boundary are optional. The NumPy feature requires Python 3.9 or later;
+Rust extensions migrate their NumPy/PyO3 dependencies together as described in
+[ADR 0011](docs/adr/0011-numpy-030-unreleased-bundle.md).
+The `half` crate is a dev-only differential
 oracle for Eunomia's native reduced-precision conversion tests.
 
 ## Provenance

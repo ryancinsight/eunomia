@@ -1,8 +1,43 @@
 # Eunomia checklist
 
-Target version: 0.10.0
+Target version: Eunomia 0.11.0; unchanged derive 0.10.0
 
 Sprint phase: Execution
+
+## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE [major] — owner integration
+
+- [x] Record the approved 0.11/0.4/binding 0.2/common FFI 0.30 plan as resolved.
+- [x] Stage the assessed optional NumPy/PyO30.30 requirements and lock delta in
+      an isolated clone, preserving factory source/tests and package versions.
+- [x] Add explicit Breaking/Migration coverage and accepted ADR 0011 without
+      changing accepted ADR 0010's factory rationale.
+- [x] Have the existing PR #182 owner review the staged bundle and accept
+      ADR 0011 for integration into the unreleased 0.11 source.
+- [ ] Renew all final-head feature/native/NumPy/MSRV/API/package/supply-chain/
+      documentation gates and independent review on the integrated source.
+- [ ] Satisfy actual GitHub checks/reviews and coordinated consumer floors.
+- [ ] Merge in approved bridge-first order, then verify immutable publication.
+
+Earlier factory-only receipts below keep their original revision scope; they
+do not certify this combined bundle. No publication is authorized before the combined final-head gates and
+bridge-first integration requirements pass.
+
+## EUNOMIA-CONST-NATIVE-FLOAT [minor] — current slice
+
+- [x] Reproduce the missing const factory and preserve the full input domain.
+- [x] Centralize native const/runtime construction without changing the guard.
+- [x] Execute analytic const and differential exponent/sign boundary regressions.
+- [x] Classify the public addition as minor; retain the unchanged derive version.
+- [x] Pass local six-feature checks, strict all-feature lint, 220 native and
+      215 NumPy tests (zero skips), 26 doctests per configuration, warning-denied
+      docs, MSRV 1.95 and both standard package builds at implementation head
+      `5929293`. Local NumPy 2.5.1 uses Python 3.14; hosted 3.13 remains pending.
+- [x] Pass the additional stricter additive API comparison (223 applicable
+      checks, 30 inapplicable skips) and unchanged supply-chain gate.
+- [ ] Pass final-head hosted CI and the blocking release API validation.
+- [ ] Review the exact final PR head and prepare current Git consumer floors.
+- [ ] Merge normally only when applicable gates and coordination are complete.
+- [ ] Verify automatic publication and immutable archive identity/checksum.
 
 ## EUNOMIA-DEFAULT-RELEASE-VERSION [major] — current slice
 

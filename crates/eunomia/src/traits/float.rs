@@ -16,6 +16,8 @@ pub trait FloatElement: private::Sealed + NumericElement {
     ///
     /// Formats narrower than `f32` round once: the `f64` is first rounded to
     /// odd at 24 bits, so no tie is broken twice.
+    /// The primitive and wrapper binary32 implementations share
+    /// [`F32::from_float`](crate::F32::from_float), which also admits const use.
     fn from_f64(val: f64) -> Self;
     /// Cast to f32.
     fn to_f32(self) -> f32;

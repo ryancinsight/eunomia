@@ -1,5 +1,48 @@
 # Eunomia backlog
 
+<a id="eunomia-numpy-030-unreleased-bundle"></a>
+## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE — Bundle optional interop before 0.11 publication [major]
+
+- Status: todo; priority: correctness; owner: Codex (PR #182), coordinated with
+  the existing Aequitas bridge owner.
+- Policy: Eunomia 0.11, Aequitas 0.4/binding 0.2 and NumPy/PyO3 0.30 are approved
+  in bridge-first order; the normal version decision is resolved.
+- Integrated scope: two optional requirements, six ordinary lock records and
+  explicit breaking/migration/design coverage. All 93 factory Rust source/test
+  files, accepted ADR 0010, facade 0.11 and derive 0.10 remain unchanged.
+- Contract: NumPy/PyO3 0.30 has a distinct Rust trait/native-link identity and a
+  Python 3.9 floor. Core arithmetic and Rust MSRV 1.95 do not change. The prior
+  factory-only additive API comparison does not certify this optional boundary.
+- Acceptance: renew final-head feature/native/NumPy/MSRV/API/package/supply-chain/
+  docs and old/new consumer identity gates; obtain independent final-head review,
+  satisfy GitHub's required approval and coordinate canonical consumer floors.
+- Decision: [ADR 0011](docs/adr/0011-numpy-030-unreleased-bundle.md), accepted by
+  the factory owner under the approved plan; accepted ADR 0010 stays intact.
+- Hold: no factory-only 0.11 publication. Merge/publication remain pending the
+  combined gates, required review and bridge-first consumer coordination.
+
+<a id="eunomia-const-native-float"></a>
+## EUNOMIA-CONST-NATIVE-FLOAT — Native const float construction [minor]
+
+- Status: todo; priority: correctness; owner: Codex; prerequisite for Coeus #528.
+- Outcome: the consumer's public const decoder calls one provider-owned native
+  narrowing factory across the complete binary64 domain without a guard waiver.
+- Implemented: `F32::from_float`; primitive/wrapper runtime trait methods share
+  its native conversion. No local consumer kernel or input restriction is used.
+- Regression evidence: missing-method failure on original source; analytical
+  const boundaries and a 49,152-encoding const/runtime differential grid pass.
+- Version: facade 0.11.0 under the public-item minor rule; unchanged derive 0.10.0.
+- Local verification: implementation head `5929293` passes six feature checks,
+  strict all-feature lint, 220 native and 215 NumPy tests (zero skips), 26
+  doctests in each configuration, warning-denied docs, MSRV and both packages.
+  The planned pre-1.0 minor classification skips 253 API compatibility rules.
+  An additional stricter patch-class comparison passes all 223 applicable
+  compatibility checks (30 inapplicable rules skipped); supply-chain passes.
+- Remaining: exact final-head hosted CI/release gates/review and coordinated
+  current Git consumer floors before automatic publication.
+- Decision: [ADR 0010](docs/adr/0010-const-native-float-construction.md).
+
+
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 

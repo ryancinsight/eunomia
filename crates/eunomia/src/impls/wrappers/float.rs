@@ -48,7 +48,7 @@ impl_float_element!(F16, f32, F16::from_f32, F16::from_f64, F16::to_f32, {
 });
 // The provided count conversions round to odd for formats narrower than
 // `f32`; `F32` converts directly.
-impl_float_element!(F32, F32, F32, |val| F32(val as f32), |x: F32| x.0, {
+impl_float_element!(F32, F32, F32, F32::from_float, |x: F32| x.0, {
     #[inline]
     fn from_count(n: usize) -> Self {
         F32::from_count(n)

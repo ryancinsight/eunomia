@@ -4,6 +4,42 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+## [0.11.0] - Unreleased
+
+### Added
+
+- [minor] `F32::from_float(f64)` provides const-capable native binary64-to-binary32
+  construction over the full input domain. Preserve nearest-even rounding,
+  signed zero, overflow/underflow and Rust's NaN conversion semantics.
+
+### Changed
+
+- Primitive and wrapper `FloatElement::from_f64` delegate to the same canonical
+  native factory. The unchanged derive package remains 0.10.0.
+- Git consumers requiring 0.10 need a coordinated requirement/public-provider
+  update before this default advances to 0.11; see ADR 0010. Publication and
+  final-head acceptance remain pending.
+
+### Breaking
+
+- [major] The optional `numpy` feature now implements the NumPy 0.30 element
+  contract and depends on PyO3 0.30. These are distinct Rust dependency/trait
+  identities from the 0.29 line; old NumPy/PyO3 Rust consumers must migrate
+  together. The Python minimum for this optional boundary rises from 3.8 to
+  3.9. The core datatype contract and Rust MSRV 1.95 remain unchanged.
+
+### Migration
+
+- Use Eunomia `0.11` with NumPy `0.30` and PyO3 `0.30` throughout a Python
+  extension's dependency graph. Rebuild the extension; the old and new PyO3
+  native-link families cannot coexist in one Cargo graph. Consumers without
+  the `numpy` feature do not acquire a Python dependency.
+- Bundle this migration with the const factory in unreleased 0.11, before
+  automatic publication. A factory-only 0.11 publication followed by this
+  breaking boundary would require a new pre-1.0 minor release. The unchanged
+  derive package stays at 0.10.0. See ADR 0011 for the integration decision and
+  final-head verification requirements.
+
 ## [0.10.0] - 2026-10-15
 
 ### Breaking

@@ -1,5 +1,13 @@
 # Eunomia gap audit
 
+## Current const-conversion prerequisite
+
+Stable trait calls cannot satisfy Coeus's existing public const decoder. The
+minimal provider-owned factory and full-domain regressions are implemented
+under EUNOMIA-CONST-NATIVE-FLOAT. Final gates and current Git consumer 0.11
+requirements remain pending; no default/registry delivery is claimed yet.
+
+
 ## Apollo-facing surface — zero-cost verification, 2026-09-06 — clean
 
 Method: codegen inspection of the three surfaces Apollo consumes at scale,
