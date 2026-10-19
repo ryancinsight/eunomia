@@ -9,7 +9,7 @@ Delivery: EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE
 
 The approved provider plan targets Eunomia0.11, Aequitas0.4/binding0.2 and a
 common NumPy/PyO30.30 boundary, in bridge-first order. PR182 already prepares
-facade0.11 for the const float factory. Its accepted ADR0010 covers that
+facade 0.11 for the const float factory. Its accepted ADR0010 covers that
 addition; its additive compatibility result does not cover dependency identity.
 
 Eunomia's optional `numpy` feature implements `numpy::Element` for its canonical
@@ -22,7 +22,7 @@ passing public-item API checks alone does not establish consumer compatibility.
 
 Include the two optional requirement updates and their ordinarily resolved lock
 delta in the still-unreleased0.11 bundle. Preserve every factory source/test,
-the accepted ADR0010, facade0.11 and unchanged derive0.10. No numeric kernel,
+the accepted ADR0010, facade 0.11 and unchanged derive 0.10. No numeric kernel,
 representation, trait implementation body or feature selection changes.
 
 Do not publish factory-only0.11 first: this subsequent breaking optional-feature
@@ -43,7 +43,8 @@ canonical Eunomia complex types and their byte/dtype contracts remain the only
 provider; no duplicate types, compatibility aliases, link override, path patch,
 manual lock SourceId or ABI-forward-compatibility switch is a release solution.
 
-The assessment at factory head `bb769965` already executes provider NumPy/all-
+The saved [PR182 factory assessment](https://github.com/ryancinsight/eunomia/pull/182)
+already executes provider NumPy/all-
 feature tests, real old/new consumer compatibility probes and combined Aequitas
 tests. Those are revision-scoped local evidence, not final canonical acceptance.
 The unchanged accepted factory regressions retain full binary64-domain coverage.

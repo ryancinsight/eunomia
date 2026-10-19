@@ -9,7 +9,7 @@
   the version decision is resolved. This local bundle needs owner integration.
 - Scope: two optional requirements, six ordinary lock records and explicit
   breaking/migration/design coverage. All factory source/tests, accepted ADR0010,
-  facade0.11 and derive0.10 remain unchanged.
+  facade 0.11 and derive0.10 remain unchanged.
 - Contract: NumPy/PyO30.30 has a distinct Rust trait/native-link identity and a
   Python3.9 floor. Core datatype arithmetic and RustMSRV1.95 do not change.
 - Acceptance: fold into unreleased0.11 before automatic publication, renew the
