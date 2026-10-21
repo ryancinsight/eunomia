@@ -4,6 +4,14 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- `FloatElement::nth_root`'s `f32`-routed default now forms its exponent as
+  the correctly rounded `1/n` (`FloatElement::from_count_reciprocal`) instead
+  of `1.0 / n as f32`, which rounded the degree itself for `n > 2^24`. The
+  native-`f64` override spells the same value via the exact `f64::from(n)`.
+  Results are unchanged within `f32` resolution; the casts are gone.
+
 ## [0.10.0] - 2026-10-15
 
 ### Breaking

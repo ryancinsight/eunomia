@@ -164,6 +164,32 @@ macro_rules! float_element_contract {
     };
 }
 
+/// `nth_root` with a degree past the `f32` exact-integer limit (`2^24`):
+/// the exponent must be the correctly rounded `1/n`, not `1/(n as f32)`.
+#[test]
+fn nth_root_large_degree_matches_f64_oracle() {
+    // Smallest odd degree `n as f32` cannot represent exactly.
+    let n: u32 = (1 << 24) + 1;
+    let expected = 2.0_f64.powf(1.0 / f64::from(n));
+    let got32 = <F32 as FloatElement>::nth_root(<F32 as FloatElement>::from_f32(2.0), n);
+    let got = f64::from(FloatElement::to_f32(got32));
+    assert!(
+        (got - expected).abs() <= expected * f64::from(f32::EPSILON),
+        "nth_root(2, {n}) = {got}, f64 oracle {expected}"
+    );
+    // Odd degree at the `u32` extreme stays sign-preserving and finite.
+    let neg = <F32 as FloatElement>::nth_root(<F32 as FloatElement>::from_f32(-8.0), u32::MAX);
+    let neg = FloatElement::to_f32(neg);
+    assert!(
+        neg.is_finite() && neg < 0.0,
+        "nth_root(-8, u32::MAX) = {neg}"
+    );
+    assert!(
+        (neg + 1.0).abs() <= f32::EPSILON,
+        "nth_root(-8, u32::MAX) = {neg}, expected ≈ -1"
+    );
+}
+
 float_element_contract!(f16_element_contract, F16);
 float_element_contract!(bf16_element_contract, Bf16);
 float_element_contract!(f32_wrapper_element_contract, F32);

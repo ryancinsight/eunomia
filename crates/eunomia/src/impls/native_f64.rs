@@ -153,10 +153,13 @@ macro_rules! impl_float_element_native_f64 {
                     return $wrap(f64::NAN);
                 }
                 let value = $unwrap(self);
+                // `f64::from(u32)` is exact, so this division is the
+                // correctly rounded `1/n`.
+                let exp = 1.0 / f64::from(n);
                 let root = if n % 2 == 1 {
-                    libm::copysign(libm::pow(libm::fabs(value), 1.0 / n as f64), value)
+                    libm::copysign(libm::pow(libm::fabs(value), exp), value)
                 } else {
-                    libm::pow(value, 1.0 / n as f64)
+                    libm::pow(value, exp)
                 };
                 $wrap(root)
             }

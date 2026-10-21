@@ -318,10 +318,13 @@ pub trait FloatElement: private::Sealed + NumericElement {
             return <Self as NumericElement>::NAN;
         }
         let x = self.to_f32();
+        // Correctly rounded `1/n`: count conversion, never `n as f32` (rounds past 2^24).
+        let count = usize::try_from(n).expect("invariant: u32 fits usize");
+        let exp = <f32 as FloatElement>::from_count_reciprocal(count);
         let root = if n % 2 == 1 {
-            libm::copysignf(libm::powf(libm::fabsf(x), 1.0 / n as f32), x)
+            libm::copysignf(libm::powf(libm::fabsf(x), exp), x)
         } else {
-            libm::powf(x, 1.0 / n as f32)
+            libm::powf(x, exp)
         };
         Self::from_f32(root)
     }
