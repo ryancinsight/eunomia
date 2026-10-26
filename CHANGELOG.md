@@ -10,6 +10,8 @@ All notable changes to Eunomia are documented here.
   documented reduced-storage software boundaries, signed pole behavior and
   analytic, identity, high-precision and encoding-boundary tests.
   CPU provider slice for differentiable gamma-log; no device claim.
+- Pre-merge release-cohort packaging verification through the existing Atlas
+  planner, covering unpublished workspace dependencies without publishing.
 
 ### Fixed
 

@@ -18,6 +18,8 @@ Sprint phase: Execution
       propagated fixture budget; final revision binding accompanies delivery.
 - [x] Deliver the reviewed provider branch as draft PR #185 through existing CLI.
 - [ ] Bind the final revision to independent review and applicable hosted/release gates.
+- [ ] Verify the complete pending workspace package cohort with the canonical
+      Atlas release planner before main integration; no publication in this job.
 - [ ] Publish and verify provider versions/source before downstream integration;
       existing user authorization covers qualifying publication after final gates.
 

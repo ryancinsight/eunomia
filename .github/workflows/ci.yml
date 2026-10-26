@@ -34,6 +34,35 @@ jobs:
     permissions:
       contents: read
 
+  package-plan:
+    name: Release package plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      CARGO_BUILD_JOBS: "1"
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      # Use the same canonical cohort verifier as the existing publisher.
+      # This command packages and verifies pending workspace crates without
+      # publishing, minting registry credentials or creating tags.
+      - name: Verify the pending workspace package cohort
+        uses: ryancinsight/atlas/.github/actions/crates-pending@0e074f34e4ca63423c4e4ba86a39734269492555
+        with:
+          command: plan
+          owner: ryancinsight
+
   verify:
     name: Rust verification
     runs-on: ubuntu-latest
