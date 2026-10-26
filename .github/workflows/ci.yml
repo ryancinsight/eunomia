@@ -210,6 +210,11 @@ jobs:
       # database entry unrelated to this crate. Pinning the tool directly
       # keeps the version under our control, the same way nextest is handled
       # in the verify job.
+      - name: Install the pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
       - name: Install cargo-deny
         uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
         with:
