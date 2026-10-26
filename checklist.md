@@ -16,8 +16,10 @@ Sprint phase: Execution
       196 checks pass, no required SemVer update.
 - [x] Independent numerical source review clears the implementation and
       propagated fixture budget; final revision binding accompanies delivery.
-- [ ] Deliver the provider branch/draft after authentication and release gates.
-- [ ] Deliver provider before downstream integration; no release authorized.
+- [x] Deliver the reviewed provider branch as draft PR #185 through existing CLI.
+- [ ] Bind the final revision to independent review and applicable hosted/release gates.
+- [ ] Publish and verify provider versions/source before downstream integration;
+      existing user authorization covers qualifying publication after final gates.
 
 ## EUNOMIA-DEFAULT-RELEASE-VERSION [major] — current slice
 
