@@ -1,5 +1,20 @@
 # Eunomia gap audit
 
+## Real digamma provider — October 26, 2026 [minor]
+
+At base `23c6047`, `lgamma` exists but digamma is missing. New scalar tests fail on
+the missing API before implementation. [Contract](docs/design/digamma.md)
+uses native generic evaluation and explicit reduced-format boundaries.
+Seven focused cases pass, including independently generated error enclosures
+and primitive premises. Six-way feature checks, strict all-feature Clippy,
+228 native cases (including NumPy), doctests, warning-denied Rustdoc and
+196 API checks pass. Independent implementation review and candidate source
+delivery are complete in [PR #185](https://github.com/ryancinsight/eunomia/pull/185).
+Final-revision review/hosted gates, release verification and fresh canonical
+downstream consumers remain required. Publication is conditionally authorized
+after those checks; no device or release completion is claimed here.
+
+
 ## Apollo-facing surface — zero-cost verification, 2026-09-06 — clean
 
 Method: codegen inspection of the three surfaces Apollo consumes at scale,

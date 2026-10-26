@@ -3,6 +3,9 @@
 
 use super::{private, NumericElement};
 
+mod power;
+use power::powi_positive;
+
 /// Float-specific capabilities.
 pub trait FloatElement: private::Sealed + NumericElement {
     /// The type a reduction over `Self` accumulates in. The per-format
@@ -442,6 +445,17 @@ pub trait FloatElement: private::Sealed + NumericElement {
         Self::from_f32(libm::lgammaf(self.to_f32()))
     }
 
+    /// Real logarithmic derivative of gamma; see `docs/design/digamma.md`.
+    ///
+    /// Negative integers and `-inf` give NaN; `±0` give `∓inf`; `+inf` stays.
+    /// Reduced storage formats explicitly evaluate in `f32` and narrow once,
+    /// as other special functions do; finite-only formats apply their saturation
+    /// and NaN encoding rules. Native `f64`/`F64` override this boundary.
+    #[inline]
+    fn digamma(self) -> Self {
+        Self::from_f32(super::digamma::evaluate(self.to_f32()))
+    }
+
     /// Machine epsilon (`nalgebra::RealField::default_epsilon` compatibility alias).
     ///
     /// Returns the smallest positive value `ε` such that `1.0 + ε != 1.0`.
@@ -480,20 +494,4 @@ pub trait FloatElement: private::Sealed + NumericElement {
     fn norm(self) -> Self {
         <Self as NumericElement>::abs(self)
     }
-}
-
-/// `base^exp` for unsigned `exp` by squaring: the shared kernel of
-/// [`FloatElement::powi`]'s upward pass and its underflow-preserving
-/// downward recomputation.
-#[inline(always)]
-fn powi_positive<T: NumericElement>(mut base: T, mut exp: u32) -> T {
-    let mut acc = T::ONE;
-    while exp > 0 {
-        if exp & 1 == 1 {
-            acc *= base;
-        }
-        base *= base;
-        exp >>= 1;
-    }
-    acc
 }
