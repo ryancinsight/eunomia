@@ -1,6 +1,9 @@
 # Eunomia backlog
 
-## EUNOMIA-DIGAMMA [minor] — in progress
+<a id="EUNOMIA-DIGAMMA"></a>
+## EUNOMIA-DIGAMMA [minor]
+
+- status: todo; priority: verification; needs: none; integrator: task-4
 
 Owner: task-4, branch `feat/digamma-provider`, base `23c6047`. Add a
 compatible default scalar method with a native double-precision override.
