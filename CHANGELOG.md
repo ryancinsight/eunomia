@@ -2,7 +2,14 @@
 
 All notable changes to Eunomia are documented here.
 
-## [Unreleased]
+## [0.11.0] - Unreleased
+
+### Added
+
+- Real `FloatElement::digamma` with native `f32`/`f64`/`F64` evaluation,
+  documented reduced-storage software boundaries, signed pole behavior and
+  analytic, identity, high-precision and encoding-boundary tests.
+  CPU provider slice for differentiable gamma-log; no device claim.
 
 ### Fixed
 

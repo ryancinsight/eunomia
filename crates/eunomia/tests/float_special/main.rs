@@ -30,3 +30,8 @@ mod domain_edges;
 mod fixtures;
 mod references;
 mod transcendentals;
+
+mod digamma;
+mod digamma_error_bounds;
+mod digamma_fixtures;
+mod digamma_primitive_fixtures;

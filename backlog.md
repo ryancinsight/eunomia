@@ -1,5 +1,15 @@
 # Eunomia backlog
 
+## EUNOMIA-DIGAMMA [minor] — in progress
+
+Owner: task-4, branch `feat/digamma-provider`, base `23c6047`. Add a
+compatible default scalar method with a native double-precision override.
+Contract and acceptance: [design](docs/design/digamma.md). Missing API is
+reproduced by the pre-implementation scalar test. Provider validation passes 228 native cases plus the six-way feature matrix,
+strict diagnostics and docs; API classification passes (196 checks); final review and downstream canonical
+delivery remain pending. Hardware remains a separate owner.
+
+
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 

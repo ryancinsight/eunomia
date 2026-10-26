@@ -31,6 +31,8 @@ serde = ["dep:serde"]
 numpy = ["dep:numpy", "dep:pyo3", "std"]
 
 [dev-dependencies]
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std"] }
 criterion = "0.5"
 
 # Reduced-precision conversion throughput: F16C-accelerated bulk paths vs the

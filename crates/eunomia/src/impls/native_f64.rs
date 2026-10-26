@@ -213,6 +213,10 @@ macro_rules! impl_float_element_native_f64 {
             fn lgamma(self) -> Self {
                 $wrap(libm::lgamma($unwrap(self)))
             }
+            #[inline]
+            fn digamma(self) -> Self {
+                crate::traits::digamma::evaluate(self)
+            }
         }
     };
 }

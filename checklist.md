@@ -1,8 +1,23 @@
 # Eunomia checklist
 
-Target version: 0.10.0
+Target version: 0.11.0
 
 Sprint phase: Execution
+
+## EUNOMIA-DIGAMMA [minor]
+
+- [x] Inspect local ownership and isolate current main.
+- [x] Define mathematical/precision/domain contract and reproduce missing API.
+- [x] Pass analytic, identity, independent-reference and reduced-boundary tests;
+      seven focused cases include per-input propagated bounds and primitive premises.
+- [x] Pass the six-way feature matrix, all-feature strict Clippy, 228 native
+      cases (including NumPy), doctests and warning-denied Rustdoc.
+- [x] Classify the additive API against main with cargo-semver-checks:
+      196 checks pass, no required SemVer update.
+- [x] Independent numerical source review clears the implementation and
+      propagated fixture budget; final revision binding accompanies delivery.
+- [ ] Deliver the provider branch/draft after authentication and release gates.
+- [ ] Deliver provider before downstream integration; no release authorized.
 
 ## EUNOMIA-DEFAULT-RELEASE-VERSION [major] — current slice
 

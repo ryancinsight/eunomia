@@ -9,6 +9,7 @@ pub(crate) mod private {
 }
 
 mod count;
+pub(crate) mod digamma;
 mod field;
 mod float;
 mod numeric;
