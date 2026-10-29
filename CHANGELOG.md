@@ -2,7 +2,7 @@
 
 All notable changes to Eunomia are documented here.
 
-## [0.11.0] - Unreleased
+## [0.12.0] - Unreleased
 
 ### Added
 
@@ -20,6 +20,42 @@ All notable changes to Eunomia are documented here.
   of `1.0 / n as f32`, which rounded the degree itself for `n > 2^24`. The
   native-`f64` override spells the same value via the exact `f64::from(n)`.
   Results are unchanged within `f32` resolution; the casts are gone.
+
+## [0.11.0] - Unreleased
+
+### Added
+
+- [minor] `F32::from_float(f64)` provides const-capable native binary64-to-binary32
+  construction over the full input domain. Preserve nearest-even rounding,
+  signed zero, overflow/underflow and Rust's NaN conversion semantics.
+
+### Changed
+
+- Primitive and wrapper `FloatElement::from_f64` delegate to the same canonical
+  native factory. The derive package inherits the workspace version.
+- Git consumers requiring 0.10 need a coordinated requirement/public-provider
+  update before this default advances to 0.12; see ADR 0010. Publication and
+  final-head acceptance remain pending.
+
+### Breaking
+
+- [major] The optional `numpy` feature now implements the NumPy 0.30 element
+  contract and depends on PyO3 0.30. These are distinct Rust dependency/trait
+  identities from the 0.29 line; old NumPy/PyO3 Rust consumers must migrate
+  together. The Python minimum for this optional boundary rises from 3.8 to
+  3.9. The core datatype contract and Rust MSRV 1.95 remain unchanged.
+
+### Migration
+
+- Use Eunomia `0.12` with NumPy `0.30` and PyO3 `0.30` throughout a Python
+  extension's dependency graph. Rebuild the extension; the old and new PyO3
+  native-link families cannot coexist in one Cargo graph. Consumers without
+  the `numpy` feature do not acquire a Python dependency.
+- Bundle this migration with the const factory in the 0.12 cohort, before
+  automatic publication. A factory-only 0.12 publication followed by this
+  breaking boundary would require a new pre-1.0 minor release. The derive
+  package inherits the workspace version. See ADR 0011 for the integration
+  decision and final-head verification requirements.
 
 ## [0.10.0] - 2026-10-15
 
