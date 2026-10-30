@@ -4,6 +4,21 @@ All notable changes to Eunomia are documented here.
 
 ## [0.12.0] - Unreleased
 
+### Fixed
+
+- Removed two redundant copies of the same 193-line checklist block (the
+  `EUNOMIA-DEFAULT-RELEASE-VERSION` through ADR-governance sections repeated
+  the canonical copy byte-for-byte, inflating the board by ~386 lines); one
+  canonical copy remains and every section heading is now single. The stale
+  `eunomia-const-native-float` anchor on the `EUNOMIA-DIGAMMA` heading is now
+  `eunomia-digamma`, matching the heading it annotates.
+- Bounded `benches/conversions.rs` to the stack's flat wall-clock budget
+  (10 samples, 100 ms warm-up, 500 ms measurement per benchmark, both
+  workload sizes kept): the five conversion groups previously ran unbounded
+  Criterion defaults and the reduced-arithmetic block ran 1 s / 3 s. Regimes,
+  workloads, and sample counts are unchanged; `cargo bench --test` smoke
+  passes.
+
 ### Added
 
 - Real `FloatElement::digamma` with native `f32`/`f64`/`F64` evaluation,

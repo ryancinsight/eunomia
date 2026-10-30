@@ -20,6 +20,11 @@ fn bench_f16_widen(c: &mut Criterion) {
         })
         .collect();
     let mut group = c.benchmark_group("f16_widen");
+    // Wall-clock budget (ATLAS-BENCH-BUDGET-001): flat 10-sample,
+    // 100 ms warm-up / 500 ms measurement per benchmark.
+    group.sample_size(10);
+    group.warm_up_time(Duration::from_millis(100));
+    group.measurement_time(Duration::from_millis(500));
     group.throughput(Throughput::Elements(
         u64::try_from(N).expect("invariant: benchmark size fits u64"),
     ));
@@ -50,6 +55,11 @@ fn bench_f16_narrow(c: &mut Criterion) {
         })
         .collect();
     let mut group = c.benchmark_group("f16_narrow");
+    // Wall-clock budget (ATLAS-BENCH-BUDGET-001): flat 10-sample,
+    // 100 ms warm-up / 500 ms measurement per benchmark.
+    group.sample_size(10);
+    group.warm_up_time(Duration::from_millis(100));
+    group.measurement_time(Duration::from_millis(500));
     group.throughput(Throughput::Elements(
         u64::try_from(N).expect("invariant: benchmark size fits u64"),
     ));
@@ -84,6 +94,11 @@ fn bench_bf16_widen(c: &mut Criterion) {
         })
         .collect();
     let mut group = c.benchmark_group("bf16_widen");
+    // Wall-clock budget (ATLAS-BENCH-BUDGET-001): flat 10-sample,
+    // 100 ms warm-up / 500 ms measurement per benchmark.
+    group.sample_size(10);
+    group.warm_up_time(Duration::from_millis(100));
+    group.measurement_time(Duration::from_millis(500));
     group.throughput(Throughput::Elements(
         u64::try_from(N).expect("invariant: benchmark size fits u64"),
     ));
@@ -114,6 +129,11 @@ fn bench_bf16_narrow(c: &mut Criterion) {
         })
         .collect();
     let mut group = c.benchmark_group("bf16_narrow");
+    // Wall-clock budget (ATLAS-BENCH-BUDGET-001): flat 10-sample,
+    // 100 ms warm-up / 500 ms measurement per benchmark.
+    group.sample_size(10);
+    group.warm_up_time(Duration::from_millis(100));
+    group.measurement_time(Duration::from_millis(500));
     group.throughput(Throughput::Elements(
         u64::try_from(N).expect("invariant: benchmark size fits u64"),
     ));
@@ -145,6 +165,11 @@ fn bench_packed_unpack(c: &mut Criterion) {
         })
         .collect();
     let mut group = c.benchmark_group("packed_unpack_f8");
+    // Wall-clock budget (ATLAS-BENCH-BUDGET-001): flat 10-sample,
+    // 100 ms warm-up / 500 ms measurement per benchmark.
+    group.sample_size(10);
+    group.warm_up_time(Duration::from_millis(100));
+    group.measurement_time(Duration::from_millis(500));
     group.throughput(Throughput::Elements(
         u64::try_from(N).expect("invariant: benchmark size fits u64"),
     ));
@@ -191,8 +216,10 @@ fn bench_reduced_operation<
         let mut group =
             criterion.benchmark_group(format!("reduced_arithmetic_{format}_{operation}_{size}"));
         group.sample_size(10);
-        group.warm_up_time(Duration::from_secs(1));
-        group.measurement_time(Duration::from_secs(3));
+        group.warm_up_time(Duration::from_millis(100));
+        group.measurement_time(Duration::from_millis(500));
+        // Wall-clock budget (ATLAS-BENCH-BUDGET-001): flat 10-sample,
+        // 100 ms warm-up / 500 ms measurement per benchmark; both sizes kept.
         group.throughput(Throughput::Elements(
             u64::try_from(size).expect("invariant: benchmark size fits u64"),
         ));

@@ -27,7 +27,7 @@
 - Hold: no factory-only 0.11 publication. Merge/publication remain pending the
   combined gates, required review and bridge-first consumer coordination.
 
-<a id="eunomia-const-native-float"></a>
+<a id="eunomia-digamma"></a>
 ## EUNOMIA-DIGAMMA [minor]
 
 - status: todo; priority: verification; needs: none; integrator: task-4
