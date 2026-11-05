@@ -165,7 +165,8 @@ fn legacy_vector_archive_with_excess_data_appends_at_logical_end() {
             let bytes = rkyv::to_bytes::<Error>(&old).expect("serialize old vector");
             let mut restored: Packed4Vec<Bf4> =
                 rkyv::from_bytes::<_, Error>(&bytes).expect("validated deserialize");
-            let mut expected = (0..len as u8).collect::<Vec<_>>();
+            let mut expected =
+                (0..u8::try_from(len).expect("length is at most five")).collect::<Vec<_>>();
             assert_eq!(codes(&restored), expected);
             for code in [14, 11, 2] {
                 restored.push(Bf4(code));

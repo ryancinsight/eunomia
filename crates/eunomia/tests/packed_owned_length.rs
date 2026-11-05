@@ -23,7 +23,8 @@ fn borrowed_cow_with_excess_backing_appends_at_logical_end() {
         for excess in 1..=3 {
             let bytes = &backing[..len.div_ceil(2) + excess];
             let view = Packed4Slice::<Bf4>::new(bytes, len).expect("enough backing bytes");
-            let expected = (0..len as u8).collect::<Vec<_>>();
+            let expected =
+                (0..u8::try_from(len).expect("length is at most five")).collect::<Vec<_>>();
             check_appends(Packed4Cow::borrowed(view).into_owned(), expected.clone());
             let mut cow = Packed4Cow::borrowed(view);
             let owned = core::mem::take(cow.to_mut());
@@ -41,7 +42,8 @@ fn f4_copy_on_write_preserves_every_code_and_appends() {
             let view = Packed4Slice::<F4>::new(bytes, len).expect("enough backing bytes");
             assert_eq!(view.as_packed_slice(), bytes);
             let mut cow = Packed4Cow::borrowed(view);
-            let mut expected = (0..len as u8).collect::<Vec<_>>();
+            let mut expected =
+                (0..u8::try_from(len).expect("length is at most sixteen")).collect::<Vec<_>>();
             let owned = cow.to_mut();
             assert_eq!(owned.as_packed_slice().len(), len.div_ceil(2));
             for code in 0..16_u8 {
@@ -70,7 +72,10 @@ fn archived_borrowed_cow_with_excess_backing_appends_at_logical_end() {
             let archive = rkyv::to_bytes::<Error>(&Packed4Cow::borrowed(view)).expect("serialize");
             let restored: Packed4Cow<'static, Bf4> =
                 rkyv::from_bytes::<_, Error>(&archive).expect("validated deserialize");
-            check_appends(restored.into_owned(), (0..len as u8).collect());
+            check_appends(
+                restored.into_owned(),
+                (0..u8::try_from(len).expect("length is at most five")).collect(),
+            );
         }
     }
 }
