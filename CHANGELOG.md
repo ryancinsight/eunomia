@@ -2,6 +2,15 @@
 
 All notable changes to Eunomia are documented here.
 
+## [0.12.1] - Unreleased
+
+### Fixed
+
+- Copy-on-write and archive deserialization now keep only the packed bytes
+  occupied by their logical elements. Excess backing bytes previously caused
+  later vector appends to write or read the wrong nibble. Valid legacy archives
+  with excess bytes remain readable.
+
 ## [0.12.0] - Unreleased
 
 ### Fixed

@@ -31,6 +31,19 @@ impl<T: Packable4> Packed4Vec<T> {
         }
     }
 
+    /// Copies the bytes occupied by `len` logical elements from a validated view.
+    ///
+    /// Callers must ensure `data` contains at least `len.div_ceil(2)` bytes.
+    /// An owned vector keeps exactly that many bytes so `push` updates the
+    /// final logical byte even when the source view has additional backing data.
+    #[inline]
+    pub(crate) fn from_packed_prefix(data: &[u8], len: usize) -> Self {
+        let mut vec = Self::with_capacity(len);
+        vec.data.extend_from_slice(&data[..len.div_ceil(2)]);
+        vec.len = len;
+        vec
+    }
+
     /// Returns the logical length.
     #[inline(always)]
     pub fn len(&self) -> usize {

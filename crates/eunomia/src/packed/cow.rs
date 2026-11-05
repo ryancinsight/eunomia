@@ -84,10 +84,7 @@ impl<'a, T: Packable4> Packed4Cow<'a, T> {
     #[inline]
     pub fn to_mut(&mut self) -> &mut Packed4Vec<T> {
         if let Self::Borrowed(view) = *self {
-            let mut owned = Packed4Vec::with_capacity(view.len());
-            owned.data.extend_from_slice(view.data);
-            owned.len = view.len;
-            *self = Self::Owned(owned);
+            *self = Self::Owned(Packed4Vec::from_packed_prefix(view.data, view.len));
         }
         match self {
             Self::Owned(vec) => vec,
@@ -101,12 +98,7 @@ impl<'a, T: Packable4> Packed4Cow<'a, T> {
     #[inline]
     pub fn into_owned(self) -> Packed4Vec<T> {
         match self {
-            Self::Borrowed(view) => {
-                let mut owned = Packed4Vec::with_capacity(view.len());
-                owned.data.extend_from_slice(view.data);
-                owned.len = view.len;
-                owned
-            }
+            Self::Borrowed(view) => Packed4Vec::from_packed_prefix(view.data, view.len),
             Self::Owned(vec) => vec,
         }
     }

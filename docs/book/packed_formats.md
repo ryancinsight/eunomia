@@ -28,8 +28,21 @@ The `packed` module provides the storage vocabulary over these formats:
 - **SIMD-accelerated unpack** — `unpack_f4_to_f32`, `unpack_bf4_to_bf16`,
   `unpack_f8_to_f32`, etc., with `unsafe_intrinsics` on `x86_64`/`aarch64`.
 
-```rust,ignore
-use eunomia::packed::{unpack_f4_to_f32, Packed4Vec, Packable4};
+A borrowed packed slice can cover a buffer longer than its logical length.
+When it becomes owned, only `ceil(len / 2)` bytes are copied, retaining the
+unused high nibble of an odd-length final byte until the next append. Valid
+archives with extra backing bytes remain readable; deserialization applies the
+same owned-length rule. The borrowed view itself retains its original buffer.
+
+```rust
+# extern crate eunomia;
+use eunomia::{Bf4, Packed4Cow, Packed4Slice};
+
+let bytes = [0x21, 0x43];
+let view = Packed4Slice::<Bf4>::new(&bytes, 1).expect("one packed element");
+let mut owned = Packed4Cow::borrowed(view).into_owned();
+owned.push(Bf4(3));
+assert_eq!(owned.get(1).expect("appended element").0, 3);
 ```
 
 ## Outline of this chapter

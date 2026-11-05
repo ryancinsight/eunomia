@@ -150,3 +150,44 @@ fn corrupted_length_is_rejected_or_bounded() {
         }
     }
 }
+
+#[test]
+fn legacy_vector_archive_with_excess_data_appends_at_logical_end() {
+    // Older public Cow conversions can create this valid archive shape.
+    let backing = [0x10, 0x32, 0x54, 0x76, 0x98, 0xba];
+    for len in 0..=5_usize {
+        for excess in 1..=3 {
+            let old = Packed4Vec::<Bf4> {
+                data: backing[..len.div_ceil(2) + excess].to_vec(),
+                len,
+                _marker: core::marker::PhantomData,
+            };
+            let bytes = rkyv::to_bytes::<Error>(&old).expect("serialize old vector");
+            let mut restored: Packed4Vec<Bf4> =
+                rkyv::from_bytes::<_, Error>(&bytes).expect("validated deserialize");
+            let mut expected = (0..len as u8).collect::<Vec<_>>();
+            assert_eq!(codes(&restored), expected);
+            for code in [14, 11, 2] {
+                restored.push(Bf4(code));
+                expected.push(code);
+                assert_eq!(codes(&restored), expected);
+                assert_eq!(restored.as_packed_slice().len(), restored.len().div_ceil(2));
+            }
+        }
+    }
+}
+
+#[test]
+fn length_exceeding_archive_data_remains_rejected() {
+    let malformed = Packed4Vec::<Bf4> {
+        data: [0x10].to_vec(),
+        len: 3,
+        _marker: core::marker::PhantomData,
+    };
+    let vec_bytes = rkyv::to_bytes::<Error>(&malformed).expect("serialize invalid vector");
+    assert!(rkyv::access::<super::ArchivedPacked4Vec<Bf4>, Error>(&vec_bytes).is_err());
+
+    let cow_bytes = rkyv::to_bytes::<Error>(&Packed4Cow::Owned(malformed))
+        .expect("serialize invalid copy-on-write container");
+    assert!(rkyv::access::<super::ArchivedPacked4Cow<Bf4>, Error>(&cow_bytes).is_err());
+}

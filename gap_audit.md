@@ -1,5 +1,14 @@
 # Eunomia gap audit
 
+## Packed owned length — November 5, 2026 [patch]
+
+An allowed oversized borrowed view and a validated legacy archive could copy
+surplus bytes into `Packed4Vec`. Its `push` then used the end of that storage
+instead of the end of the logical elements. Regression tests reproduce the
+incorrect appended code on the unmodified base. Owned conversion now copies
+the logical byte prefix; borrowed views and archive validation retain their
+existing contracts. Final review, hosted gates and publication remain pending.
+
 ## Real digamma provider — October 26, 2026 [minor]
 
 At base `23c6047`, `lgamma` exists but digamma is missing. New scalar tests fail on
