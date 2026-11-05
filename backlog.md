@@ -1,8 +1,9 @@
 # Eunomia backlog
 
+<a id="eunomia-packed-owned-length"></a>
 ## EUNOMIA-PACKED-OWNED-LENGTH — Preserve append position after borrowing [patch]
 
-- status: in progress; target: 0.12.1.
+- status: todo; priority: correctness; target: 0.12.1.
 - A valid packed view may expose more bytes than its logical length requires.
   Copy-on-write conversion and validated legacy-archive deserialization must
   preserve the elements while giving an owned vector exactly `ceil(len / 2)`
