@@ -102,10 +102,10 @@ where
 {
     #[inline]
     fn deserialize(&self, _deserializer: &mut D) -> Result<Packed4Cow<'static, T>, D::Error> {
-        let mut vec = Packed4Vec::with_capacity(self.len());
-        vec.data.extend_from_slice(self.data.as_slice());
-        vec.len = self.len();
-        Ok(Packed4Cow::Owned(vec))
+        Ok(Packed4Cow::Owned(Packed4Vec::from_packed_prefix(
+            self.data.as_slice(),
+            self.len(),
+        )))
     }
 }
 
@@ -179,10 +179,10 @@ where
 {
     #[inline]
     fn deserialize(&self, _deserializer: &mut D) -> Result<Packed4Vec<T>, D::Error> {
-        let mut vec = Packed4Vec::with_capacity(self.len());
-        vec.data.extend_from_slice(self.data.as_slice());
-        vec.len = self.len();
-        Ok(vec)
+        Ok(Packed4Vec::from_packed_prefix(
+            self.data.as_slice(),
+            self.len(),
+        ))
     }
 }
 

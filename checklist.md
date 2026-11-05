@@ -1,8 +1,16 @@
 # Eunomia checklist
 
-Target version: 0.12.0
+Target version: 0.12.1
 
 Sprint phase: Execution
+
+## EUNOMIA-PACKED-OWNED-LENGTH [patch]
+
+- [x] Reproduce incorrect appends from extra borrowed and archived bytes.
+- [x] Copy only the logical byte prefix into owned vectors.
+- [ ] Complete final-head feature, native, API, package and documentation gates.
+- [ ] Obtain independent review and required hosted checks.
+- [ ] Verify any applicable publication and documentation deployment.
 
 ## EUNOMIA-DIGAMMA [minor]
 

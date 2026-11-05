@@ -1,5 +1,19 @@
 # Eunomia backlog
 
+<a id="eunomia-packed-owned-length"></a>
+## EUNOMIA-PACKED-OWNED-LENGTH — Preserve append position after borrowing [patch]
+
+- status: todo; priority: correctness; target: 0.12.1.
+- A valid packed view may expose more bytes than its logical length requires.
+  Copy-on-write conversion and validated legacy-archive deserialization must
+  preserve the elements while giving an owned vector exactly `ceil(len / 2)`
+  bytes, so its next append writes the logical end.
+- Regression coverage exercises empty, odd and even lengths, both four-bit
+  formats, copy-on-write conversion, and archives with surplus bytes. Existing
+  archive bounds validation remains required.
+- Final-head review, normal hooks, feature/native/NumPy/API/package gates,
+  hosted checks and publication receipts remain required.
+
 <a id="EUNOMIA-DIGAMMA"></a>
 
 <a id="eunomia-numpy-030-unreleased-bundle"></a>
