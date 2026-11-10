@@ -6,6 +6,7 @@
 ## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE — Bundle optional interop in the 0.12 cohort [major]
 
 - status: blocked; priority: correctness; needs: none; integrator: pi:01a1885f-3f38-73dd-a2f0-7e3fde63b66a
+- milestone: M-0.12-cohort.
 - Blocker: the 0.12.0 cohort is unpublished; the coordinated Aequitas
   0.4/binding 0.2 and Coeus consumer floors belong to their owners.
 - Re-open trigger: the pending publisher reports the cohort published, or
@@ -31,6 +32,7 @@
 ## EUNOMIA-DIGAMMA [minor]
 
 - status: todo; priority: verification; needs: none; integrator: task-4
+- milestone: M-special-functions.
 
 Owner: task-4, branch `feat/digamma-provider`, base `23c6047`. Add a
 compatible default scalar method with a native double-precision override.
@@ -104,7 +106,11 @@ Sprint target: 0.8.0 (native reduced-precision provider contract).
 - **Non-goal:** `F64_NATIVE_TOL` in the same file denotes the crate's `F64`
   wrapper type, not a generic scalar dimension, and keeps its name.
 
-## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] <a id="eunomia-structure-float-special-2026-09-21"></a>
+## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] — done <a id="eunomia-structure-float-special-2026-09-21"></a>
+
+- Closed 2026-11-10: split into contract leaves (`4b846d9`); every leaf is at
+  or under the 500-line target (largest 455); all 18 tests remain with bodies
+  unchanged; no new test binary. Milestone: M-special-functions (exit evidence).
 
 - **Outcome:** `crates/eunomia/tests/float_special.rs` (576 lines) raises
   `oversized_files`, holding the member's pin behind the atlas sweep.
@@ -224,7 +230,7 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   truncation with a documented derivation. Acceptance met: analytical and
   exhaustive value tests, Nextest 60/60, all feature/doc/lint/semver gates, and
   a local-source Leto/Hephaestus integration check pass.
-- **E-024 [arch]** OCP-MXFP `FP8`(E4M3)/`FP4`(E2M1) formats (no infinity) via a
+- **E-024 [arch] — milestone: M-ecosystem.** OCP-MXFP `FP8`(E4M3)/`FP4`(E2M1) formats (no infinity) via a
   kernel special-value **policy parameter**, added when coeus/hephaestus
   quantization needs them. Dep: E-023 + a driving consumer. Acceptance: OCP
   reference vectors match; existing IEEE-style types unchanged. ADR 0003 D3.
@@ -272,8 +278,8 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   (default-on) feature and gating its impls is NOT purely additive —
   `default-features = false` consumers (e.g. hephaestus GPU buffers) rely on
   `eunomia::Complex: bytemuck::Pod`, so it requires consumer verification, not a
-  solo eunomia commit.
-- **E-027 [arch] — in-progress; owner: Codex; branch:
+  solo eunomia commit. Milestone: M-layout-derives (E-026 gating exit).
+- **E-027 [arch] — in-progress; milestone: M-layout-derives; owner: Codex; branch:
   `feat/eunomia-layout-derives`.** Add the provider-owned `Pod`/`Zeroable`
   derives required by the consumer GPU-ABI migration, then migrate consumer
   GPU-ABI structs (hephaestus ~130, coeus ~115, …) onto the E-026 vocabulary
@@ -496,7 +502,7 @@ for the remaining ~19 apollo crates):
     whole workspace is on leto + eunomia, apollo-fft can't merge (the ~19 consumer
     crates + tests keep it red).
 
-- **E-011 [arch]** **apollo FIRST (critical-path upstream).** ~250 num_complex
+- **E-011 [arch] — milestone: M-ecosystem.** **apollo FIRST (critical-path upstream).** ~250 num_complex
   files across ~20 crates (apollo-{fft,czt,dctdst,dht,frft,fwht,gft,hilbert,mellin,
   ntt,nufft,qft,radon,sdft,sft,sht,stft,…}). apollo-fft *alone* is 121 num_complex
   files (larger than the whole gaia migration), and is consumed by ~19 sibling
@@ -508,10 +514,10 @@ for the remaining ~19 apollo crates):
   `features=["num-complex"]` → `["eunomia"]`; consolidate the GPU `ComplexPod
   {re,im}` structs onto `eunomia::Complex<f32>`. **FFT-numerics correctness is the
   gate** (differential vs reference transforms) — not rushable.
-- **E-012 [arch]** **ritk** — UNBLOCKED ONLY AFTER apollo-fft (E-011). Then a clean
+- **E-012 [arch] — milestone: M-ecosystem.** **ritk** — UNBLOCKED ONLY AFTER apollo-fft (E-011). Then a clean
   ~10-file swap of ritk-filter (`num_complex::Complex` → `eunomia::Complex`,
   drop the `num-complex` bytemuck dep). Trial run done + reverted; resume post-apollo.
-- **E-012b [arch]** **CFDrs.** Sparse-linalg blocker **largely RESOLVED** (earlier
+- **E-012b [arch] — milestone: M-ecosystem.** **CFDrs.** Sparse-linalg blocker **largely RESOLVED** (earlier
   "needs a whole new sparse crate" was wrong). **Sparse linear algebra lives in
   leto-ops (CPU) + hephaestus (GPU), hermes-SIMD-backed** — the same layering as
   the dense linalg, NOT a separate crate. `leto-ops::application::sparse` already
@@ -530,6 +536,7 @@ for the remaining ~19 apollo crates):
   `SparsityPattern` analogue; CSC format. (gaia-style per-site migration.)
 - **E-013 [minor]** Replace direct `num-traits` deps with `eunomia::FloatElement`/
   `NumericElement`.
+  - **CFDrs, gaia remainder — milestone: M-ecosystem.**
   - **leto: DONE** — leto PR #6 (reduction/statistics off num_traits::Float/Zero/
     One; num-traits dropped from leto + leto-ops; full suite green). Enabled by
     the float-surface completion below.
