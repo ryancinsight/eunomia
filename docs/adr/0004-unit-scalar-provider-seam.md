@@ -15,7 +15,7 @@ Revision 2026-09-21 (cont., [patch]): the new method's first name,
 `divide_by_f64`, embedded the coefficient's type in the identifier —
 the same defect the sibling `scale_by_f64` already carried. Both rename to
 `divide_by_factor`/`scale_by_factor` for
-[EUNOMIA-TYPE-SUFFIXED-UNIT-METHODS-2026-09-21](../../backlog.md#eunomia-type-suffixed-unit-methods-2026-09-21):
+PR #100 (`87a6a4a`):
 the coefficient's concrete `f64` precision is a real, ADR-mandated contract
 (native storage-precision division, never a widen/narrow), so it stays in
 the signature (`factor: f64`); it does not need restating in the name. Since
