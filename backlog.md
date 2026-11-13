@@ -1,7 +1,5 @@
 # Eunomia backlog
 
-<a id="EUNOMIA-DIGAMMA"></a>
-
 <a id="eunomia-numpy-030-unreleased-bundle"></a>
 ## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE — Bundle optional interop in the 0.12 cohort [major]
 
@@ -26,25 +24,6 @@
   the factory owner under the approved plan; accepted ADR 0010 stays intact.
 - Hold: no factory-only 0.11 publication. Merge/publication remain pending the
   combined gates, required review and bridge-first consumer coordination.
-
-<a id="eunomia-digamma"></a>
-## EUNOMIA-DIGAMMA [minor]
-
-- status: todo; priority: verification; needs: none; integrator: task-4
-
-Owner: task-4, branch `feat/digamma-provider`, base `23c6047`. Add a
-compatible default scalar method with a native double-precision override.
-Contract and acceptance: [design](docs/design/digamma.md). Missing API is
-reproduced by the pre-implementation scalar test. Provider validation passes
-228 native cases plus the six-way feature matrix, strict diagnostics and docs;
-API classification passes 196 checks. Independent implementation review clears
-native precision and propagated numerical budgets. The candidate is delivered
-in [PR #185](https://github.com/ryancinsight/eunomia/pull/185). Final-head review,
-hosted/release checks, provider publication receipts and downstream canonical
-consumers remain gates. Existing user authorization covers repaired-package
-publication after final checks; no new general approval is required. Hardware
-remains a separate provider owner.
-
 
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
