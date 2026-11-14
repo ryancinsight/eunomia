@@ -384,6 +384,30 @@ pub trait FloatElement: private::Sealed + NumericElement {
         power::powi(self, n)
     }
 
+    /// `self` to the `n`th power for every `u32` exponent, by squaring in `Self`.
+    ///
+    /// A negative, zero or infinite base keeps the sign its parity gives,
+    /// `nth_power(0)` is one for every base, and NaN otherwise stays NaN. Overflow
+    /// reaches the signed infinity, or the signed largest finite value for the
+    /// finite-only [`F4`](crate::F4), [`Bf4`](crate::Bf4) and [`F8`](crate::F8);
+    /// underflow passes through the subnormals (`F4` has none) to a signed zero.
+    /// Up to `i32::MAX` the result equals [`powi`](Self::powi) bit for bit.
+    ///
+    /// With `u` the unit roundoff of `Self` and no intermediate overflow or subnormal
+    /// result, the relative error is at most `(1 + u)^(n−1) − 1` for `n ≥ 1`, and
+    /// `(n − 1)·u / (1 − (n − 1)·u)` when `(n − 1)·u < 1`; the kernel derives both.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(eunomia::FloatElement::nth_power(3.0_f64, 4), 81.0);
+    /// assert_eq!(eunomia::FloatElement::nth_power(-1.0_f32, (1 << 24) + 1), -1.0);
+    /// ```
+    #[inline]
+    fn nth_power(self, n: u32) -> Self {
+        power::nth_power(self, n)
+    }
+
     /// Base-10 logarithm, `log₁₀(self)`.
     ///
     /// Default routes through `f32` via `libm`; `f64` overrides with the
