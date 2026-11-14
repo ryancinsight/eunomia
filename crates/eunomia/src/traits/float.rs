@@ -4,7 +4,6 @@
 use super::{private, NumericElement};
 
 mod power;
-use power::powi_positive;
 
 /// Float-specific capabilities.
 pub trait FloatElement: private::Sealed + NumericElement {
@@ -382,30 +381,7 @@ pub trait FloatElement: private::Sealed + NumericElement {
     /// no per-type implementation needed, so no precision is lost.
     #[inline]
     fn powi(self, n: i32) -> Self {
-        // `unsigned_abs`, never `-n`: `i32::MIN` has no positive `i32`
-        // negation (`-n` panics in debug, wraps to `MIN` and returns `ONE` in
-        // release). `u32` holds 2^31 exactly.
-        let exp = n.unsigned_abs();
-        let acc = powi_positive(self, exp);
-        if n < 0 {
-            // No `is_infinite` on `NumericElement` (deliberately: infinities
-            // are not portable across all element types); infinite ⟺
-            // neither finite nor NaN.
-            if !acc.is_finite() && !acc.is_nan() {
-                // Cold path: the upward power overflowed, so the true
-                // quotient underflows — recompute working downward to
-                // preserve IEEE gradual underflow instead of flushing to
-                // +0 (`(-2)^-130` is the subnormal 2^-130). Inverting first
-                // unconditionally would instead round the reciprocal early
-                // and amplify that error |n|-fold (measured: 8 ulp off std
-                // at |n| = 10).
-                powi_positive(<Self as NumericElement>::ONE / self, exp)
-            } else {
-                <Self as NumericElement>::ONE / acc
-            }
-        } else {
-            acc
-        }
+        power::powi(self, n)
     }
 
     /// Base-10 logarithm, `log₁₀(self)`.
