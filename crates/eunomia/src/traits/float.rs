@@ -4,7 +4,6 @@
 use super::{private, NumericElement};
 
 mod power;
-use power::powi_positive;
 
 /// Float-specific capabilities.
 pub trait FloatElement: private::Sealed + NumericElement {
@@ -378,34 +377,35 @@ pub trait FloatElement: private::Sealed + NumericElement {
     /// `self` raised to an integer power via exponentiation by squaring.
     ///
     /// Exact for integer exponents and correct for negative bases (unlike
-    /// [`powf`](Self::powf)). A default over the [`NumericElement`] arithmetic —
-    /// no per-type implementation needed, so no precision is lost.
+    /// [`powf`](Self::powf)). A default over the [`NumericElement`] arithmetic,
+    /// so no precision is lost. Exponents above `i32::MAX`: [`nth_power`](Self::nth_power).
     #[inline]
     fn powi(self, n: i32) -> Self {
-        // `unsigned_abs`, never `-n`: `i32::MIN` has no positive `i32`
-        // negation (`-n` panics in debug, wraps to `MIN` and returns `ONE` in
-        // release). `u32` holds 2^31 exactly.
-        let exp = n.unsigned_abs();
-        let acc = powi_positive(self, exp);
-        if n < 0 {
-            // No `is_infinite` on `NumericElement` (deliberately: infinities
-            // are not portable across all element types); infinite ⟺
-            // neither finite nor NaN.
-            if !acc.is_finite() && !acc.is_nan() {
-                // Cold path: the upward power overflowed, so the true
-                // quotient underflows — recompute working downward to
-                // preserve IEEE gradual underflow instead of flushing to
-                // +0 (`(-2)^-130` is the subnormal 2^-130). Inverting first
-                // unconditionally would instead round the reciprocal early
-                // and amplify that error |n|-fold (measured: 8 ulp off std
-                // at |n| = 10).
-                powi_positive(<Self as NumericElement>::ONE / self, exp)
-            } else {
-                <Self as NumericElement>::ONE / acc
-            }
-        } else {
-            acc
-        }
+        power::powi(self, n)
+    }
+
+    /// `self` to the `n`th power for every `u32` exponent, by squaring in `Self`.
+    ///
+    /// Every step is a product in `Self`: the sign of a negative base follows
+    /// the parity of `n`, a zero base stays defined, and `nth_power(0)` is one.
+    /// Overflow reaches the signed infinity (or the format's finite-only policy);
+    /// underflow passes through the subnormals to a signed zero. Up to `i32::MAX`
+    /// the result equals [`powi`](Self::powi)'s bit for bit. Without intermediate
+    /// overflow or underflow the relative error is at most
+    /// `γ(n − 1) = (n − 1)·u / (1 − (n − 1)·u)`, `u` the unit roundoff of `Self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use eunomia::FloatElement;
+    ///
+    /// assert_eq!(FloatElement::nth_power(3.0_f64, 4), 81.0);
+    /// // The sign of `-1` survives past `f32`'s exact-integer limit, 2^24.
+    /// assert_eq!(FloatElement::nth_power(-1.0_f32, (1 << 24) + 1), -1.0);
+    /// ```
+    #[inline]
+    fn nth_power(self, n: u32) -> Self {
+        power::nth_power(self, n)
     }
 
     /// Base-10 logarithm, `log₁₀(self)`.

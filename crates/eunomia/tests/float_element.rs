@@ -17,6 +17,8 @@
 
 use eunomia::{Bf16, FloatElement, NumericElement, F16, F32, F64};
 
+#[path = "float_element/nth_power.rs"]
+mod nth_power;
 #[path = "float_element/reduced_arithmetic.rs"]
 mod reduced_arithmetic;
 mod support;

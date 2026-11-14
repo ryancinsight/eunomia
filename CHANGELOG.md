@@ -21,6 +21,11 @@ All notable changes to Eunomia are documented here.
 
 ### Added
 
+- `FloatElement::nth_power(self, n: u32)`, the exponentiation-by-squaring
+  kernel behind `powi`, for the full `u32` exponent range: the sign of a
+  negative base follows the parity of `n` past `2^24` and `i32::MAX`, a zero
+  base stays defined, and `powi` now calls it. The kernel no longer forms the
+  trailing square it never reads; results are unchanged bit for bit.
 - Real `FloatElement::digamma` with native `f32`/`f64`/`F64` evaluation,
   documented reduced-storage software boundaries, signed pole behavior and
   analytic, identity, high-precision and encoding-boundary tests.
