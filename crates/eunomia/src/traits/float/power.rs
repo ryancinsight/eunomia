@@ -1,4 +1,5 @@
 //! Integer powers by repeated squaring: the kernel behind
+//! [`FloatElement::nth_power`](super::FloatElement::nth_power) and
 //! [`FloatElement::powi`](super::FloatElement::powi).
 
 use super::NumericElement;
@@ -7,6 +8,24 @@ use super::NumericElement;
 ///
 /// Forms at most `2·⌊log₂ exp⌋ + 1` products for `exp ≥ 1` and none for
 /// `exp = 0`, which gives one.
+///
+/// # Rounding error
+///
+/// Let `n = exp ≥ 1` and `u` be the unit roundoff of `T`: round to nearest
+/// makes each product the exact one times `1 + δ` with `|δ| ≤ u`. Assume no
+/// product overflows or is subnormal. The square `s_i` of the base `s_0 = x`
+/// carries `2^i − 1` factors `1 + δ` counted with multiplicity (`s_0` none,
+/// `s_i = fl(s_{i−1}²)` carries `2(2^(i−1) − 1) + 1`). The accumulator
+/// multiplies in the `k` squares the set bits of `n` select, and its first
+/// product `1·s` is exact, so the factors total `Σ(2^i − 1) + k − 1 = n − 1`
+/// and the result is `xⁿ·Π(1 + δ_j)` over `n − 1` factors. Expanding the
+/// product, `|Π(1 + δ_j) − 1| ≤ Π(1 + |δ_j|) − 1 ≤ (1 + u)^(n−1) − 1`, which
+/// holds for every `n`. For `m = n − 1` with `m·u < 1`,
+/// `(1 + u)^m ≤ (1 − u)^−m ≤ 1 / (1 − m·u)`, the first step because
+/// `(1 + u)(1 − u) ≤ 1` and the second by Bernoulli's inequality
+/// `(1 − u)^m ≥ 1 − m·u`, so the bound is at most `γ_m = m·u / (1 − m·u)`. For
+/// `m·u ≥ 1` (`n > 2^24` for `f32`) `γ_m` is undefined and only the first
+/// bound holds.
 #[inline(always)]
 pub(super) fn nth_power<T: NumericElement>(mut base: T, mut exp: u32) -> T {
     let mut acc = T::ONE;
