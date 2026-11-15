@@ -25,6 +25,18 @@
 - Hold: no factory-only 0.11 publication. Merge/publication remain pending the
   combined gates, required review and bridge-first consumer coordination.
 
+<a id="EUNOMIA-POWI-SATURATION"></a>
+## EUNOMIA-POWI-SATURATION — powi inverts a saturated power on finite-only formats [patch]
+
+- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: 09a46fe.
+- Outcome: `FloatElement::powi` with `n < 0` returns the format-rounded `x^n` on `Bf4`, `F8` and `F4` when the upward power saturates. The downward recompute at `crates/eunomia/src/traits/float/power.rs:61` fires only on a non-finite upward power; these formats clamp to their largest finite value, so the clamped value is inverted.
+- Evidence (`09a46fe`, every base, n in -9..-1, against `from_f64` of the exact power): `Bf4` powi(2, -2) = 0.5, want 0 (0.25 ties to even); 44 mismatches, all saturated (upward = ±3). `F8` powi(2, -9) = 2^-8, want 2^-9; 776 saturated mismatches (upward = ±240). `F4`: 0 mismatches, since 1/8 ties to zero as does every true value below it, so `F4` is unaffected.
+- Acceptance: new `crates/eunomia/tests/float_element/powi_saturation.rs`, test `powi_negative_exponent_rounds_the_exact_power_when_upward_saturates`, generic over `Bf4`, `F8`, `F4`: asserts the values above and the saturated-upward sweep; it fails at the basis and passes after the fix, with IEEE-format `powi` results bit-identical to the basis.
+- Next step: extend the recompute trigger to a saturated upward power (a legitimate power can also equal the largest finite value, so the trigger must not misclassify it).
+- Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/tests/float_element/`, `CHANGELOG.md`.
+- Non-goal: 242 further `F8` mismatches whose upward power is a rounded subnormal, not saturated; not classified here.
+- Driver: found reviewing `nth_power` (PR #198); the kernel move (PR #200) and `nth_power` (PR #201) kept the trigger.
+
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 
