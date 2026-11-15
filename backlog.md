@@ -31,8 +31,8 @@
 
 - status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: ce48289.
 - Outcome: `FloatElement::powi` with `n < 0` returns the format-rounded `x^n` on `Bf4`, `F8` and `F4` when the upward power saturates. The downward recompute at `crates/eunomia/src/traits/float/power.rs:61` fires only on a non-finite upward power; these formats clamp to their largest finite value, so the clamped value is inverted. Only saturation is held to a correctly rounded result, as no error bound exists there; unsaturated results keep the documented bound.
-- Evidence (`ce48289`, every base, n in -9..-1, against `from_f64` of the exact power): `Bf4` powi(2, -2) = 0.5, want 0 (0.25 ties to even); 44 mismatches, all saturated (upward = ±3). `F8` powi(2, -9) = 2^-8, want 2^-9; 776 saturated mismatches (upward = ±240). `F4`: 0 mismatches, since 1/8 ties to zero as does every true value below it. The 242 unsaturated `F8` mismatches split into 202 with a normal upward power, within the documented bound (expected variation: powi(0.3125, -2) = 11, exact power rounds to 10), and 40 with a subnormal one, filed as [EUNOMIA-POWI-SUBNORMAL-UPWARD](#EUNOMIA-POWI-SUBNORMAL-UPWARD).
-- Acceptance: new `crates/eunomia/tests/float_element/powi_saturation.rs`, test `powi_negative_exponent_rounds_the_exact_power_when_upward_saturates`, generic over `Bf4`, `F8`, `F4`: asserts the values above and the saturated-upward sweep, plus rows the basis already gets right that must stay right: `Bf4` powi(±1.5, -3) = ±0.5 and `F8` powi(±2.25, -7) = ±2^-8. It fails at the basis; IEEE-format `powi` results stay bit-identical.
+- Evidence (`ce48289`, every base, n in -9..-1, against `from_f64` of the exact power): `Bf4` powi(2, -2) = 0.5, want 0 (0.25 ties to even); 44 mismatches, all saturated (upward = ±3). `F8` powi(2, -9) = 2^-8, want 2^-9; 776 saturated mismatches (upward = ±240). `F4`: 0 mismatches, since 1/8 ties to zero as does every true value below it. The 242 unsaturated `F8` mismatches split into 202 with a normal upward power, within the documented bound composed with one reciprocal rounding (expected variation: powi(0.3125, -2) = 11, exact power rounds to 10), and 40 with a subnormal one, filed as [EUNOMIA-POWI-SUBNORMAL-UPWARD](#EUNOMIA-POWI-SUBNORMAL-UPWARD).
+- Acceptance: new `crates/eunomia/tests/float_element/powi_saturation.rs`, test `powi_negative_exponent_rounds_the_exact_power_when_upward_saturates`, generic over `Bf4`, `F8`, `F4`: asserts the values above and the saturated-upward sweep, plus rows the basis already gets right that must stay right: `Bf4` powi(±1.5, -3) = ±0.5 and `F8` powi(±2.25, -7) = ±2^-8. It fails at the basis; IEEE-format `powi` results stay bit-identical to those at `f574aa7f`, except rows with a subnormal upward power, which the sibling item changes.
 - Next step: saturation needs a correctly rounded path, not only a wider trigger: recomputing as `nth_power(ONE / x, |n|)` fixes the saturated cases but turns the two rows above wrong (verdict emulation, not run), so do not prescribe it; derive the path from the format's rounding.
 - Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/src/traits/float.rs:379` (the "Exact for integer exponents" claim is false at the basis; state the documented bound), `crates/eunomia/tests/float_element/powi_saturation.rs`, its `#[path]` line in `crates/eunomia/tests/float_element.rs`, `crates/eunomia/tests/float_element/integer_power.rs:84-150` (skips the saturated inversion and pins `Bf4`/`F8` bitwise to the old loop, defective values included), `CHANGELOG.md`.
 - Non-goal: the 202 normal-upward `F8` cases and the subnormal-upward regime, which the sibling item owns.
@@ -43,11 +43,11 @@
 
 - status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: ce48289.
 - Outcome: `FloatElement::powi` with `n < 0` stays within a derived error bound when the upward power is subnormal. No bound covers it: the derivation at `crates/eunomia/src/traits/float/power.rs:12-28` assumes no subnormal product, and the trigger at line 61 handles only a non-finite one. The subnormal rounding loses relative precision, and the reciprocal carries that loss into a normal or overflowing result.
-- Evidence (`ce48289`, run): `F8` powi(±0.0703125, -2) = 176, correct 208 (exact 202.27); `Bf8` powi(0.02734375, -3) = +inf, correct 49152 (exact 48913.17, below the largest finite 57344); `f32` powi(1.432404e-13, -3) = 3.4025413e38, want 3.4025415e38, 882 of 10235 sampled subnormal-upward cases off. `F8`: 40 of its mismatches have a subnormal upward power.
-- Acceptance: test `powi_negative_exponent_with_subnormal_upward_power_stays_within_bound` in `crates/eunomia/tests/float_element/`, generic over `F8`, `Bf8`, `f32`, asserting the three rows above against the derived bound; it fails at the basis.
+- Evidence (`ce48289`, run): `F8` powi(±0.0703125, -2) = 176, correct 208 (exact 202.27); `Bf8` powi(0.02734375, -3) = +inf, correct 49152 (exact 48913.17, below the largest finite 57344); `f32` powi(1.4323644e-13 = 0x2a214518, -3) = +inf, correct `f32::MAX` = 3.4028235e38 (the upward power is subnormal, 2^-128 after rounding, and its reciprocal overflows; `f32::powi` agrees with the correct value; the same scan finds `n` = 5 at 0x32a8e5a3 and `n` = 9 at 0x385b7458). `F8`: 40 of its mismatches have a subnormal upward power.
+- Acceptance: test `powi_negative_exponent_with_subnormal_upward_power_stays_within_bound` in `crates/eunomia/tests/float_element/`, generic over `F8`, `Bf8`, `f32`, asserting the three rows above against the derived bound (the `f32` row is the `+inf` one); it fails at the basis.
 - Next step: extend the derivation at `power.rs:12-28` to a subnormal upward power, then choose a path that meets it on every format; it shares the `power.rs:61` trigger with [EUNOMIA-POWI-SATURATION](#EUNOMIA-POWI-SATURATION), so land one and merge the other.
 - Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/src/traits/float.rs:379`, `crates/eunomia/tests/float_element/` and its `#[path]` line in `crates/eunomia/tests/float_element.rs`, `CHANGELOG.md`.
-- Driver: judge verdict on PR #203 (witnesses for `F8`, `Bf8`); `f32` witness measured by the filer.
+- Driver: judge verdict on PR #203 (witnesses for `F8`, `Bf8`); `f32` witness: judge round 2 finding 1 on PR #203, `f32` row reproduced by the filer at `f574aa7f`.
 
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
@@ -82,7 +82,8 @@ Sprint target: 0.8.0 (native reduced-precision provider contract).
 - **Non-goal:** `F64_NATIVE_TOL` in the same file denotes the crate's `F64`
   wrapper type, not a generic scalar dimension, and keeps its name.
 
-## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] — done <a id="eunomia-structure-float-special-2026-09-21"></a>
+<a id="eunomia-structure-float-special-2026-09-21"></a>
+## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] — done
 
 - Closed 2026-11-10: split into contract leaves (`4b846d9`); every leaf is at
   or under the 500-line target (largest 455); all 18 tests remain with bodies
@@ -95,12 +96,14 @@ Sprint target: 0.8.0 (native reduced-precision provider contract).
 - **Non-goals:** the other `tests/*.rs` binaries (one target each, a separate
   consolidation item) and any change to the oracles themselves.
 
-## E-037 [patch] — Remove the external reduced-precision oracle — done <a id="e-037-oracle"></a>
+<a id="e-037-oracle"></a>
+## E-037 [patch] — Remove the external reduced-precision oracle — done
 
 - Landed `a296e12` (PR #85). Eunomia's manifests and source carry no `half`
   dependency or import; the independent IEEE-754 oracle retains the exhaustive
   bit-pattern and rounding-sweep coverage.
 
+<a id="eunomia-closure-refresh-0-8-0"></a>
 ## 0.8.0 closure refresh — 2026-08-10
 
 The Eunomia 0.8.0 provider surface is source-complete and indexed on crates.io
@@ -124,7 +127,8 @@ check, warning-denied all-target/all-feature Clippy, Nextest **117/117**
 The Nextest count continues to grow with new value-semantic tests (was
 116/116 at the clean-clone snapshot).
 
-## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — Verify the optional NumPy boundary [patch] — done <a id="atlas-eunomia-numpy-ci"></a>
+<a id="atlas-eunomia-numpy-ci"></a>
+## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — Verify the optional NumPy boundary [patch] — done
 
 - The `numpy` CI job provisions pinned Python 3.13 and NumPy 2.5.1, installs
   the pinned Nextest binary, and asserts the dtype names and item sizes for
@@ -132,7 +136,8 @@ The Nextest count continues to grow with new value-semantic tests (was
 - Collected: run `33840122785` at main head `02397fa`, job **NumPy feature
   contract — success**.
 
-## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — Unify scalar NaN and signed-zero laws [major] [arch] — done <a id="atlas-eunomia-nan-contract"></a>
+<a id="atlas-eunomia-nan-contract"></a>
+## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — Unify scalar NaN and signed-zero laws [major] [arch] — done
 
 - One real-scalar table for one/two NaNs and `±0` governs the `NumericElement`
   min/max default, the primitive float overrides, the reduced-precision
@@ -140,6 +145,7 @@ The Nextest count continues to grow with new value-semantic tests (was
 - Hosted gates green at main head `02397fa` (CI run `33840122785`); the Atlas
   provider pointer already reads that head, closing the convergence box.
 
+<a id="eunomia-recently-completed"></a>
 ## Recently completed
 
 - **FloatElement sign-preserving roots — done; owner: Codex.** Added
@@ -179,6 +185,7 @@ The Nextest count continues to grow with new value-semantic tests (was
   `eunomia::Complex` directly in device buffers and Python NumPy results.
   Delivered by Eunomia PR #36, Hephaestus PR #48, and Leto PR #42.
 
+<a id="eunomia-byte-layout-reduced-precision"></a>
 ## Byte-layout & reduced-precision (E-022…E-030)
 
 Workstream: own native reduced-precision conversion + a byte-layout vocabulary;
@@ -345,6 +352,7 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   (f8, where compute lost to the gather), the analytical model held —
   autovectorization confirmed by measurement.
 
+<a id="eunomia-done"></a>
 ## Done
 
 - **E-012 [minor]** Added provider-owned float-to-`usize` `CastFrom` edges for
@@ -371,6 +379,7 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   `PartialOrd` to eunomia for the sealed `Scalar` bound). — eunomia PR #1, coeus
   PR #94; coeus-core 57 tests green. Last duplicate native complex type closed.
 
+<a id="eunomia-capabilities-num-complex-removal"></a>
 ## Capabilities (done — enable stack-wide num-complex/num-traits removal)
 
 - **E-008 [minor]** Full `num_complex`-equivalent Complex surface
@@ -391,6 +400,7 @@ Scope: `convert/`, `types/floats.rs`, `packed/`, `casts/`, `impls/wrappers/`,
   `cargo check -p eunomia`, `cargo clippy -p eunomia --all-targets -- -D warnings`,
   and `cargo nextest run -p eunomia` pass.
 
+<a id="eunomia-roadmap-num-complex-migration"></a>
 ## Roadmap — consumer num-complex → eunomia migration (tracked [arch])
 
 Prereqs now satisfied: full Complex surface (E-008), serde (E-009), mnemosyne
@@ -573,6 +583,7 @@ for the remaining ~19 apollo crates):
 - **E-007 [minor]** GPU layout vector types grow as a backend consumer appears;
   std140 UBO alignment stays a buffer-packing concern, not a type property.
 
+<a id="eunomia-capabilities-and-cleanup"></a>
 ## Capabilities + cleanup (done, this round)
 
 - **E-014 [patch]** Vertical-hierarchy/SRP cleanup: `eunomia-gpu` flat lib.rs →
@@ -600,6 +611,7 @@ Note: Leto and Hephaestus no longer declare `num-complex`. Leto retains
 transitive `num-complex` edges are excluded from the production graph and
 tracked for independent-oracle retirement in Leto.
 
+<a id="eunomia-cleanup-redundancy-removal"></a>
 ## Cleanup (redundancy removal)
 
 - **E-019 [patch]** Removed the dead `eunomia-gpu` crate: it had zero external
@@ -609,6 +621,7 @@ tracked for independent-oracle retirement in Leto.
   GPU-vector concern does not belong in the datatype crate. eunomia is now a
   single-crate workspace. README + diagram synced.
 
+<a id="eunomia-adr-governance-index-refresh"></a>
 ## ADR governance — generated index refresh
 
 - **[patch]** Refresh the generated ADR index from the existing canonical
