@@ -36,7 +36,8 @@ pub trait RealField: FloatElement + PartialOrd + Neg<Output = Self> {
     fn infinity() -> Self;
     fn neg_infinity() -> Self;
     fn nan() -> Self;
-    fn min_value() -> Self;
+    fn min_value() -> Self; // smallest finite value (not -inf)
+    fn max_value() -> Self; // largest finite value (not +inf)
     // ...
 }
 ```

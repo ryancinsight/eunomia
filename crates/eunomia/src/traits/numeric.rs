@@ -133,14 +133,18 @@ pub trait NumericElement:
         }
     }
 
-    /// The minimum representable finite value (negative infinity or `i32::MIN`).
+    /// The identity element of `Max` reductions: negative infinity for floats
+    /// (so an infinite operand still reduces to itself), `MIN` for integers.
     ///
-    /// Used as the identity element for `Max` reductions.
+    /// Not the smallest finite value of a float format; that is
+    /// [`RealField::min_value`](crate::RealField::min_value).
     const MIN_VALUE: Self;
 
-    /// The maximum representable finite value (positive infinity or `i32::MAX`).
+    /// The identity element of `Min` reductions: positive infinity for floats
+    /// (so an infinite operand still reduces to itself), `MAX` for integers.
     ///
-    /// Used as the identity element for `Min` reductions.
+    /// Not the largest finite value of a float format; that is
+    /// [`RealField::max_value`](crate::RealField::max_value).
     const MAX_VALUE: Self;
 
     /// Saturating addition.

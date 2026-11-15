@@ -19,6 +19,14 @@ impl RealField for f32 {
     const EPSILON: Self = f32::EPSILON;
 
     #[inline]
+    fn min_value() -> Self {
+        f32::MIN
+    }
+    #[inline]
+    fn max_value() -> Self {
+        f32::MAX
+    }
+    #[inline]
     fn copysign(self, sign: Self) -> Self {
         libm::copysignf(self, sign)
     }
@@ -37,6 +45,14 @@ impl RealField for f64 {
     const SQRT_2: Self = core::f64::consts::SQRT_2;
     const EPSILON: Self = f64::EPSILON;
 
+    #[inline]
+    fn min_value() -> Self {
+        f64::MIN
+    }
+    #[inline]
+    fn max_value() -> Self {
+        f64::MAX
+    }
     #[inline]
     fn copysign(self, sign: Self) -> Self {
         libm::copysign(self, sign)
@@ -66,6 +82,14 @@ impl RealField for F32 {
     const EPSILON: Self = F32(f32::EPSILON);
 
     #[inline]
+    fn min_value() -> Self {
+        F32(f32::MIN)
+    }
+    #[inline]
+    fn max_value() -> Self {
+        F32(f32::MAX)
+    }
+    #[inline]
     fn copysign(self, sign: Self) -> Self {
         F32(libm::copysignf(self.0, sign.0))
     }
@@ -86,6 +110,14 @@ impl RealField for F64 {
     const SQRT_2: Self = F64(core::f64::consts::SQRT_2);
     const EPSILON: Self = F64(f64::EPSILON);
 
+    #[inline]
+    fn min_value() -> Self {
+        F64(f64::MIN)
+    }
+    #[inline]
+    fn max_value() -> Self {
+        F64(f64::MAX)
+    }
     #[inline]
     fn copysign(self, sign: Self) -> Self {
         F64(libm::copysign(self.0, sign.0))
