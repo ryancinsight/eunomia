@@ -52,26 +52,31 @@
 <a id="EUNOMIA-COMPLEX-REDUCTION-IDENTITY"></a>
 ## EUNOMIA-COMPLEX-REDUCTION-IDENTITY — Complex MIN_VALUE/MAX_VALUE are not Max/Min fold identities [patch]
 
-- status: todo; priority: correctness; needs: none; basis: 9cba23be236e.
+- status: todo; priority: correctness; needs: none; basis: 548cb3f0229b.
 - milestone: M-special-functions.
-- Outcome: for `Complex<T>`, a Max fold seeded with `MIN_VALUE` and a Min
-  fold seeded with `MAX_VALUE` return the element, never the seed, in either
-  argument order; or the contract states `Complex` has no reduction identity
-  and consumers stop seeding with it.
-- Evidence (derived from reading, not run): `impls/primitives/numeric.rs`
-  builds the constants as `(T::MIN_VALUE, 0)`/`(T::MAX_VALUE, 0)`, and
-  `max_scalar`/`min_scalar` order lexicographically (re, then im), so Max over
-  `(T::MIN_VALUE, -1)` seeded with `(T::MIN_VALUE, 0)` returns the seed. PR
-  #205 scoped the identity docs to reals and makes no claim for `Complex`.
-- Acceptance: a test generic over the shipped `Complex<T>` instantiations;
-  for re in {MIN, MAX, finite} x im in {negative, 0, positive},
+- Outcome: for `Complex<T>` with no NaN component, a Max fold seeded with
+  `MIN_VALUE` and a Min fold seeded with `MAX_VALUE` return the element,
+  never the seed, in either argument order. The constants become
+  `(T::MIN_VALUE, T::MIN_VALUE)` and `(T::MAX_VALUE, T::MAX_VALUE)`, the
+  least and greatest pairs under the lexicographic order, and their
+  `Complex` doc paragraphs follow. NaN stays outside the contract, as for
+  the real-scalar `max_scalar` (`traits/numeric.rs:107-111`).
+- Evidence (read; run by the judge of PR #206 at `9cba23be236e`): the
+  constants are `(T::MIN_VALUE, 0)`/`(T::MAX_VALUE, 0)`; the grid below
+  fails at exactly Max re=MIN im<0 and Min re=MAX im>0 and passes with the
+  new constants.
+- Acceptance: test `complex_reduction_identity_returns_the_element` in
+  `crates/eunomia/tests/complex_provider_contract.rs`, generic over every
+  shipped `Complex<T>`, that is every `T: NumericElement + Neg<Output = T>`
+  (`impls/primitives/numeric.rs:247-250`), including `f32`, `f64`, `i32`,
+  `F16`, `F8`, `I8`; for re in {MIN, MAX, ONE} x im in {-ONE, ZERO, ONE},
   `max_scalar(MIN_VALUE, v) == v == max_scalar(v, MIN_VALUE)` and the Min
   analogue. It fails at the basis.
-- Next step: choose between changing the constants and removing the claim;
-  then check hermes/leto Min/Max seed sites for `Complex` instantiation.
+- Next step: change the constants and docs; read the hermes and leto Min/Max
+  seed sites for `Complex` that assume a zero imaginary part.
 - Scope: `crates/eunomia/src/impls/primitives/numeric.rs`,
-  `crates/eunomia/src/traits/numeric.rs`, `crates/eunomia/tests/`,
-  `CHANGELOG.md`.
+  `crates/eunomia/src/traits/numeric.rs`,
+  `crates/eunomia/tests/complex_provider_contract.rs`, `CHANGELOG.md`.
 
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
