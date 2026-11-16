@@ -122,14 +122,29 @@
   rounded complex products (the first, one times the base, is exact) and that bound.
 - Scope: `crates/eunomia/src/types/complex/float.rs`.
 
+<a id="EUNOMIA-0-12-COHORT-REVIEW"></a>
+## EUNOMIA-0-12-COHORT-REVIEW — merged #182 (`feat!`, major) has no independent review of its final head [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 38d0e2fff1c9.
+- Outcome: a judge that did not generate it reviews eunomia#182 (`feat!`, merged as `b2477bd8fde1`) at its final head `0dccc32c0da7` against ADR 0010 and ADR 0011,
+  and each gating finding is fixed forward.
+- Evidence (`38d0e2fff1c9`, run): `gh pr view 182 --json reviews,reviewDecision` lists no review and an empty decision; the statuses API lists none for `0dccc32c0da7` or `b2477bd8fde1`.
+  The review recorded in #182's body targets a head that is not an ancestor of `0dccc32c0da7`, which was re-carried onto the 0.11.0 baseline, so it does not cover the merged head.
+  `0dccc32c0da7` is in tag `crate-eunomia-v0.12.0`; its check run `ADR index is current` failed, and `775f8ce`, which regenerates the index, is on origin/main and not in that tag.
+- Acceptance: `gh api repos/ryancinsight/eunomia/commits/0dccc32c0da7/statuses` lists a `judge` status whose creator is not `github-actions[bot]` (it lists none at the basis),
+  and every gating finding of that verdict is closed by a merged fix-forward PR, or the verdict has none.
+- Next step: dispatch the judge with ADR 0010 and ADR 0011 as the oracle and the artifact at `0dccc32c0da7`, without generator reasoning.
+- Scope: `CHANGELOG.md`, `README.md`, `Cargo.toml`, `Cargo.lock`, `crates/eunomia/Cargo.toml`, `crates/eunomia/src/convert/count.rs`, `crates/eunomia/src/impls/primitives/float.rs`,
+  `crates/eunomia/src/impls/wrappers/float.rs`, `crates/eunomia/src/traits/float.rs`,
+  `docs/adr/0010-const-native-float-construction.md`, `docs/adr/0011-numpy-030-unreleased-bundle.md`, `docs/adr/README.md`.
+
 <a id="EUNOMIA-CHECKLIST-RETIRE"></a>
 ## EUNOMIA-CHECKLIST-RETIRE — root `checklist.md` is a retired board form [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 2327b325c5fc.
 - Outcome: `checklist.md` (236 lines) is deleted with no open state lost: each of its 12 open boxes is closed with evidence or lives in a board item, as hyperion#107 did.
   The board lint counts the file (`board_checklist_files` in `scripts/atlas-board-lint.py`, atlas) and the conformance scan holds that count non-increasing per member.
-- Evidence (`2327b325c5fc`, read): the 12 `- [ ]` boxes sit in `EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE` (3), `EUNOMIA-CONST-NATIVE-FLOAT` (4), `E-037` (1),
-  `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21` (3), `ATLAS-EUNOMIA-NUMPY-CI-2026-08-20` (1). The three bundle boxes (gates and review; checks, reviews and floors;
-  merge and publication) lapse with the #182 merge (`b2477bd8fde1`) and the 0.12.0 publication; a consumer floor is an item on the consumer's board.
+- Evidence (`2327b325c5fc`, read): the 12 `- [ ]` boxes sit in `EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE` (3: file lines 18, 20, 21), `EUNOMIA-CONST-NATIVE-FLOAT` (4), `E-037` (1),
+  `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21` (3), `ATLAS-EUNOMIA-NUMPY-CI-2026-08-20` (1). Line 21 (merge and publication) closes with the #182 merge (`b2477bd8fde1`) and the 0.12.0 publication.
+  Lines 18 and 20 hold the independent review, open and carried by `EUNOMIA-0-12-COHORT-REVIEW`, and gates, checks and floors: the closing PR names their receipts; floors belong on consumer boards.
   `e-037-oracle` (`a296e12`, PR #85), `atlas-eunomia-nan-contract` and `atlas-eunomia-numpy-ci` are done blocks; ADR 0010 delivers CONST-NATIVE-FLOAT in 0.12.0
   (`0dccc32`, in tag `crate-eunomia-v0.12.0`). Outside the file, `docs/adr/0009-default-release-version.md:43` reads "the backlog and checklist record the release as pending".
 - Acceptance: `git ls-files checklist.md` prints nothing at the closing PR head (it prints the file at the basis); the closing PR body names, for each of the 12 boxes,
