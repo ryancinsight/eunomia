@@ -1,8 +1,7 @@
 //! Contract of [`FloatElement::powi`] for a negative exponent on the finite-only formats `Bf4`,
-//! `F8` and `F4`, whose overflowing product clamps to the largest finite value. When the upward
-//! power `|x|^e` clamps, its reciprocal is not `x^-e` (`F8` `powi(2, -9)`: `512` clamps to `240`
-//! and `1/240` rounds to `2^-8`); the result must be the exact `x^-e` rounded once into the
-//! format.
+//! `F8` and `F4`, whose overflowing product clamps to the largest finite value. A clamped upward
+//! power `|x|^e` is not `x^e` (`F8` `powi(2, -9)`: `512` clamps to `240`, `1/240` rounds to
+//! `2^-8`); the result must be the exact `x^-e` rounded once into the format.
 //!
 //! Two independent references check every saturated row:
 //!
@@ -72,9 +71,8 @@ fn representable<T: FloatElement>(value: f64) -> bool {
     NumericElement::to_f64(make::<T>(value)) == value
 }
 
-/// `σ` with `2^-σ` the least positive value of `T`: the largest `k` for which
-/// `T` still holds `2^-k` (the next power is half of it, a tie that rounds to
-/// zero).
+/// `σ` with `2^-σ` the least positive value of `T`: the largest `k` with `2^-k` held (half of it
+/// is a tie that rounds to zero).
 fn least_positive_exponent<T: FloatElement>() -> i32 {
     (0..=30)
         .rev()
@@ -82,8 +80,7 @@ fn least_positive_exponent<T: FloatElement>() -> i32 {
         .expect("invariant: every format holds 2^0")
 }
 
-/// `value = significand · 2^exponent` with `significand` odd; `value` a
-/// finite nonzero normal `f64`.
+/// `value = significand · 2^exponent` with `significand` odd, for a normal `f64`.
 fn odd_significand(value: f64) -> (u32, i32) {
     let bits = value.abs().to_bits();
     let field = i32::try_from(bits >> 52).expect("invariant: 11-bit field");
@@ -96,15 +93,6 @@ fn odd_significand(value: f64) -> (u32, i32) {
     )
 }
 
-/// `2^exponent` as an `f64`; zero below the least subnormal.
-fn power_of_two_or_zero(exponent: i32) -> f64 {
-    if exponent < -1074 {
-        0.0
-    } else {
-        power_of_two(exponent)
-    }
-}
-
 /// The exact `x^-e` rounded once into `T`, as an `f64` magnitude, by the
 /// integer oracle. `x > 1` and `e ≤ ORACLE_EXPONENT_LIMIT`.
 fn oracle_magnitude<T: FloatElement>(base: f64, exponent: u32) -> f64 {
@@ -115,7 +103,7 @@ fn oracle_magnitude<T: FloatElement>(base: f64, exponent: u32) -> f64 {
         let shift = power
             .checked_mul(exponent_signed)
             .expect("invariant: small product");
-        return NumericElement::to_f64(make::<T>(power_of_two_or_zero(-shift)));
+        return NumericElement::to_f64(make::<T>(power_of_two(-shift)));
     }
     let mut odd_power = BigUint::one();
     for _ in 0..exponent {
@@ -241,9 +229,9 @@ fn powi_negative_exponent_rounds_the_exact_power_when_upward_saturates() {
     check_saturated_sweep::<Bf4>();
     check_saturated_sweep::<F8>();
     check_saturated_sweep::<F4>();
-    // 0.25 is half the least `Bf4` value, a tie to zero; 1.5^3 clamps to 3 but 1/3.375 rounds to 0.5.
+    // 0.25 is half the least `Bf4` value, a tie to zero; 1.5^3 clamps to 3, 1/3.375 rounds to 0.5.
     check_rows::<Bf4>(&[(2.0, -2, 0.0), (1.5, -3, 0.5), (-1.5, -3, -0.5)]);
-    // 2^-9 is the least `F8` value and 2^-10 a tie to zero; 2.25^7 clamps to 240, 1/291.9 rounds to 2^-8.
+    // 2^-9 is the least `F8` value, 2^-10 a tie to zero; 2.25^7 clamps, 1/291.9 rounds to 2^-8.
     check_rows::<F8>(&[
         (2.0, -9, power_of_two(-9)),
         (2.0, -10, 0.0),
@@ -254,18 +242,31 @@ fn powi_negative_exponent_rounds_the_exact_power_when_upward_saturates() {
     check_rows::<F4>(&[(2.0, -3, 0.0), (-2.0, -3, -0.0)]);
 }
 
-/// The `n < 0` bound excludes a subnormal upward power: `F16` `x = 1031·2^-18`
-/// squares to the subnormal `260·2^-24`, and the normal reciprocal misses the
-/// exact `2^36 / 1062961` by more than `(1 − u)^−2 − 1`, `u = 2^-11`.
-#[test]
-fn powi_bound_excludes_a_subnormal_upward_power() {
-    let result = NumericElement::to_f64(FloatElement::powi(F16::from_bits(0x1C07), -2));
-    let exact = power_of_two(36) / 1_062_961.0;
-    let roundoff = power_of_two(-11);
-    let bound = 1.0 / ((1.0 - roundoff) * (1.0 - roundoff)) - 1.0;
-    assert_bits::<F16>(result, 64512.0, "powi(0x1C07, -2)");
-    assert!(
-        (exact - result) / exact > bound,
-        "the bound {bound} holds at the subnormal row"
+/// `powi` returns `result` for `base^n`; its error against `exact` exceeds the bound for `2^-bits`.
+fn assert_outside_bound<T: FloatElement>(base: f64, n: i32, result: f64, exact: f64, bits: i32) {
+    let roundoff = power_of_two(-bits);
+    let bound = if n > 0 {
+        (1.0 + roundoff).powi(n - 1)
+    } else {
+        (1.0 - roundoff).powi(n)
+    } - 1.0;
+    assert_bits::<T>(
+        NumericElement::to_f64(FloatElement::powi(make::<T>(base), n)),
+        result,
+        &format!("powi({base}, {n})"),
     );
+    assert!(
+        (exact - result).abs() / exact > bound,
+        "powi({base}, {n}) is within {bound}"
+    );
+}
+
+/// The bound excludes subnormal and clamped products. `F16` `1031·2^-18` squares to the subnormal
+/// `260·2^-24` (EUNOMIA-POWI-SUBNORMAL-UPWARD owns that regime); `F8` 30^2 and `Bf4` 3^2 clamp.
+#[test]
+fn powi_bound_excludes_subnormal_and_clamped_products() {
+    let subnormal_exact = power_of_two(36) / 1_062_961.0;
+    assert_outside_bound::<F16>(1031.0 * power_of_two(-18), -2, 64512.0, subnormal_exact, 11);
+    assert_outside_bound::<F8>(30.0, 2, 240.0, 900.0, 4);
+    assert_outside_bound::<Bf4>(3.0, 2, 3.0, 9.0, 2);
 }
