@@ -16,21 +16,6 @@
 - Next step: derive both bounds, extend `power.rs:12-28`, then pick a path meeting the first on every format (the branch `powi` holds for a non-finite or saturated upward power).
 - Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/src/traits/float.rs`, `crates/eunomia/tests/float_element/`, `crates/eunomia/tests/float_element.rs`, `CHANGELOG.md`.
 
-<a id="EUNOMIA-COMPLEX-REDUCTION-IDENTITY"></a>
-## EUNOMIA-COMPLEX-REDUCTION-IDENTITY — Complex MIN_VALUE/MAX_VALUE are not Max/Min fold identities [patch]
-- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
-- Outcome: for `Complex<T>` with no NaN component, a Max fold seeded with `MIN_VALUE` and a Min fold seeded with `MAX_VALUE`
-  return a value equal to the element in either argument order: the constants become `(T::MIN_VALUE, T::MIN_VALUE)` and
-  `(T::MAX_VALUE, T::MAX_VALUE)`, their docs (`traits/numeric.rs:148-150`, `:165-167`) follow, NaN stays out (`:107-111`).
-- Evidence: the constants are `(T::MIN_VALUE, 0)`/`(T::MAX_VALUE, 0)` and `max_scalar`/`min_scalar` (`impls/primitives/numeric.rs:335-350`)
-  order by `re`, then `im`; the PR #206 judge's 3x3 grid failed at Max re=MIN im<0 and Min re=MAX im>0 (`9cba23be236e`, code unchanged since).
-- Acceptance: test `complex_reduction_identity_returns_the_element` in `tests/complex_provider_contract.rs`, generic over every
-  `T: NumericElement + Neg<Output = T>` (`impls/primitives/numeric.rs:247-250`): for re in {MIN, MAX, ONE} x im in {MIN_VALUE, -ONE,
-  ZERO, ONE, MAX_VALUE}, `max_scalar(MIN_VALUE, v) == v == max_scalar(v, MIN_VALUE)` and the Min analogue. It fails at the basis;
-  a `(MIN, -ONE)`/`(MAX, ONE)` mutant fails it at the `im` extremes; `git grep -nF` for `(T::MIN_VALUE, 0)` and `(T::MAX_VALUE, 0)` over `crates` and `docs` is empty.
-- Next step: change the constants and docs; read the hermes and leto Min/Max seed sites that assume `im = 0`.
-- Scope: `crates/eunomia/src/impls/primitives/numeric.rs`, `crates/eunomia/src/traits/numeric.rs`, `crates/eunomia/tests/complex_provider_contract.rs`, `CHANGELOG.md`.
-
 <a id="EUNOMIA-POWI-DOC-CLAIMS"></a>
 ## EUNOMIA-POWI-DOC-CLAIMS — three powi statements read false as written [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0ae80384255f.

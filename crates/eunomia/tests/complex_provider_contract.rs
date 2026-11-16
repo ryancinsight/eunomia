@@ -1,4 +1,10 @@
-use eunomia::{Complex32, Complex64, ComplexField, NumericElement};
+use core::any::type_name;
+use core::ops::Neg;
+
+use eunomia::{
+    Bf16, Bf4, Bf8, Complex, Complex32, Complex64, ComplexField, NumericElement, F16, F32, F4, F64,
+    F8, I16, I32, I8,
+};
 
 #[test]
 fn complex_layout_round_trips_through_plain_arrays() {
@@ -63,6 +69,85 @@ fn native_and_generic_identities_are_equivalent() {
     let value = Complex64::new(4.0, -3.0);
     assert_eq!(value + Complex64::ZERO, value);
     assert_eq!(value * Complex64::ONE, value);
+}
+
+/// Cells of the identity grid for which a `Max` fold seeded with
+/// `Complex<T>::MIN_VALUE`, or a `Min` fold seeded with `Complex<T>::MAX_VALUE`,
+/// does not return the element in both argument orders.
+///
+/// `max_scalar`/`min_scalar` order by `re`, then `im`, so the constants must be
+/// the least and greatest pairs under that lexicographic order. The grid pairs
+/// each real part with the imaginary extremes, where a zero imaginary seed
+/// fails; no component is NaN.
+fn complex_reduction_identity_failures<T>() -> Vec<String>
+where
+    T: NumericElement + Neg<Output = T>,
+{
+    let max_identity = <Complex<T> as NumericElement>::MIN_VALUE;
+    let min_identity = <Complex<T> as NumericElement>::MAX_VALUE;
+    let reals = [T::MIN_VALUE, T::MAX_VALUE, T::ONE];
+    let imaginaries = [T::MIN_VALUE, -T::ONE, T::ZERO, T::ONE, T::MAX_VALUE];
+    let mut failures = Vec::new();
+    for re in reals {
+        for im in imaginaries {
+            let element = Complex::new(re, im);
+            let cells = [
+                (
+                    "max",
+                    "left",
+                    NumericElement::max_scalar(max_identity, element),
+                ),
+                (
+                    "max",
+                    "right",
+                    NumericElement::max_scalar(element, max_identity),
+                ),
+                (
+                    "min",
+                    "left",
+                    NumericElement::min_scalar(min_identity, element),
+                ),
+                (
+                    "min",
+                    "right",
+                    NumericElement::min_scalar(element, min_identity),
+                ),
+            ];
+            for (fold, side, result) in cells {
+                if result != element {
+                    failures.push(format!(
+                        "{} {fold} seed {side}: {element:?} became {result:?}",
+                        type_name::<T>()
+                    ));
+                }
+            }
+        }
+    }
+    failures
+}
+
+#[test]
+fn complex_reduction_identity_returns_the_element() {
+    let mut failures = Vec::new();
+    failures.extend(complex_reduction_identity_failures::<f32>());
+    failures.extend(complex_reduction_identity_failures::<f64>());
+    failures.extend(complex_reduction_identity_failures::<i8>());
+    failures.extend(complex_reduction_identity_failures::<i16>());
+    failures.extend(complex_reduction_identity_failures::<i32>());
+    failures.extend(complex_reduction_identity_failures::<i64>());
+    failures.extend(complex_reduction_identity_failures::<isize>());
+    failures.extend(complex_reduction_identity_failures::<F16>());
+    failures.extend(complex_reduction_identity_failures::<Bf16>());
+    failures.extend(complex_reduction_identity_failures::<F32>());
+    failures.extend(complex_reduction_identity_failures::<F64>());
+    failures.extend(complex_reduction_identity_failures::<Bf8>());
+    failures.extend(complex_reduction_identity_failures::<Bf4>());
+    failures.extend(complex_reduction_identity_failures::<F8>());
+    failures.extend(complex_reduction_identity_failures::<F4>());
+    failures.extend(complex_reduction_identity_failures::<I8>());
+    failures.extend(complex_reduction_identity_failures::<I16>());
+    failures.extend(complex_reduction_identity_failures::<I32>());
+    assert_eq!(failures, Vec::<String>::new());
 }
 
 #[cfg(feature = "numpy")]

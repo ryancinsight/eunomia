@@ -146,8 +146,11 @@ pub trait NumericElement:
     /// value; that is [`RealField::min_value`](crate::RealField::min_value).
     ///
     /// `Complex<T>` implements `PartialOrd` with `None` for every pair, so it
-    /// has no least value under that order; its constant is the componentwise
-    /// pair `(T::MIN_VALUE, 0)`.
+    /// has no least value under that order. Its `max_scalar` orders by the real
+    /// part, then the imaginary part, so the constant is the componentwise pair
+    /// `(T::MIN_VALUE, T::MIN_VALUE)`, the least pair of that lexicographic
+    /// order: a `Max` fold seeded with it returns any element without a NaN
+    /// component unchanged.
     const MIN_VALUE: Self;
 
     /// For the ordered real element types (float formats and integers), the
@@ -163,8 +166,11 @@ pub trait NumericElement:
     /// that is [`RealField::max_value`](crate::RealField::max_value).
     ///
     /// `Complex<T>` implements `PartialOrd` with `None` for every pair, so it
-    /// has no greatest value under that order; its constant is the componentwise
-    /// pair `(T::MAX_VALUE, 0)`.
+    /// has no greatest value under that order. Its `min_scalar` orders by the
+    /// real part, then the imaginary part, so the constant is the componentwise
+    /// pair `(T::MAX_VALUE, T::MAX_VALUE)`, the greatest pair of that
+    /// lexicographic order: a `Min` fold seeded with it returns any element
+    /// without a NaN component unchanged.
     const MAX_VALUE: Self;
 
     /// Saturating addition.
