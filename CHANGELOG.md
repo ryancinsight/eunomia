@@ -11,9 +11,10 @@ All notable changes to Eunomia are documented here.
   smallest *finite* value. They now return `MAX` and `MIN` of the format
   (exact value tests in `tests/float_special/finite_extremes.rs`). The
   `NumericElement::{MIN_VALUE, MAX_VALUE}` constants are unchanged: they are
-  the Min/Max reduction identities (`-inf`/`+inf` for floats) that SIMD and
-  tensor reductions seed their folds with, and their documentation now says
-  so instead of calling them finite.
+  the Min/Max reduction identities (`-inf`/`+inf` where the float format has
+  an infinity, the saturated extreme finite value for `Bf4`, `F8` and `F4`)
+  that SIMD and tensor reductions seed their folds with, and their
+  documentation now says so instead of calling them finite.
 - Removed two redundant copies of the same 193-line checklist block (the
   `EUNOMIA-DEFAULT-RELEASE-VERSION` through ADR-governance sections repeated
   the canonical copy byte-for-byte, inflating the board by ~386 lines); one

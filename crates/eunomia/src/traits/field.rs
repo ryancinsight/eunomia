@@ -45,15 +45,17 @@ pub trait RealField: FloatElement + PartialOrd + Neg<Output = Self> {
     fn nan() -> Self {
         <Self as NumericElement>::NAN
     }
-    /// The smallest finite value, the format's `MIN` (`-max_value()`).
+    /// The most negative finite value, the format's `MIN` (`-max_value()`).
     ///
-    /// Not [`NumericElement::MIN_VALUE`], which is the Max-reduction identity
-    /// `-inf`.
+    /// Not the smallest positive normal value (the `MIN_POSITIVE` of C's
+    /// `FLT_MIN`). Not [`NumericElement::MIN_VALUE`] either, which is the
+    /// Max-reduction identity `-inf` for every `RealField` type.
     fn min_value() -> Self;
     /// The largest finite value, the format's `MAX`.
     ///
     /// Not [`NumericElement::MAX_VALUE`], which is the Min-reduction identity
-    /// `+inf`; `max_value()` is finite and below `infinity()`.
+    /// `+inf` for every `RealField` type; `max_value()` is finite and below
+    /// `infinity()`.
     fn max_value() -> Self;
 
     /// A value with the magnitude of `self` and the sign of `sign`.
