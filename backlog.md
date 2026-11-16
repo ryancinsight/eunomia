@@ -1,31 +1,5 @@
 # Eunomia backlog
 
-<a id="eunomia-numpy-030-unreleased-bundle"></a>
-## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE — Bundle optional interop in the 0.12 cohort [major]
-
-- status: blocked; priority: correctness; needs: none; integrator: pi:01a1885f-3f38-73dd-a2f0-7e3fde63b66a; basis: 38d0e2fff1c9.
-- milestone: M-0.12-cohort.
-- Blocker: the coordinated Aequitas 0.4/binding 0.2 and Coeus consumer floors belong to their owners
-  (Aequitas `main` is 0.3.2 and requires eunomia `>=0.10.0, <0.13.0`). The cohort is published.
-- Re-open trigger: the consumer owners land their floors. Receipts: crates.io lists eunomia and eunomia-derive 0.12.0
-  (2026-10-29, not yanked); tag `crate-eunomia-v0.12.0` (`b2477bd8fde1`) holds ADR 0011 and the optional 0.30 requirements.
-- Policy: Eunomia 0.11, Aequitas 0.4/binding 0.2 and NumPy/PyO3 0.30 are approved
-  in bridge-first order; the normal version decision is resolved.
-- Integrated scope: two optional requirements, six ordinary lock records and
-  explicit breaking/migration/design coverage. All 93 factory Rust source/test
-  files, accepted ADR 0010 and the facade source remain unchanged. Eunomia
-  0.11.0 is published, so this bundle ships in the 0.12.0 cohort.
-- Contract: NumPy/PyO3 0.30 has a distinct Rust trait/native-link identity and a
-  Python 3.9 floor. Core arithmetic and Rust MSRV 1.95 do not change. The prior
-  factory-only additive API comparison does not certify this optional boundary.
-- Acceptance: renew final-head feature/native/NumPy/MSRV/API/package/supply-chain/
-  docs and old/new consumer identity gates; obtain independent final-head review,
-  satisfy GitHub's required approval and coordinate canonical consumer floors.
-- Decision: [ADR 0011](docs/adr/0011-numpy-030-unreleased-bundle.md), accepted by
-  the factory owner under the approved plan; accepted ADR 0010 stays intact.
-- Hold: no factory-only 0.11 publication. The bundle is merged and published in 0.12.0;
-  the consumer floors remain pending bridge-first coordination.
-
 <a id="EUNOMIA-POWI-SUBNORMAL-UPWARD"></a>
 ## EUNOMIA-POWI-SUBNORMAL-UPWARD — powi has no bound where a product or the result is subnormal [patch]
 - status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
@@ -77,47 +51,46 @@
 ## EUNOMIA-POWI-SATURATION-GUARD — the finite-only guard of powi's saturation predicate cannot change a result [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-FLOAT-EXTREMES-BITS; basis: 38d0e2fff1c9.
 - Outcome: `saturates` (`crates/eunomia/src/traits/float/power.rs:119-122`) is `T::INFINITY.is_finite() && power.abs() == T::MAX_VALUE`; no test fails without its first conjunct.
-  `MAX_VALUE` and `INFINITY` share bits in all ten formats (EUNOMIA-FLOAT-EXTREMES-BITS); `saturates` runs after the non-finite branch (`power.rs:100`), so it is false on an infinity.
+  `MAX_VALUE` and `INFINITY` are one constant expression in all ten formats (EUNOMIA-FLOAT-EXTREMES-BITS); `saturates` runs after the non-finite branch (`power.rs:100`), so it is false on an infinity.
 - Evidence: the dropped-conjunct mutant passes `--test float_element` (20 of 20) and the package (234 of 234), relayed from the PR #210 judge at `2ef8acd`;
   `power.rs` code is unchanged since. A rerun here is void, its disabled-branch control also passed.
 - Risk: the conjunct is a per-monomorphization constant, so it may let LLVM drop the branch for the seven formats with an infinity.
 - Acceptance: `power::powi` and `saturates` are `#[inline(always)]` and `float.rs:382` is `#[inline]`, so take the asm of a non-inlined wrapper per format with an infinity,
   conjunct dropped against the basis. (i) No wrapper gains a compare or branch: delete the conjunct, record the clean asm diffs in the closing PR, keep
   `powi_equals_the_loop_it_replaced_bit_for_bit` and `powi_negative_exponent_rounds_the_exact_power_when_upward_saturates` passing unchanged, and have the `saturates` doc comment say the
-  predicate admits every clamped power and an exact power equal to `M` (`F8` `powi(240, -1)`), which the accumulator path rounds correctly. (ii) Any wrapper gains one: keep the
+  predicate admits every clamped power and an exact power equal to `T::MAX_VALUE` (`F8` `powi(240, -1)`), which the accumulator path rounds correctly. (ii) Any wrapper gains one: keep the
   conjunct and record the mutant as equivalent, with the asm diff, in the `saturates` doc comment.
 - Next step: take the per-format asm diffs once EUNOMIA-FLOAT-EXTREMES-BITS has landed, then branch (i) or (ii).
 - Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/tests/float_element/powi_saturation.rs`.
 
 <a id="EUNOMIA-FLOAT-EXTREMES-BITS"></a>
-## EUNOMIA-FLOAT-EXTREMES-BITS — no test pins MAX_VALUE and INFINITY as one bit pattern and one `T` equality [patch]
+## EUNOMIA-FLOAT-EXTREMES-BITS — no test asserts `MAX_VALUE == INFINITY` under `T`'s own `==` [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 38d0e2fff1c9.
-- Outcome: for all ten `FloatElement` implementors `MAX_VALUE == INFINITY` under `T`'s own `==` (the comparison `saturates` makes)
-  and their bits are equal, pinned by a test, not by reading.
-- Evidence (`38d0e2fff1c9`, read): `reduction_identities_are_the_format_infinity_for_every_float`
-  (`crates/eunomia/tests/float_special/finite_extremes.rs:50-86`) asserts `to_f64` equality of `MAX_VALUE`, `INFINITY` and the identity
-  for f32, f64, F32, F64, F16, Bf16, Bf8, Bf4, F8 and F4; it calls neither `==` on `T` nor reads bits, and the wrappers' `PartialEq`
-  is float-semantic, not bitwise (`types/floats.rs:6`). The constants are `impls/primitives/numeric.rs:26,31` and `impls/wrappers/numeric.rs`
-  `$inf`/`$max`; `NumericElement` is sealed (`traits/numeric.rs:16-17`), so the ten are all. EUNOMIA-POWI-SATURATION-GUARD needs them.
-- Acceptance: that test, not a sibling, also asserts `MAX_VALUE == INFINITY` and equal bits (`to_bits` or the `.0` field) for each of the ten;
-  `git grep -n -F to_bits -- crates/eunomia/tests/float_special/finite_extremes.rs` prints a line, and nothing at the basis. A format with
-  one encoding per value makes the bits follow from the value equality, so the `==` assertion is the independent one; the test doc says so.
-- Next step: add both assertions to `assert_reduction_identities` (`finite_extremes.rs:54-70`) and pass each format's bits through a closure argument.
+- Outcome: for all ten `FloatElement` implementors `MAX_VALUE == INFINITY` under `T`'s own `==` (the comparison `saturates` makes) is pinned by a test, not by reading.
+- Evidence (`38d0e2fff1c9`, read): `reduction_identities_are_the_format_infinity_for_every_float` (`crates/eunomia/tests/float_special/finite_extremes.rs:50-86`)
+  compares `to_f64` values of `MAX_VALUE`, `INFINITY` and the identity for f32, f64, F32, F64, F16, Bf16, Bf8, Bf4, F8 and F4, never `==` on `T`; the wrappers'
+  `PartialEq` is float-semantic (`types/floats.rs:6`). The bits are already pinned for `Bf4`, `F8` and `F4`, the formats whose `INFINITY` is finite, by
+  `numeric_constants_match_subbyte_value_contracts` (`crates/eunomia/tests/subbyte_convert.rs:107-125`: 0x05, 0x77, 0x06); the other seven have one infinity encoding.
+  The constants are `impls/primitives/numeric.rs:26,31` and `impls/wrappers/numeric.rs` `$inf`/`$max`; `NumericElement` is sealed (`traits/numeric.rs:16-17`), so the ten are all.
+- Acceptance: `assert_reduction_identities` (`finite_extremes.rs:54-70`) also asserts `T::MAX_VALUE == T::INFINITY`:
+  `git grep -n -e 'MAX_VALUE ==' -e '== .*INFINITY' -- crates/eunomia/tests/float_special/finite_extremes.rs` prints a line
+  (an `assert!` of `==`, not `assert_eq!`), and nothing at the basis. No bits assertion is added; the subbyte test owns them.
+- Next step: add the `==` assertion to `assert_reduction_identities`; EUNOMIA-POWI-SATURATION-GUARD needs it.
 - Scope: `crates/eunomia/tests/float_special/finite_extremes.rs`.
 
 <a id="EUNOMIA-POWI-QUOTIENT-BIAS-MUTANT"></a>
 ## EUNOMIA-POWI-QUOTIENT-BIAS-MUTANT — a downward 2^-20 bias on powi's saturated quotient survives every test [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 38d0e2fff1c9.
-- Outcome: mutant M2e, the accumulator quotient at `power.rs:110` times `1 - 2^-20` with its sign kept, is either killed by a row or
+- Outcome: mutant M2e, the accumulator quotient at `power.rs:110` times `1 - 2^-20` with its sign kept, is killed by a row, or is
   recorded as an equivalent mutant together with the least bias a row kills.
 - Evidence: relayed from the PR #210 judge (`/808` F-3, head `2ef8acd`; `power.rs` code unchanged since): M2e passes 234 of 234 and no
   mutant-specific failing row shows which binary ran; M2d (`1 - 2^-4`) fails at `F8` `powi(1.5, -17)`, and the upward biases fail.
   The judge's reading: the sweep is exhaustive for e ≤ 128 and every result beyond is zero; a tie occurs only for power-of-two bases,
   and there the correctly rounded neighbour is the lower one or zero.
-- Acceptance: on the closing head M2e is rerun and the bias bisected between `2^-19` and `2^-5`; the closing PR names the least bias
-  a row kills and that row, which shows the mutated binary ran. The module doc of `powi_saturation.rs` states that a quotient bias below
-  it changes no result and why (ties round down or to zero): `git grep -n -i bias -- crates/eunomia/tests/float_element/powi_saturation.rs`
-  prints a line, and nothing at the basis.
+- Acceptance: on the closing head M2e is rerun. (a) A row fails, or one is added that fails: the closing PR names it, which shows the mutated binary ran.
+  (b) None fails: a bias is bisected over (2^-20, 2^-4] (2^-20 survives, 2^-4 kills; a larger downward bias never raises a rounded result, so the rows it changes only grow),
+  the PR names the least bias a row kills and that row, and the module doc of `powi_saturation.rs` states that a smaller bias changes no result and why (ties round down or to zero):
+  `git grep -n -i bias -- crates/eunomia/tests/float_element/powi_saturation.rs` prints a line, and nothing at the basis.
 - Next step: apply each bias to a `git archive` export of the head, touch the files, and run `cargo nextest run -p eunomia --test float_element`.
 - Scope: `crates/eunomia/tests/float_element/powi_saturation.rs`.
 
@@ -128,8 +101,8 @@
   and `power.rs:14,53` do.
 - Evidence (`38d0e2fff1c9`, read; the PR #210 judge's `/808` F-2, first half): `float.rs:379` reads "roundoff `u`" with no owner,
   and `git grep -n -F 'unit roundoff' -- crates/eunomia/src/traits/float.rs` prints only `:396`.
-- Acceptance: that grep also prints a line inside the `powi` doc block (before `fn powi`, `:382` at the basis); `float.rs` counts
-  at most 500 lines (newlines plus one) and has no line over 100 characters.
+- Acceptance: that grep also prints a line inside the `powi` doc block (`:377-381` at the basis; `#[inline]` is `:382`, `fn powi` `:383`);
+  `float.rs` counts at most 500 lines (newlines plus one) and has no line over 100 characters.
 - Next step: reword `float.rs:379-381` after EUNOMIA-POWI-DOC-CLAIMS rewords `:381`; those lines sit at the 100-character limit,
   so the rewording replaces words and adds none.
 - Scope: `crates/eunomia/src/traits/float.rs`.
@@ -155,14 +128,14 @@
 - Outcome: `checklist.md` (236 lines) is deleted with no open state lost: each of its 12 open boxes is closed with evidence or lives in a board item, as hyperion#107 did.
   The board lint counts the file (`board_checklist_files` in `scripts/atlas-board-lint.py`, atlas) and the conformance scan holds that count non-increasing per member.
 - Evidence (`2327b325c5fc`, read): the 12 `- [ ]` boxes sit in `EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE` (3), `EUNOMIA-CONST-NATIVE-FLOAT` (4), `E-037` (1),
-  `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21` (3), `ATLAS-EUNOMIA-NUMPY-CI-2026-08-20` (1). The three bundle boxes map to the open bundle item's Acceptance (two) and Hold (merge, publication); `e-037-oracle`
-  (`a296e12`, PR #85), `atlas-eunomia-nan-contract` and `atlas-eunomia-numpy-ci` are done blocks here; ADR 0010 delivers CONST-NATIVE-FLOAT in 0.12.0 (`0dccc32`, in tag `crate-eunomia-v0.12.0`, `b2477bd8fde1`).
-  Outside the file, `docs/adr/0009-default-release-version.md:43` reads "the backlog and checklist record the release as pending".
+  `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21` (3), `ATLAS-EUNOMIA-NUMPY-CI-2026-08-20` (1). The three bundle boxes (gates and review; checks, reviews and floors;
+  merge and publication) lapse with the #182 merge (`b2477bd8fde1`) and the 0.12.0 publication; a consumer floor is an item on the consumer's board.
+  `e-037-oracle` (`a296e12`, PR #85), `atlas-eunomia-nan-contract` and `atlas-eunomia-numpy-ci` are done blocks; ADR 0010 delivers CONST-NATIVE-FLOAT in 0.12.0
+  (`0dccc32`, in tag `crate-eunomia-v0.12.0`). Outside the file, `docs/adr/0009-default-release-version.md:43` reads "the backlog and checklist record the release as pending".
 - Acceptance: `git ls-files checklist.md` prints nothing at the closing PR head (it prints the file at the basis); the closing PR body names, for each of the 12 boxes,
   the item ID or the landed commit or receipt that closes it; `git grep -n -i checklist -- docs` is empty; `backlog.md` stays at or under 1000 lines;
   `docs/adr/0009-default-release-version.md` gains a `Revision <date>:` line for the rewording, as ADRs 0010 and 0011 have at line 7 (`git grep -n '^Revision'` over it prints nothing at the basis).
-- Next step: check the four CONST-NATIVE-FLOAT boxes (hosted CI, review, merge, publication receipt) against `0dccc32`, the 0.12.0 tag and the registry, fold any still open
-  into the bundle item, delete the file, and reword the ADR 0009 sentence with its revision note.
+- Next step: check the four CONST-NATIVE-FLOAT boxes against `0dccc32`, the 0.12.0 tag and the registry, fold any still open into an item, delete the file, reword ADR 0009:43 with a revision note.
 - Scope: `checklist.md`, `backlog.md`, `docs/adr/0009-default-release-version.md`.
 
 <a id="EUNOMIA-UNIT-DIVISION"></a>
