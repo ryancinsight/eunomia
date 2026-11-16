@@ -73,8 +73,8 @@
   `numeric_constants_match_subbyte_value_contracts` (`crates/eunomia/tests/subbyte_convert.rs:107-125`: 0x05, 0x77, 0x06); the other seven have one infinity encoding.
   The constants are `impls/primitives/numeric.rs:26,31` and `impls/wrappers/numeric.rs` `$inf`/`$max`; `NumericElement` is sealed (`traits/numeric.rs:16-17`), so the ten are all.
 - Acceptance: `assert_reduction_identities` (`finite_extremes.rs:54-70`) also asserts `T::MAX_VALUE == T::INFINITY`:
-  `git grep -n -e 'MAX_VALUE ==' -e '== .*INFINITY' -- crates/eunomia/tests/float_special/finite_extremes.rs` prints a line
-  (an `assert!` of `==`, not `assert_eq!`), and nothing at the basis. No bits assertion is added; the subbyte test owns them.
+  `git grep -n -e 'MAX_VALUE ==' -e '== .*INFINITY' -e 'assert_eq!(.*MAX_VALUE, .*INFINITY' -- crates/eunomia/tests/float_special/finite_extremes.rs` prints a line
+  (`assert!` of `==` or `assert_eq!`; both compare under `T`'s own `PartialEq`, so the form is free: #213 round 2 N-2), and nothing at the basis. No bits assertion is added; the subbyte test owns them.
 - Next step: add the `==` assertion to `assert_reduction_identities`; EUNOMIA-POWI-SATURATION-GUARD needs it.
 - Scope: `crates/eunomia/tests/float_special/finite_extremes.rs`.
 
@@ -82,14 +82,14 @@
 ## EUNOMIA-POWI-QUOTIENT-BIAS-MUTANT — a downward 2^-20 bias on powi's saturated quotient survives every test [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 38d0e2fff1c9.
 - Outcome: mutant M2e, the accumulator quotient at `power.rs:110` times `1 - 2^-20` with its sign kept, is killed by a row, or is
-  recorded as an equivalent mutant together with the least bias a row kills.
+  recorded as an equivalent mutant together with the least bias exponent a row kills.
 - Evidence: relayed from the PR #210 judge (`/808` F-3, head `2ef8acd`; `power.rs` code unchanged since): M2e passes 234 of 234 and no
   mutant-specific failing row shows which binary ran; M2d (`1 - 2^-4`) fails at `F8` `powi(1.5, -17)`, and the upward biases fail.
   The judge's reading: the sweep is exhaustive for e ≤ 128 and every result beyond is zero; a tie occurs only for power-of-two bases,
   and there the correctly rounded neighbour is the lower one or zero.
 - Acceptance: on the closing head M2e is rerun. (a) A row fails, or one is added that fails: the closing PR names it, which shows the mutated binary ran.
-  (b) None fails: a bias is bisected over (2^-20, 2^-4] (2^-20 survives, 2^-4 kills; a larger downward bias never raises a rounded result, so the rows it changes only grow),
-  the PR names the least bias a row kills and that row, and the module doc of `powi_saturation.rs` states that a smaller bias changes no result and why (ties round down or to zero):
+  (b) None fails: the bias 2^-k is bisected over the integers 4 <= k <= 20 (2^-20 survives, 2^-4 kills; a larger downward bias never raises a rounded result, so the rows it changes only grow) to adjacent exponents,
+  the PR names the largest k whose bias a row kills and that row, shows 2^-(k+1) survives, and the module doc of `powi_saturation.rs` states that biases at or below 2^-(k+1) change no result and why (ties round down or to zero):
   `git grep -n -i bias -- crates/eunomia/tests/float_element/powi_saturation.rs` prints a line, and nothing at the basis.
 - Next step: apply each bias to a `git archive` export of the head, touch the files, and run `cargo nextest run -p eunomia --test float_element`.
 - Scope: `crates/eunomia/tests/float_element/powi_saturation.rs`.
@@ -164,12 +164,12 @@
 - Evidence (`bf0bce90eabd`, read): the 12 `- [ ]` boxes sit in the 0.12.0 cohort section (3: file lines 18, 20, 21), `EUNOMIA-CONST-NATIVE-FLOAT` (4: lines 39-42), `E-037` (1),
   `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21` (3), `ATLAS-EUNOMIA-NUMPY-CI-2026-08-20` (1). Line 21 (merge and publication) closes with the #182 merge (`b2477bd8fde1`) and the 0.12.0 publication.
   Lines 18, 20 and 40 hold the independent review of #182's final head: its post-merge review posted `judge` `failure` on `0dccc32c0da7`, and the `Item: EUNOMIA-0-12-COHORT-REVIEW` commits (`0d76dfba5928`, `188d5ca5927b`, in `bf0bce90eabd`) fixed the gating findings. Gates, checks and floors: the closing PR names their receipts; floors belong on consumer boards.
-  `e-037-oracle` (`a296e12`, PR #85), `atlas-eunomia-nan-contract` and `atlas-eunomia-numpy-ci` are done blocks; ADR 0010 delivers CONST-NATIVE-FLOAT in 0.12.0
-  (`0dccc32`, in tag `crate-eunomia-v0.12.0`). Outside the file, `docs/adr/0009-default-release-version.md:43` reads "the backlog and checklist record the release as pending".
+  Receipts of the `done` blocks it cites, deleted by the #216 filing sweep (each commit an ancestor of origin/main, run): `E-037` `a296e12` (PR #85); `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21` `834bd3b`, docs `8c4510e`;
+  `ATLAS-EUNOMIA-NUMPY-CI-2026-08-20` CI run `33840122785` at `02397fa` (success; NumPy feature contract job success). ADR 0010 delivers CONST-NATIVE-FLOAT in 0.12.0 (`0dccc32`, in tag `crate-eunomia-v0.12.0`). Outside the file, `docs/adr/0009-default-release-version.md:43` reads "the backlog and checklist record the release as pending".
 - Acceptance: `git ls-files checklist.md` prints nothing at the closing PR head (it prints the file at the basis); the closing PR body names, for each of the 12 boxes,
   the item ID or the landed commit or receipt that closes it; `git grep -n -i checklist -- docs` is empty; `backlog.md` stays at or under 1000 lines;
   `docs/adr/0009-default-release-version.md` gains a `Revision <date>:` line for the rewording, as ADRs 0010 and 0011 have at line 7 (`git grep -n '^Revision'` over it prints nothing at the basis).
-- Next step: check CONST-NATIVE-FLOAT boxes 39, 41 and 42 (40 is closed above) against `0dccc32`, the 0.12.0 tag and the registry, fold any still open into an item, delete the file, reword ADR 0009:43 with a revision note.
+- Next step: check CONST-NATIVE-FLOAT boxes 39, 41 and 42 (42, the archive-identity check, is EUNOMIA-ADR-RELEASE-RESIDUE's acceptance; 40 is closed above) against `0dccc32`, the 0.12.0 tag and the registry, fold any still open into an item, delete the file, reword ADR 0009:43 with a revision note.
 - Scope: `checklist.md`, `backlog.md`, `docs/adr/0009-default-release-version.md`.
 
 <a id="EUNOMIA-LADDER-0-12-CLOSE"></a>
@@ -193,7 +193,7 @@
   no read artifact records that check (crates.io lists a sha256 checksum for eunomia 0.12.0; it was not compared with the tagged tree). ADR 0011 `:56` and `:82` are 126 and 114 characters in a file wrapped near 80.
   ADR 0010 `:53-54` says consumers of `^0.10` or `^0.11` "advance their requirement to 0.12"; the judge read the consumers widening instead: `>=0.10.0, <0.13.0` (aequitas, apollo, athena, hermes, hephaestus), `>=0.11.0, <0.13.0` (leto), `0.12.0` (coeus).
 - Acceptance: `git grep -n -i -e 'before the automatic publisher' -e 'after authorized publication' -- docs/adr/0011-numpy-030-unreleased-bundle.md` prints nothing (`:81`, `:82` at the basis); `awk 'length > 90' docs/adr/0011-numpy-030-unreleased-bundle.md` prints nothing (`:56`, `:82` at the basis);
-  ADR 0011 records the crates.io checksum and `.cargo_vcs_info.json` commit of eunomia and eunomia-derive 0.12.0 against the tag, or says the check was not run; ADR 0010 states the observed ranges or only that such a consumer widens its range; each edited ADR gains a dated `Revision` line.
+  ADR 0011 records the crates.io checksum and `.cargo_vcs_info.json` commit of eunomia and eunomia-derive 0.12.0 against the tag (the check runs: crates.io lists both checksums; checklist box 42); ADR 0010 states the observed ranges or only that such a consumer widens its range; each edited ADR gains a dated `Revision` line.
 - Next step: read the two 0.12.0 archives' `.cargo_vcs_info.json` and compare their checksums with `Cargo.lock` of a consumer, then rewrite `:80-82`, rewrap `:56`, reword ADR 0010 `:53-54`.
 - Scope: `docs/adr/0011-numpy-030-unreleased-bundle.md` (not `:48`, EUNOMIA-RELEASE-NOTES-GAPS), `docs/adr/0010-const-native-float-construction.md`.
 
@@ -204,20 +204,28 @@
 - Evidence (`bf0bce90eabd`, read; judge verdict on eunomia#214 round 1, F6, F10): `README.md:62`, `CHANGELOG.md:61-62` and ADR 0011 `:48` say Python 3.9 with no interpreter; `pyo3-ffi-0.30.1/build.rs:39-51` (local registry source) sets CPython min 3.9, PyPy 3.11, GraalPy 3.10.
   `9d29a66` is an ancestor of tag `crate-eunomia-v0.11.0` and not of `crate-eunomia-v0.10.0` (run); `git grep -n -i floor -- CHANGELOG.md` prints only `:162` (`binary_exponent`), and `git grep -c -i digamma -- CHANGELOG.md` prints 1, so the search finds an entry that exists.
   The `[0.11.0]` section matches the tag's own `CHANGELOG.md`, so the entry is an addition to it.
-- Acceptance: each hit of `git grep -n -B1 -A1 '3\.9' -- README.md CHANGELOG.md docs/adr/0011-numpy-030-unreleased-bundle.md` names the interpreter it holds for (no line does at the basis);
+- Acceptance: `git grep -c '3\.9' -- README.md CHANGELOG.md docs/adr/0011-numpy-030-unreleased-bundle.md` prints a count of at least 1 for each of the three files (the floor sentences still exist; deleting one fails this), and each hit of `git grep -n -B1 -A1 '3\.9'` over the same paths names the interpreter it holds for (no line does at the basis);
   `git grep -n -i floor -- CHANGELOG.md` prints a line between the `## [0.11.0]` and `## [0.10.0]` headings, worded from `git show 9d29a66`.
 - Next step: reword the three floor sentences with the per-interpreter minimums, then write the entry from the commit body.
 - Scope: `README.md`, `CHANGELOG.md`, `docs/adr/0011-numpy-030-unreleased-bundle.md` (`:48` only; EUNOMIA-ADR-RELEASE-RESIDUE owns the rest).
 
 <a id="EUNOMIA-BOARD-DONE-BLOCKS"></a>
-## EUNOMIA-BOARD-DONE-BLOCKS — six `done` blocks keep the backlog failing the board lint [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-CHECKLIST-RETIRE; basis: bf0bce90eabd.
-- Outcome: `backlog.md` holds no block whose status is `done`; each block's receipt stays in its landed commit and `Item:` trailer, and the board lint reports no status violation.
-- Evidence (`bf0bce90eabd`, run): `atlas-board-lint.py --file` from atlas origin/main `6ee24b06a113` exits 1 with six `status "done"` violations. Two carry the line `- status: done`: EUNOMIA-UNIT-DIVISION (`:177`) and EUNOMIA-TYPE-SUFFIXED-SPECIAL-TESTS-2026-09-22 (`:192`).
-  Four take it from a `— done` heading suffix: EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 (`:208`), E-037 (`:222`), ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 (`:253`) and ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 (`:262`).
-  EUNOMIA-CHECKLIST-RETIRE cites three of them as evidence (`e-037-oracle`, `atlas-eunomia-numpy-ci`, `atlas-eunomia-nan-contract`), so it lands first; a search of atlas origin/main and aequitas origin/HEAD for inbound links to the six anchors found none.
-- Acceptance: `git grep -n -e '^- status: done' -e '— done$' -- backlog.md` prints nothing (six lines at the basis); the lint on `backlog.md` reports 0 schema violations (6 at the basis; a `status: bogus` probe on one todo item raises the count); `backlog.md` stays at or under 1000 lines.
-- Next step: re-search the stack for inbound links to the six anchors, then delete the six blocks and name each block's landed commit in the closing PR body.
+## EUNOMIA-BOARD-DONE-BLOCKS — the `done` block EUNOMIA-UNIT-DIVISION keeps the backlog failing the board lint [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
+- Outcome: `backlog.md` holds no block whose status is `done`; EUNOMIA-UNIT-DIVISION's receipt (PR #97, `71fdc60`) lives in ADR 0004 and the board lint reports no status violation.
+- Evidence (`bf0bce90eabd`, run): `atlas-board-lint.py --file` from atlas origin/main `6ee24b06a113` exits 1 with six `status "done"` violations; the #216 filing sweep deletes five (receipts in EUNOMIA-CHECKLIST-RETIRE and the sweep's commit body), leaving EUNOMIA-UNIT-DIVISION (`- status: done`).
+  `docs/adr/0004-unit-scalar-provider-seam.md:8` links `../../backlog.md#EUNOMIA-UNIT-DIVISION`, so deleting the block alone breaks that fragment link; the lint's `--file` mode does not check fragments (probe: deleting all six blocks exits 0).
+- Acceptance: `git grep -n -e '^- status: done' -e '— done$' -- backlog.md` prints nothing (six lines at the basis, one once #216 lands); the lint on `backlog.md` reports 0 schema violations; `git grep -n 'backlog.md#EUNOMIA-UNIT-DIVISION' -- docs` prints nothing (`adr/0004:8` at the basis); `backlog.md` stays at or under 1000 lines.
+- Next step: retarget the ADR 0004 Revision-line link to PR #97 / `71fdc60`, then delete the block.
+- Scope: `backlog.md`, `docs/adr/0004-unit-scalar-provider-seam.md`.
+
+<a id="EUNOMIA-BOARD-ARCHIVE-NARRATIVE"></a>
+## EUNOMIA-BOARD-ARCHIVE-NARRATIVE — the board keeps five completed-work sections the board rules do not hold [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
+- Outcome: `backlog.md` holds open items only: the five sections below are deleted, each receipt left to its landed commit and `Item:` trailer, or moved to its owning ADR or CHANGELOG entry where still cited.
+- Evidence (`bf0bce90eabd`, read; judge verdict on eunomia#216 round 1, F1): headings `## 0.8.0 closure refresh — 2026-08-10`, `## Recently completed`, `## Done`, `## Capabilities (done — enable stack-wide num-complex/num-traits removal)` and `## Capabilities + cleanup (done, this round)`. The sections `## Byte-layout & reduced-precision`, `## Roadmap` and `## Cleanup` are not named: their status is unread.
+- Acceptance: `git grep -n -e '^## 0\.8\.0 closure refresh' -e '^## Recently completed' -e '^## Done' -e '^## Capabilities' -- backlog.md` prints nothing (five lines at the basis); each deleted section's anchor has no inbound reference left (`git grep -n <anchor>` over the repository); `backlog.md` stays at or under 1000 lines.
+- Next step: read each section for a still-open obligation, file it as an item, then delete the section.
 - Scope: `backlog.md`.
 
 <a id="EUNOMIA-UNIT-DIVISION"></a>
@@ -234,45 +242,6 @@
 - Follow-up: the type-suffixed method rename landed in PR #100 (`87a6a4a`); `UnitScalar` now exposes `scale_by_factor`/`divide_by_factor`.
 
 Sprint target: 0.8.0 (native reduced-precision provider contract).
-
-<a id="eunomia-type-suffixed-special-tests-2026-09-22"></a>
-## EUNOMIA-TYPE-SUFFIXED-SPECIAL-TESTS-2026-09-22 — special-function tests carried scalar type tokens in their names [patch]
-
-- status: done; integrator: claude-special-test-names; landed PR #101 (`9c62a07`).
-- **Outcome:** six `tests/float_special/references.rs` test names embedded
-  `f64`/`f32`. `atlas-conformance.py`'s `type_suffixed_fns` detector excludes
-  `tests/` from production code (its `testish`/`split_test_region` logic), so
-  the scan never counted them — the violation was invisible to the ratchet
-  rather than absent, and no conformance count moves on this fix.
-- **Fix:** rename to the property/role vocabulary PR #100 established in the
-  sibling `transcendentals.rs` — `double_precision`/`single_precision` for the
-  precision dimension. Rename only: six `fn` signature lines, no assertion,
-  tolerance, operand, doc-comment or test-count change.
-- **Acceptance:** no test identifier in the crate carries a scalar type token;
-  all 154 nextest cases pass and the six collect under their new names.
-- **Non-goal:** `F64_NATIVE_TOL` in the same file denotes the crate's `F64`
-  wrapper type, not a generic scalar dimension, and keeps its name.
-
-<a id="eunomia-structure-float-special-2026-09-21"></a>
-## EUNOMIA-STRUCTURE-FLOAT-SPECIAL-2026-09-21 — the float_special test crossed the structural target [patch] — done
-
-- Closed 2026-11-10: split into contract leaves (`4b846d9`); every leaf is at
-  or under the 500-line target (largest 455); all 18 tests remain with bodies
-  unchanged; no new test binary. Milestone: M-special-functions (exit evidence).
-
-- **Outcome:** `crates/eunomia/tests/float_special.rs` (576 lines) raises
-  `oversized_files`, holding the member's pin behind the atlas sweep.
-- **Acceptance:** no Rust file exceeds the 500-line target; all 18 tests remain,
-  each body unchanged; no new test binary; the gate is green at CI's features.
-- **Non-goals:** the other `tests/*.rs` binaries (one target each, a separate
-  consolidation item) and any change to the oracles themselves.
-
-<a id="e-037-oracle"></a>
-## E-037 [patch] — Remove the external reduced-precision oracle — done
-
-- Landed `a296e12` (PR #85). Eunomia's manifests and source carry no `half`
-  dependency or import; the independent IEEE-754 oracle retains the exhaustive
-  bit-pattern and rounding-sweep coverage.
 
 <a id="eunomia-closure-refresh-0-8-0"></a>
 ## 0.8.0 closure refresh — 2026-08-10
@@ -297,24 +266,6 @@ check, warning-denied all-target/all-feature Clippy, Nextest **117/117**
 (all features), 9/9 doctests, strict all-target check, and rustdoc all pass.
 The Nextest count continues to grow with new value-semantic tests (was
 116/116 at the clean-clone snapshot).
-
-<a id="atlas-eunomia-numpy-ci"></a>
-## ATLAS-EUNOMIA-NUMPY-CI-2026-08-20 — Verify the optional NumPy boundary [patch] — done
-
-- The `numpy` CI job provisions pinned Python 3.13 and NumPy 2.5.1, installs
-  the pinned Nextest binary, and asserts the dtype names and item sizes for
-  `Complex32` and `Complex64`.
-- Collected: run `33840122785` at main head `02397fa`, job **NumPy feature
-  contract — success**.
-
-<a id="atlas-eunomia-nan-contract"></a>
-## ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21 — Unify scalar NaN and signed-zero laws [major] [arch] — done
-
-- One real-scalar table for one/two NaNs and `±0` governs the `NumericElement`
-  min/max default, the primitive float overrides, the reduced-precision
-  wrappers, and `RealField::clamp`. Landed `834bd3b`; docs `8c4510e`.
-- Hosted gates green at main head `02397fa` (CI run `33840122785`); the Atlas
-  provider pointer already reads that head, closing the convergence box.
 
 <a id="eunomia-recently-completed"></a>
 ## Recently completed
