@@ -13,7 +13,8 @@ Revision 2026-11-16: the "Version and consumers" section is rewritten for the
 released state (Eunomia and derive 0.12.0) after the post-merge review of #182
 at `0dccc32c0da7` found it still describing 0.11.0 and an unchanged derive
 0.10.0 (finding G3 of the verdict at
-https://github.com/ryancinsight/eunomia/pull/182#issuecomment-6917989787).
+https://github.com/ryancinsight/eunomia/pull/182#issuecomment-6917989787);
+the Verification paragraph now records the 0.12.0 release.
 
 ## Context
 

@@ -32,9 +32,10 @@ All notable changes to Eunomia are documented here.
 - Bounded `benches/conversions.rs` to the stack's flat wall-clock budget
   (10 samples, 100 ms warm-up, 500 ms measurement per benchmark, both
   workload sizes kept): the five conversion groups previously ran unbounded
-  Criterion defaults and the reduced-arithmetic block ran 1 s / 3 s. Regimes,
-  workloads, and sample counts are unchanged; `cargo bench --test` smoke
-  passes.
+  Criterion defaults (100 samples) and the reduced-arithmetic block ran
+  1 s / 3 s at 10 samples. Regimes and workloads are unchanged; the five
+  conversion groups drop from 100 samples to 10, the reduced-arithmetic
+  block keeps 10; `cargo bench --test` smoke passes.
 
 ## [0.12.0] - 2026-10-29
 
@@ -47,7 +48,7 @@ All notable changes to Eunomia are documented here.
 ### Changed
 
 - Primitive and wrapper `FloatElement::from_f64` delegate to the same canonical
-  native factory. The derive package inherits the workspace version.
+  native factory.
 - Git and registry consumers requiring 0.10 or 0.11 cannot resolve this
   version; advance the requirement to 0.12 together with the public-provider
   update. See ADR 0010.
