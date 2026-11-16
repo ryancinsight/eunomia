@@ -6,6 +6,15 @@ All notable changes to Eunomia are documented here.
 
 ### Fixed
 
+- `FloatElement::powi` with a negative exponent inverted the clamped upward
+  power on `Bf4`, `F8` and `F4`, whose overflow saturates instead of reaching
+  infinity: `F8` `powi(2, -9)` returned `2^-8` for the correct `2^-9`, and
+  `Bf4` `powi(2, -2)` returned `0.5` for `0`. A saturated upward power now
+  forms the power in the format's accumulator and rounds the quotient once
+  into the format; `f32`, `f64`, `F16`, `Bf16`, `F32`, `F64` and `Bf8` results
+  are unchanged. The `powi` documentation states the error bound in place of
+  "exact for integer exponents". Value tests against an exact integer oracle
+  are in `tests/float_element/powi_saturation.rs`.
 - `RealField::max_value()` and `min_value()` returned `+inf`/`-inf` for
   `f32`, `f64`, `F32` and `F64` although the contract is the largest and
   smallest *finite* value. They now return `MAX` and `MIN` of the format

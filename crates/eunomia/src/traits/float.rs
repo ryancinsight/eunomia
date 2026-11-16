@@ -376,9 +376,9 @@ pub trait FloatElement: private::Sealed + NumericElement {
 
     /// `self` raised to an integer power via exponentiation by squaring.
     ///
-    /// Exact for integer exponents and correct for negative bases (unlike
-    /// [`powf`](Self::powf)). A default over the [`NumericElement`] arithmetic —
-    /// no per-type implementation needed, so no precision is lost.
+    /// Correct for negative bases (unlike [`powf`](Self::powf)). With `e = |n| ≥ 1`, roundoff `u`,
+    /// a normal result without overflow has relative error at most `(1 + u)^(e−1) − 1` (`n > 0`) or
+    /// `(1 − u)^−e − 1` (`n < 0`); `n = 0` is exact, and `F4`/`Bf4`/`F8` round saturation exactly.
     #[inline]
     fn powi(self, n: i32) -> Self {
         power::powi(self, n)
