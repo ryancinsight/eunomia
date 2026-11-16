@@ -27,6 +27,7 @@
 
 mod bessel;
 mod domain_edges;
+mod finite_extremes;
 mod fixtures;
 mod references;
 mod transcendentals;

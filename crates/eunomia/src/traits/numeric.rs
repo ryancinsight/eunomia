@@ -133,14 +133,38 @@ pub trait NumericElement:
         }
     }
 
-    /// The minimum representable finite value (negative infinity or `i32::MIN`).
+    /// For the ordered real element types (float formats and integers), the
+    /// identity element of `Max` reductions: the least value of the type.
     ///
-    /// Used as the identity element for `Max` reductions.
+    /// For a float format this is the negation of [`INFINITY`](Self::INFINITY):
+    /// negative infinity where the format encodes infinity (so an infinite
+    /// operand still reduces to itself), and the saturated most negative
+    /// finite value for `Bf4`, `F8` and `F4`, which have no infinity encoding.
+    /// For integers it is `MIN`.
+    ///
+    /// Where the format encodes infinity this is not the most negative finite
+    /// value; that is [`RealField::min_value`](crate::RealField::min_value).
+    ///
+    /// `Complex<T>` implements `PartialOrd` with `None` for every pair, so it
+    /// has no least value under that order; its constant is the componentwise
+    /// pair `(T::MIN_VALUE, 0)`.
     const MIN_VALUE: Self;
 
-    /// The maximum representable finite value (positive infinity or `i32::MAX`).
+    /// For the ordered real element types (float formats and integers), the
+    /// identity element of `Min` reductions: the greatest value of the type.
     ///
-    /// Used as the identity element for `Min` reductions.
+    /// For a float format this is [`INFINITY`](Self::INFINITY): positive
+    /// infinity where the format encodes infinity (so an infinite operand still
+    /// reduces to itself), and the saturated largest finite value for `Bf4`,
+    /// `F8` and `F4`, which have no infinity encoding. For integers it is
+    /// `MAX`.
+    ///
+    /// Where the format encodes infinity this is not the largest finite value;
+    /// that is [`RealField::max_value`](crate::RealField::max_value).
+    ///
+    /// `Complex<T>` implements `PartialOrd` with `None` for every pair, so it
+    /// has no greatest value under that order; its constant is the componentwise
+    /// pair `(T::MAX_VALUE, 0)`.
     const MAX_VALUE: Self;
 
     /// Saturating addition.
