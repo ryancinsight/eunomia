@@ -27,44 +27,82 @@
   combined gates, required review and bridge-first consumer coordination.
 
 <a id="EUNOMIA-POWI-SUBNORMAL-UPWARD"></a>
-## EUNOMIA-POWI-SUBNORMAL-UPWARD — powi loses precision when the upward power is subnormal [patch]
+## EUNOMIA-POWI-SUBNORMAL-UPWARD — powi has no bound where a product or the result is subnormal [patch]
 
-- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: ce48289.
-- Outcome: `FloatElement::powi` with `n < 0` stays within a derived error bound when the upward power is subnormal. No bound covers it: the derivation at `crates/eunomia/src/traits/float/power.rs:12-28` assumes no subnormal product, and the trigger in `powi` handles only a non-finite or a saturated one. The subnormal rounding loses relative precision, and the reciprocal carries that loss into a normal or overflowing result.
-- Evidence (`ce48289`, run): `F8` powi(±0.0703125, -2) = 176, correct 208 (exact 202.27); `Bf8` powi(0.02734375, -3) = +inf, correct 49152 (exact 48913.17, below the largest finite 57344); `f32` powi(1.4323644e-13 = 0x2a214518, -3) = +inf, correct `f32::MAX` = 3.4028235e38 (the upward power is subnormal, 2^-128 after rounding, and its reciprocal overflows). "Correct" is the correctly rounded exact power. The same scan finds two more `+inf` rows: `n` = 5 at 0x32a8e5a3, correct 0x7f7ffffd, and `n` = 9 at 0x385b7458, correct 0x7f7ffffa. `F8`: 40 of its mismatches have a subnormal upward power.
-- Acceptance: test `powi_negative_exponent_with_subnormal_upward_power_stays_within_bound` in `crates/eunomia/tests/float_element/`, generic over `F8`, `Bf8`, `f32`, asserting the three rows above against the derived bound (the `f32` row is the 0x2a214518, n = -3 row); it fails at the basis.
-- Next step: extend the derivation at `power.rs:12-28` to a subnormal upward power, then choose a path that meets it on every format; the branch it extends is the one `powi` already holds for a non-finite upward power and for a saturated one (documented on `powi`).
+- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
+- Outcome: `FloatElement::powi` with `n < 0` stays within a stated, derived error bound where the documented one stops: a subnormal upward power, and a subnormal result (`power.rs:53-56` and `float.rs:379-381` exclude both). The derivation at `crates/eunomia/src/traits/float/power.rs:12-28` assumes no subnormal product, and the trigger in `powi` handles only a non-finite or a saturated upward power. A subnormal upward power loses relative precision, and the reciprocal carries that loss into a normal or overflowing result. A subnormal result is one rounding of the quotient, whose relative error exceeds `u`.
+- Evidence (`0ae80384255f`, run over `F8` and `Bf8` bases, every positive finite code, `n` in -128..=-1, and one `f32` row; exact values in rational arithmetic): `Bf8` powi(0.02734375, -3) = +inf, exact 48913.17, correctly rounded 49152 (the largest finite is 57344). `f32` powi(1.4323644e-13 = 0x2a214518, -3) = +inf, exact 3.4028234746e38 lies above `f32::MAX` by 8.2e29, under half an ulp (2^103), so the correctly rounded value is `f32::MAX`; the upward power rounds to the subnormal 2^-128. `F8` powi(224, -1) = 2^-8 for exact 4.464e-3, relative error 0.125 over the bound 1/15: the quotient is correctly rounded, so only the stated range is wrong. `F8` powi(0.0703125, -2) = 176 for exact 202.27 (correctly rounded 208) has relative error 0.130, inside the 0.1378 the documented bound would give for `e` = 2, so it is a correct-rounding row, not a bound violation.
+- Acceptance: test `powi_negative_exponent_with_subnormal_upward_power_stays_within_bound` in `crates/eunomia/tests/float_element/`, generic over `Bf8` and `f32`, asserting the two +inf rows above against the derived bound (it fails at the basis, since an infinite result is outside every finite bound); test `powi_negative_exponent_with_subnormal_result_stays_within_bound` asserting the `F8` powi(224, -1) row against the bound the docs state for a subnormal result; `power.rs` and `float.rs` state both bounds.
+- Next step: derive the bound for a subnormal upward power and for a subnormal result and extend `power.rs:12-28`, then choose a path that meets the first on every format; the branch it extends is the one `powi` already holds for a non-finite upward power and for a saturated one (documented on `powi`).
 - Scope: `crates/eunomia/src/traits/float/power.rs`, `FloatElement::powi` in `crates/eunomia/src/traits/float.rs`, `crates/eunomia/tests/float_element/` and its `#[path]` line in `crates/eunomia/tests/float_element.rs`, `CHANGELOG.md`.
-- Driver: judge verdict on PR #203 (witnesses for `F8`, `Bf8`); `f32` witness: judge round 2 finding 1 on PR #203, `f32` row reproduced by the filer at `f574aa7f`.
+- Driver: judge verdict on PR #203 (the `Bf8` and `f32` rows); subnormal-result regime: judge finding G1 on PR #208.
 
 <a id="EUNOMIA-COMPLEX-REDUCTION-IDENTITY"></a>
 ## EUNOMIA-COMPLEX-REDUCTION-IDENTITY — Complex MIN_VALUE/MAX_VALUE are not Max/Min fold identities [patch]
 
-- status: todo; priority: correctness; needs: none; basis: 548cb3f0229b.
+- status: todo; priority: correctness; needs: none; basis: 0ae80384255f.
 - milestone: M-special-functions.
 - Outcome: for `Complex<T>` with no NaN component, a Max fold seeded with
-  `MIN_VALUE` and a Min fold seeded with `MAX_VALUE` return the element,
-  never the seed, in either argument order. The constants become
+  `MIN_VALUE` and a Min fold seeded with `MAX_VALUE` return a value equal to
+  the element, in either argument order. The constants become
   `(T::MIN_VALUE, T::MIN_VALUE)` and `(T::MAX_VALUE, T::MAX_VALUE)`, the
   least and greatest pairs under the lexicographic order, and their
-  `Complex` doc paragraphs follow. NaN stays outside the contract, as for
-  the real-scalar `max_scalar` (`traits/numeric.rs:107-111`).
-- Evidence (read; run by the judge of PR #206 at `9cba23be236e`): the
-  constants are `(T::MIN_VALUE, 0)`/`(T::MAX_VALUE, 0)`; the grid below
-  fails at exactly Max re=MIN im<0 and Min re=MAX im>0 and passes with the
-  new constants.
+  `Complex` doc paragraphs (`traits/numeric.rs:148-150`, `:165-167`) follow.
+  NaN stays outside the contract, as for the real-scalar `max_scalar`
+  (`traits/numeric.rs:107-111`).
+- Evidence (read; run by the judge of PR #206 at `9cba23be236e`, on a grid
+  without the `im` extremes; the constants, `max_scalar` and `min_scalar` are
+  unchanged to the basis): the constants are
+  `(T::MIN_VALUE, 0)`/`(T::MAX_VALUE, 0)` and `max_scalar`/`min_scalar`
+  (`impls/primitives/numeric.rs:335-350`) order by `re`, then `im`. With
+  re = MIN the Max fold keeps the seed for every im <= 0, so it differs from
+  the element at im in {MIN_VALUE, -ONE}; the Min fold mirrors this at
+  re = MAX, im in {ONE, MAX_VALUE}.
 - Acceptance: test `complex_reduction_identity_returns_the_element` in
   `crates/eunomia/tests/complex_provider_contract.rs`, generic over every
   shipped `Complex<T>`, that is every `T: NumericElement + Neg<Output = T>`
   (`impls/primitives/numeric.rs:247-250`), including `f32`, `f64`, `i32`,
-  `F16`, `F8`, `I8`; for re in {MIN, MAX, ONE} x im in {-ONE, ZERO, ONE},
-  `max_scalar(MIN_VALUE, v) == v == max_scalar(v, MIN_VALUE)` and the Min
-  analogue. It fails at the basis.
+  `F16`, `F8`, `I8`; for re in {MIN, MAX, ONE} x im in {MIN_VALUE, -ONE,
+  ZERO, ONE, MAX_VALUE}, `max_scalar(MIN_VALUE, v) == v == max_scalar(v,
+  MIN_VALUE)` and the Min analogue. It fails at the basis, and a mutant with
+  constants `(MIN, -ONE)`/`(MAX, ONE)` fails it at im = MIN_VALUE/MAX_VALUE.
+  `git grep -nF '(T::MIN_VALUE, 0)'` and `git grep -nF '(T::MAX_VALUE, 0)'`
+  over `crates` and `docs` print nothing.
 - Next step: change the constants and docs; read the hermes and leto Min/Max
   seed sites for `Complex` that assume a zero imaginary part.
 - Scope: `crates/eunomia/src/impls/primitives/numeric.rs`,
   `crates/eunomia/src/traits/numeric.rs`,
   `crates/eunomia/tests/complex_provider_contract.rs`, `CHANGELOG.md`.
+
+<a id="EUNOMIA-POWI-DOC-CLAIMS"></a>
+## EUNOMIA-POWI-DOC-CLAIMS — three powi statements read false as written [patch]
+
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
+- Outcome: each statement below is true as written, or says what it holds for. (1) `crates/eunomia/src/traits/float.rs:381`, "for `n < 0` a clamped `F4`/`Bf4`/`F8` power rounds exactly", holds for the clamped upward power but not the returned value: `F8` powi(0.34375, -5) = 240 for exact 208.35, correctly rounded 208, because the upward power is subnormal and its reciprocal clamps. It names the upward power. (2) `crates/eunomia/src/traits/float/power.rs:80-81` says "keeps `|x|^e` above `2^125`, far below half the least positive value of `T`", which read literally puts `|x|^e` far below a small positive value although it lies above `2^125`; the true statement is that the exact `|x|^-e` lies below `2^-125`. (3) `assert_outside_bound` (`crates/eunomia/tests/float_element/powi_saturation.rs:246-262`) evaluates its bound in `f64` with no rounding note: for the `F16` row the error is 2.121e-3 against the bound 9.773e-4, a ratio of 2.17, so `f64` rounding of the bound cannot flip the comparison, yet the test says neither; its `.powi` binds to the inherent `f64::powi`, not the trait method.
+- Evidence (`0ae80384255f`, read; row (1) run: `F8` code 0x2b powi with `n` = -5 returns code 0x77 = 240; ratio in (3) derived in exact rational arithmetic).
+- Acceptance: `git grep -n 'rounds exactly' crates/eunomia/src/traits/float.rs` shows the upward power named; the sentence at `power.rs:80-81` has `|x|^-e` as its subject; a comment above `assert_outside_bound` states the margin and why `f64` suffices, or the comparison is made in exact integers; `float.rs` stays at or under 500 lines with lines of at most 100 characters.
+- Next step: reword the three sites; `float.rs:379-381` is at the 100-character limit, so shorten the neighbouring words.
+- Scope: `crates/eunomia/src/traits/float.rs`, `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/tests/float_element/powi_saturation.rs`.
+
+<a id="EUNOMIA-POWI-SATURATION-GUARD"></a>
+## EUNOMIA-POWI-SATURATION-GUARD — the finite-only guard in powi's saturation test cannot change a result [patch]
+
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
+- Outcome: `saturates` (`crates/eunomia/src/traits/float/power.rs:119-122`) is `T::INFINITY.is_finite() && power.abs() == T::MAX_VALUE`, and no test fails when its first conjunct is dropped. The conjunct is redundant: `MAX_VALUE` is `INFINITY` for every shipped float format (`traits/numeric.rs:153-163`; `impls/primitives/numeric.rs:31`; the `$inf` and `$max` arguments of `impls/wrappers/numeric.rs` agree for `F16`, `F32`, `F64`, `Bf16`, `Bf8`, `Bf4`, `F8`, `F4`), and `saturates` runs only after the non-finite branch of `powi` (`power.rs:100`), so on a format with an infinity `power.abs() == MAX_VALUE` is false. `NumericElement` is sealed, so no other format exists. The conjunct is deleted, and a test pins `MAX_VALUE == INFINITY` so the equivalence is checked.
+- Evidence (the dropped-conjunct mutant: judge run on PR #210 at `2ef8acd`, not reproduced here; `power.rs` code is unchanged to the basis, read from `git diff 2ef8acd 0ae80384255f`): it passes `--test float_element` (20 of 20) and the package (234 of 234), while the mutants that disable the branch, drop `abs`, or shift the accumulator exponent fail both. The equivalence argument is derived from reading the constants above, not run.
+- Acceptance: a test generic over every shipped float format asserts `T::MAX_VALUE` and `T::INFINITY` have equal bits; `saturates` is `power.abs() == T::MAX_VALUE` and its doc comment says why that identifies a clamped power; `cargo nextest run -p eunomia` passes with no result bit changed (`powi_equals_the_loop_it_replaced_bit_for_bit`, `powi_negative_exponent_rounds_the_exact_power_when_upward_saturates`).
+- Next step: add the constants test, then delete the conjunct.
+- Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/tests/float_element/powi_saturation.rs`.
+
+<a id="EUNOMIA-COMPLEX-POWI-EXACT-CLAIM"></a>
+## EUNOMIA-COMPLEX-POWI-EXACT-CLAIM — Complex::powi is called exact but rounds every product [patch]
+
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
+- Outcome: no source, test or board text calls `Complex::powi` exact, and its Rustdoc states what it guarantees. The roadmap narrative at `backlog.md:450-451` ("exact exponentiation-by-squaring") says it too. `crates/eunomia/src/types/complex/float.rs:132-137` says "**exact** exponentiation-by-squaring" and "exact up to the floating-point error of the multiplies"; the loop at `:139-165` rounds each complex product, and a negative `n` adds one complex division. The test `powi_is_exact_repeated_multiplication` (`:236`) compares with four `1e-12` literal tolerances in two assertions, the counted underived class.
+- Evidence (`0ae80384255f`, read): the Rustdoc, test name, tolerances and narrative lines above; `git grep -n -i powi` over `backlog.md`, `backlog/` and `gap_audit.md` finds no item for them.
+- Acceptance: `git grep -n -i 'exact' crates/eunomia/src/types/complex/float.rs` prints no line about `powi` and `git grep -n 'exact exponentiation-by-$' backlog.md` prints nothing; the test is renamed for the property it checks and holds each tolerance as a named constant whose doc derives it from a per-product error bound read in a cited source, or asserts exact equality on inputs whose products are exact (`(1 + i)^2`, `(1 + i)^4` as the test already does).
+- Next step: read the complex-multiplication error bound in a numerical-analysis reference before citing it; then reword the Rustdoc to state the number of rounded complex products (the first, one times the base, is exact) and that bound.
+- Scope: `crates/eunomia/src/types/complex/float.rs`, `backlog.md`.
 
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
