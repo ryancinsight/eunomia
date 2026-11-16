@@ -1,5 +1,18 @@
 # Eunomia backlog
 
+<a id="EUNOMIA-POWI-SUBNORMAL-SWEEP"></a>
+## EUNOMIA-POWI-SUBNORMAL-SWEEP — the powi subnormal bound is pinned on three rows, not swept on every format [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
+- Outcome: `powi_subnormal.rs` holds the bound of `power.rs` on every shipped format (`F4`, `Bf4`, `F8`, `Bf8`, `F16`, `Bf16`, `F32`, `f32`, `F64`, `f64`),
+  not only on the `Bf8`, `f32`, `F16` and `F8` pinned rows, and `integer_power.rs` holds each row its pin drops (`inverts_subnormal_power`) to `check_row`.
+- Evidence: the rescue PR #218 (`refs/pull/218/head`) carries both: `every_format!` over `upward_sweep` (log grid, powers from `2^(emin-2)` to `2^(emin+1)`,
+  `e` up to 24) and `result_sweep` (results `2^(emax-1)` to `2^(emax+1)`; skipped for `F4`, which has no subnormal), the dropped rows forwarded in `check_previous_powi`, and
+  `check_row`, `Format`, `largest_exponent` made `pub(super)`. At that head every format passes; dropping the exponent carry fails the upward sweep on `F8`..`f64`.
+- Acceptance: the upward sweep kills the carry-drop mutant (`Carried::multiply` without `.saturating_add(carry)`) on `F8`, `Bf8`, `F16`, `Bf16`, `F32`, `f32`, `F64`, `f64`; it fails at the
+  basis on `F16`, `Bf16`, `F32`, `f32`; `F4` and `Bf4` stay held by the pins (every row has `m = 1`, so the carry is zero).
+- Next step: restore the sweep and the hook from `refs/pull/218/head`; the counted diff is about 236 lines against `main` once the fix has landed.
+- Scope: `crates/eunomia/tests/float_element/powi_subnormal.rs`, `crates/eunomia/tests/float_element/integer_power.rs`.
+
 <a id="EUNOMIA-COMPLEX-REDUCTION-IDENTITY"></a>
 ## EUNOMIA-COMPLEX-REDUCTION-IDENTITY — Complex MIN_VALUE/MAX_VALUE are not Max/Min fold identities [patch]
 - status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
