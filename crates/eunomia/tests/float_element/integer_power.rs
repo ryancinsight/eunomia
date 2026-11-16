@@ -103,26 +103,28 @@ fn check_powers_of_two<T: FloatElement>() {
     }
 }
 
+/// The squaring loop `powi` ran before its kernel moved: the upward power.
+fn previous_upward<T: FloatElement>(mut base: T, mut exponent: u32) -> T {
+    let mut accumulator = <T as NumericElement>::ONE;
+    while exponent > 0 {
+        if exponent & 1 == 1 {
+            accumulator *= base;
+        }
+        base *= base;
+        exponent >>= 1;
+    }
+    accumulator
+}
+
 /// `powi` as it stood before its kernel moved: the squaring loop forms one
 /// square past the last exponent bit.
 fn previous_powi<T: FloatElement>(base: T, n: i32) -> T {
-    fn upward<T: FloatElement>(mut base: T, mut exponent: u32) -> T {
-        let mut accumulator = <T as NumericElement>::ONE;
-        while exponent > 0 {
-            if exponent & 1 == 1 {
-                accumulator *= base;
-            }
-            base *= base;
-            exponent >>= 1;
-        }
-        accumulator
-    }
     let exponent = n.unsigned_abs();
-    let accumulator = upward(base, exponent);
+    let accumulator = previous_upward(base, exponent);
     if n >= 0 {
         accumulator
     } else if !NumericElement::is_finite(accumulator) && !NumericElement::is_nan(accumulator) {
-        upward(<T as NumericElement>::ONE / base, exponent)
+        previous_upward(<T as NumericElement>::ONE / base, exponent)
     } else {
         <T as NumericElement>::ONE / accumulator
     }
