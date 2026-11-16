@@ -6,6 +6,11 @@ All notable changes to Eunomia are documented here.
 
 ### Fixed
 
+- `FloatElement::powi` with a negative exponent inverted the clamped upward
+  power on `Bf4`, `F8` and `F4`: `F8` `powi(2, -9)` returned `2^-8` for the
+  correct `2^-9`, and `Bf4` `powi(2, -2)` returned `0.5` for `0`. A saturated
+  power now rounds the exact power once into the format; other formats are
+  unchanged. The `powi` docs now state the error bound.
 - `RealField::max_value()` and `min_value()` returned `+inf`/`-inf` for
   `f32`, `f64`, `F32` and `F64` although the contract is the largest and
   smallest *finite* value. They now return `MAX` and `MIN` of the format

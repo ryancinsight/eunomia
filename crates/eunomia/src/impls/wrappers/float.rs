@@ -204,10 +204,10 @@ mod tests {
         // signum: ±1 with the sign (num_traits / std semantics), NaN→NaN.
         assert_eq!(FloatElement::signum(-3.5_f64), -1.0);
         assert_eq!(FloatElement::signum(0.0_f64), 1.0);
-        // powi: exact integer power, correct for negative base + exponent.
+        // powi: powers of two are exact; the sign follows the exponent's parity.
         assert_eq!(FloatElement::powi(2.0_f64, 10), 1024.0);
         assert_eq!(FloatElement::powi(-2.0_f64, 3), -8.0);
-        assert!((FloatElement::powi(2.0_f64, -2) - 0.25).abs() < 1e-15);
+        assert_eq!(FloatElement::powi(2.0_f64, -2), 0.25);
         // F64 wrapper (native impl).
         assert_eq!(FloatElement::floor(F64(2.7)).0, 2.0);
         assert_eq!(FloatElement::powi(F64(2.0), 10).0, 1024.0);

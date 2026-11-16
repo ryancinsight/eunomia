@@ -26,27 +26,15 @@
 - Hold: no factory-only 0.11 publication. Merge/publication remain pending the
   combined gates, required review and bridge-first consumer coordination.
 
-<a id="EUNOMIA-POWI-SATURATION"></a>
-## EUNOMIA-POWI-SATURATION — powi inverts a saturated power on finite-only formats [patch]
-
-- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: ce48289.
-- Outcome: `FloatElement::powi` with `n < 0` returns the format-rounded `x^n` on `Bf4`, `F8` and `F4` when the upward power saturates. The downward recompute at `crates/eunomia/src/traits/float/power.rs:61` fires only on a non-finite upward power; these formats clamp to their largest finite value, so the clamped value is inverted. Only saturation is held to a correctly rounded result, as no error bound exists there; unsaturated results keep the documented bound.
-- Evidence (`ce48289`, every base, n in -9..-1, against `from_f64` of the exact power): `Bf4` powi(2, -2) = 0.5, want 0 (0.25 ties to even); 44 mismatches, all saturated (upward = ±3). `F8` powi(2, -9) = 2^-8, want 2^-9; 776 saturated mismatches (upward = ±240). `F4`: 0 mismatches, since 1/8 ties to zero as does every true value below it. The 242 unsaturated `F8` mismatches split into 202 with a normal upward power, within the documented bound composed with one reciprocal rounding (expected variation: powi(0.3125, -2) = 11, exact power rounds to 10), and 40 with a subnormal one, filed as [EUNOMIA-POWI-SUBNORMAL-UPWARD](#EUNOMIA-POWI-SUBNORMAL-UPWARD).
-- Acceptance: new `crates/eunomia/tests/float_element/powi_saturation.rs`, test `powi_negative_exponent_rounds_the_exact_power_when_upward_saturates`, generic over `Bf4`, `F8`, `F4`: asserts the values above and the saturated-upward sweep, plus rows the basis already gets right that must stay right: `Bf4` powi(±1.5, -3) = ±0.5 and `F8` powi(±2.25, -7) = ±2^-8. It fails at the basis; IEEE-format `powi` results stay bit-identical to those at `f574aa7f`, except rows whose upward power, as computed by `nth_power` at `f574aa7f`, is subnormal, which the sibling item changes.
-- Next step: saturation needs a correctly rounded path, not only a wider trigger: recomputing as `nth_power(ONE / x, |n|)` fixes the saturated cases but turns the two rows above wrong (run by the round-2 judge /615 at `ce48289`: it gives ±0 and ±2^-9), so do not prescribe it; derive the path from the format's rounding.
-- Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/src/traits/float.rs:379` (the "Exact for integer exponents" claim is false at the basis; state the documented bound), `crates/eunomia/tests/float_element/powi_saturation.rs`, its `#[path]` line in `crates/eunomia/tests/float_element.rs`, `crates/eunomia/tests/float_element/integer_power.rs:84-150` (skips the saturated inversion and pins `Bf4`/`F8` bitwise to the old loop, defective values included), `CHANGELOG.md`.
-- Non-goal: the 202 normal-upward `F8` cases and the subnormal-upward regime, which the sibling item owns.
-- Driver: found reviewing `nth_power` (PR #198); the kernel move (PR #200) and `nth_power` (PR #201) kept the trigger.
-
 <a id="EUNOMIA-POWI-SUBNORMAL-UPWARD"></a>
 ## EUNOMIA-POWI-SUBNORMAL-UPWARD — powi loses precision when the upward power is subnormal [patch]
 
 - status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: ce48289.
-- Outcome: `FloatElement::powi` with `n < 0` stays within a derived error bound when the upward power is subnormal. No bound covers it: the derivation at `crates/eunomia/src/traits/float/power.rs:12-28` assumes no subnormal product, and the trigger at line 61 handles only a non-finite one. The subnormal rounding loses relative precision, and the reciprocal carries that loss into a normal or overflowing result.
+- Outcome: `FloatElement::powi` with `n < 0` stays within a derived error bound when the upward power is subnormal. No bound covers it: the derivation at `crates/eunomia/src/traits/float/power.rs:12-28` assumes no subnormal product, and the trigger in `powi` handles only a non-finite or a saturated one. The subnormal rounding loses relative precision, and the reciprocal carries that loss into a normal or overflowing result.
 - Evidence (`ce48289`, run): `F8` powi(±0.0703125, -2) = 176, correct 208 (exact 202.27); `Bf8` powi(0.02734375, -3) = +inf, correct 49152 (exact 48913.17, below the largest finite 57344); `f32` powi(1.4323644e-13 = 0x2a214518, -3) = +inf, correct `f32::MAX` = 3.4028235e38 (the upward power is subnormal, 2^-128 after rounding, and its reciprocal overflows). "Correct" is the correctly rounded exact power. The same scan finds two more `+inf` rows: `n` = 5 at 0x32a8e5a3, correct 0x7f7ffffd, and `n` = 9 at 0x385b7458, correct 0x7f7ffffa. `F8`: 40 of its mismatches have a subnormal upward power.
 - Acceptance: test `powi_negative_exponent_with_subnormal_upward_power_stays_within_bound` in `crates/eunomia/tests/float_element/`, generic over `F8`, `Bf8`, `f32`, asserting the three rows above against the derived bound (the `f32` row is the 0x2a214518, n = -3 row); it fails at the basis.
-- Next step: extend the derivation at `power.rs:12-28` to a subnormal upward power, then choose a path that meets it on every format; it shares the `power.rs:61` trigger with [EUNOMIA-POWI-SATURATION](#EUNOMIA-POWI-SATURATION), so land one and merge the other.
-- Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/src/traits/float.rs:379`, `crates/eunomia/tests/float_element/` and its `#[path]` line in `crates/eunomia/tests/float_element.rs`, `CHANGELOG.md`.
+- Next step: extend the derivation at `power.rs:12-28` to a subnormal upward power, then choose a path that meets it on every format; the branch it extends is the one `powi` already holds for a non-finite upward power and for a saturated one (documented on `powi`).
+- Scope: `crates/eunomia/src/traits/float/power.rs`, `FloatElement::powi` in `crates/eunomia/src/traits/float.rs`, `crates/eunomia/tests/float_element/` and its `#[path]` line in `crates/eunomia/tests/float_element.rs`, `CHANGELOG.md`.
 - Driver: judge verdict on PR #203 (witnesses for `F8`, `Bf8`); `f32` witness: judge round 2 finding 1 on PR #203, `f32` row reproduced by the filer at `f574aa7f`.
 
 <a id="EUNOMIA-COMPLEX-REDUCTION-IDENTITY"></a>
@@ -621,7 +609,7 @@ for the remaining ~19 apollo crates):
 - **E-015 [patch]** Native f64 transcendentals for the `F64` wrapper (was
   f32-routed → widen-narrow defect). — eunomia PR #5.
 - **E-016 [minor]** Completed `FloatElement` to num-traits `Float` parity:
-  floor/ceil/round/trunc/signum + exact `powi`. — eunomia PR #6.
+  floor/ceil/round/trunc/signum + `powi`. — eunomia PR #6.
 - **E-020 [minor]** Added `FloatElement::acos` with libm-backed reduced-
   precision defaults and native f64 primitive/wrapper overrides. Driver: CFDrs
   Murray's-law bifurcation migration needs inverse-cosine geometry without
