@@ -133,7 +133,8 @@ pub trait NumericElement:
         }
     }
 
-    /// The identity element of `Max` reductions: the least value of the type.
+    /// For the ordered real element types (float formats and integers), the
+    /// identity element of `Max` reductions: the least value of the type.
     ///
     /// For a float format this is the negation of [`INFINITY`](Self::INFINITY):
     /// negative infinity where the format encodes infinity (so an infinite
@@ -143,10 +144,14 @@ pub trait NumericElement:
     ///
     /// Where the format encodes infinity this is not the most negative finite
     /// value; that is [`RealField::min_value`](crate::RealField::min_value).
+    ///
+    /// `Complex<T>` implements `PartialOrd` with `None` for every pair, so it
+    /// has no least value under that order; its constant is the componentwise
+    /// pair `(T::MIN_VALUE, 0)`.
     const MIN_VALUE: Self;
 
-    /// The identity element of `Min` reductions: the greatest value of the
-    /// type.
+    /// For the ordered real element types (float formats and integers), the
+    /// identity element of `Min` reductions: the greatest value of the type.
     ///
     /// For a float format this is [`INFINITY`](Self::INFINITY): positive
     /// infinity where the format encodes infinity (so an infinite operand still
@@ -156,6 +161,10 @@ pub trait NumericElement:
     ///
     /// Where the format encodes infinity this is not the largest finite value;
     /// that is [`RealField::max_value`](crate::RealField::max_value).
+    ///
+    /// `Complex<T>` implements `PartialOrd` with `None` for every pair, so it
+    /// has no greatest value under that order; its constant is the componentwise
+    /// pair `(T::MAX_VALUE, 0)`.
     const MAX_VALUE: Self;
 
     /// Saturating addition.
