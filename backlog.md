@@ -49,6 +49,30 @@
 - Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/src/traits/float.rs:379`, `crates/eunomia/tests/float_element/` and its `#[path]` line in `crates/eunomia/tests/float_element.rs`, `CHANGELOG.md`.
 - Driver: judge verdict on PR #203 (witnesses for `F8`, `Bf8`); `f32` witness: judge round 2 finding 1 on PR #203, `f32` row reproduced by the filer at `f574aa7f`.
 
+<a id="EUNOMIA-COMPLEX-REDUCTION-IDENTITY"></a>
+## EUNOMIA-COMPLEX-REDUCTION-IDENTITY — Complex MIN_VALUE/MAX_VALUE are not Max/Min fold identities [patch]
+
+- status: todo; priority: correctness; needs: none; basis: 9cba23be236e.
+- milestone: M-special-functions.
+- Outcome: for `Complex<T>`, a Max fold seeded with `MIN_VALUE` and a Min
+  fold seeded with `MAX_VALUE` return the element, never the seed, in either
+  argument order; or the contract states `Complex` has no reduction identity
+  and consumers stop seeding with it.
+- Evidence (derived from reading, not run): `impls/primitives/numeric.rs`
+  builds the constants as `(T::MIN_VALUE, 0)`/`(T::MAX_VALUE, 0)`, and
+  `max_scalar`/`min_scalar` order lexicographically (re, then im), so Max over
+  `(T::MIN_VALUE, -1)` seeded with `(T::MIN_VALUE, 0)` returns the seed. PR
+  #205 scoped the identity docs to reals and makes no claim for `Complex`.
+- Acceptance: a test generic over the shipped `Complex<T>` instantiations;
+  for re in {MIN, MAX, finite} x im in {negative, 0, positive},
+  `max_scalar(MIN_VALUE, v) == v == max_scalar(v, MIN_VALUE)` and the Min
+  analogue. It fails at the basis.
+- Next step: choose between changing the constants and removing the claim;
+  then check hermes/leto Min/Max seed sites for `Complex` instantiation.
+- Scope: `crates/eunomia/src/impls/primitives/numeric.rs`,
+  `crates/eunomia/src/traits/numeric.rs`, `crates/eunomia/tests/`,
+  `CHANGELOG.md`.
+
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
 
