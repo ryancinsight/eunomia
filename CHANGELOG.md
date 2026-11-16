@@ -2,7 +2,15 @@
 
 All notable changes to Eunomia are documented here.
 
-## [0.12.0] - Unreleased
+## [Unreleased]
+
+### Added
+
+- `FloatElement::nth_power(self, n: u32)`, the `u32`-exponent counterpart of
+  `powi`: the sign of a negative base follows the parity of `n` past `2^24`
+  and `i32::MAX`, a zero base stays defined, overflow saturates by each
+  format's policy, and the documented relative error is at most
+  `(1 + u)^(n-1) - 1` while no intermediate overflows or is subnormal.
 
 ### Fixed
 
@@ -21,42 +29,15 @@ All notable changes to Eunomia are documented here.
   extreme finite value for `Bf4`, `F8` and `F4`) that SIMD and tensor
   reductions seed their folds with, and their documentation now says so
   instead of calling them finite.
-- Removed two redundant copies of the same 193-line checklist block (the
-  `EUNOMIA-DEFAULT-RELEASE-VERSION` through ADR-governance sections repeated
-  the canonical copy byte-for-byte, inflating the board by ~386 lines); one
-  canonical copy remains and every section heading is now single. The stale
-  `eunomia-const-native-float` anchor on the `EUNOMIA-DIGAMMA` heading is now
-  `eunomia-digamma`, matching the heading it annotates.
 - Bounded `benches/conversions.rs` to the stack's flat wall-clock budget
   (10 samples, 100 ms warm-up, 500 ms measurement per benchmark, both
   workload sizes kept): the five conversion groups previously ran unbounded
-  Criterion defaults and the reduced-arithmetic block ran 1 s / 3 s. Regimes,
-  workloads, and sample counts are unchanged; `cargo bench --test` smoke
-  passes.
+  Criterion defaults (100 samples) and the reduced-arithmetic block ran
+  1 s / 3 s at 10 samples. Regimes and workloads are unchanged; the five
+  conversion groups drop from 100 samples to 10, the reduced-arithmetic
+  block keeps 10; `cargo bench --test` smoke passes.
 
-### Added
-
-- `FloatElement::nth_power(self, n: u32)`, the `u32`-exponent counterpart of
-  `powi`: the sign of a negative base follows the parity of `n` past `2^24`
-  and `i32::MAX`, a zero base stays defined, overflow saturates by each
-  format's policy, and the documented relative error is at most
-  `(1 + u)^(n-1) - 1` while no intermediate overflows or is subnormal.
-- Real `FloatElement::digamma` with native `f32`/`f64`/`F64` evaluation,
-  documented reduced-storage software boundaries, signed pole behavior and
-  analytic, identity, high-precision and encoding-boundary tests.
-  CPU provider slice for differentiable gamma-log; no device claim.
-- Pre-merge release-cohort packaging verification through the existing Atlas
-  planner, covering unpublished workspace dependencies without publishing.
-
-### Fixed
-
-- `FloatElement::nth_root`'s `f32`-routed default now forms its exponent as
-  the correctly rounded `1/n` (`FloatElement::from_count_reciprocal`) instead
-  of `1.0 / n as f32`, which rounded the degree itself for `n > 2^24`. The
-  native-`f64` override spells the same value via the exact `f64::from(n)`.
-  Results are unchanged within `f32` resolution; the casts are gone.
-
-## [0.11.0] - Unreleased
+## [0.12.0] - 2026-10-29
 
 ### Added
 
@@ -67,10 +48,10 @@ All notable changes to Eunomia are documented here.
 ### Changed
 
 - Primitive and wrapper `FloatElement::from_f64` delegate to the same canonical
-  native factory. The derive package inherits the workspace version.
-- Git consumers requiring 0.10 need a coordinated requirement/public-provider
-  update before this default advances to 0.12; see ADR 0010. Publication and
-  final-head acceptance remain pending.
+  native factory.
+- Git and registry consumers requiring 0.10 or 0.11 cannot resolve this
+  version; advance the requirement to 0.12 together with the public-provider
+  update. See ADR 0010.
 
 ### Breaking
 
@@ -86,11 +67,28 @@ All notable changes to Eunomia are documented here.
   extension's dependency graph. Rebuild the extension; the old and new PyO3
   native-link families cannot coexist in one Cargo graph. Consumers without
   the `numpy` feature do not acquire a Python dependency.
-- Bundle this migration with the const factory in the 0.12 cohort, before
-  automatic publication. A factory-only 0.12 publication followed by this
-  breaking boundary would require a new pre-1.0 minor release. The derive
-  package inherits the workspace version. See ADR 0011 for the integration
-  decision and final-head verification requirements.
+- Eunomia 0.11.0 predates this boundary and keeps NumPy `0.29` and PyO3
+  `0.29`; the const factory and the NumPy 0.30 boundary first ship together in
+  0.12.0. See ADR 0011 for the integration decision.
+
+## [0.11.0] - 2026-10-26
+
+### Added
+
+- Real `FloatElement::digamma` with native `f32`/`f64`/`F64` evaluation,
+  documented reduced-storage software boundaries, signed pole behavior and
+  analytic, identity, high-precision and encoding-boundary tests.
+  CPU provider slice for differentiable gamma-log; no device claim.
+- Pre-merge release-cohort packaging verification through the existing Atlas
+  planner, covering unpublished workspace dependencies without publishing.
+
+### Fixed
+
+- `FloatElement::nth_root`'s `f32`-routed default now forms its exponent as
+  the correctly rounded `1/n` (`FloatElement::from_count_reciprocal`) instead
+  of `1.0 / n as f32`, which rounded the degree itself for `n > 2^24`. The
+  native-`f64` override spells the same value via the exact `f64::from(n)`.
+  Results are unchanged within `f32` resolution; the casts are gone.
 
 ## [0.10.0] - 2026-10-15
 

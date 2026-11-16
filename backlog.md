@@ -122,20 +122,38 @@
   rounded complex products (the first, one times the base, is exact) and that bound.
 - Scope: `crates/eunomia/src/types/complex/float.rs`.
 
-<a id="EUNOMIA-0-12-COHORT-REVIEW"></a>
-## EUNOMIA-0-12-COHORT-REVIEW — merged #182 (`feat!`, major) has no independent review of its final head [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 38d0e2fff1c9.
-- Outcome: a judge that did not generate it reviews eunomia#182 (`feat!`, merged as `b2477bd8fde1`) at its final head `0dccc32c0da7` against ADR 0010 and ADR 0011,
-  and each gating finding is fixed forward.
-- Evidence (`38d0e2fff1c9`, run): `gh pr view 182 --json reviews,reviewDecision` lists no review and an empty decision; the statuses API lists none for `0dccc32c0da7` or `b2477bd8fde1`.
-  The review recorded in #182's body targets a head that is not an ancestor of `0dccc32c0da7`, which was re-carried onto the 0.11.0 baseline, so it does not cover the merged head.
-  `0dccc32c0da7` is in tag `crate-eunomia-v0.12.0`; its check run `ADR index is current` failed, and `775f8ce`, which regenerates the index, is on origin/main and not in that tag.
-- Acceptance: `gh api repos/ryancinsight/eunomia/commits/0dccc32c0da7/statuses` lists a `judge` status whose creator is not `github-actions[bot]` (it lists none at the basis),
-  and every gating finding of that verdict is closed by a merged fix-forward PR, or the verdict has none.
-- Next step: dispatch the judge with ADR 0010 and ADR 0011 as the oracle and the artifact at `0dccc32c0da7`, without generator reasoning.
-- Scope: `CHANGELOG.md`, `README.md`, `Cargo.toml`, `Cargo.lock`, `crates/eunomia/Cargo.toml`, `crates/eunomia/src/convert/count.rs`, `crates/eunomia/src/impls/primitives/float.rs`,
-  `crates/eunomia/src/impls/wrappers/float.rs`, `crates/eunomia/src/traits/float.rs`,
-  `docs/adr/0010-const-native-float-construction.md`, `docs/adr/0011-numpy-030-unreleased-bundle.md`, `docs/adr/README.md`.
+<a id="EUNOMIA-COUNT-CAST-EXPECT"></a>
+## EUNOMIA-COUNT-CAST-EXPECT — `convert/count.rs` expects one cast lint but holds a narrowing cast [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: e5b65f5edae5.
+- Outcome: the module-scoped `#![expect]` in `crates/eunomia/src/convert/count.rs` names every cast lint that fires in the module, with a reason for each.
+- Evidence (read; verdict F5 of eunomia#182 `0dccc32c0da7`): `count.rs:15-19` expects only `clippy::cast_precision_loss` (integer to float); `F32::from_float` holds `value as f32`,
+  an `f64`-to-`f32` narrowing, which is `clippy::cast_possible_truncation` (class recalled, not observed firing: `Cargo.toml:38` allows it workspace-wide).
+- Acceptance: `cargo clippy -p eunomia --all-targets -- -W clippy::cast_possible_truncation -W clippy::cast_precision_loss` reports no warning with a `count.rs` span,
+  and each lint it showed firing is in the `expect` with its reason; the per-class counts beside `Cargo.toml:36-44` are unchanged or lowered.
+- Next step: run that command at the basis and read the spans before editing the `expect`.
+- Scope: `crates/eunomia/src/convert/count.rs`.
+
+<a id="EUNOMIA-COUNT-TEST-MODULE"></a>
+## EUNOMIA-COUNT-TEST-MODULE — `convert/count.rs` splits its tests across two modules [patch]
+- status: todo; priority: tightening; milestone: M-special-functions; needs: none; basis: e5b65f5edae5.
+- Outcome: the `count.rs` unit tests live in one place: the inline `mod native_float_tests` joins the `mod tests;` file module (`convert/count/tests.rs`).
+- Evidence (read; verdict F8 of eunomia#182): `count.rs:296-297` declares `#[cfg(test)] mod tests;` and `:299-300` an inline `mod native_float_tests`, holding
+  `constant_narrowing_preserves_analytic_boundaries` and `constant_narrowing_matches_runtime_across_every_exponent_and_sign`.
+- Acceptance: `git grep -n 'mod native_float_tests' -- crates` prints nothing; `cargo nextest list -p eunomia` lists both tests above and the same test names as at the basis otherwise
+  (diff of the name lists, not counts); both pass with the 46-row bit table and the 49,152-encoding grid unchanged.
+- Next step: move the module body into `convert/count/tests.rs`, with no assertion edit.
+- Scope: `crates/eunomia/src/convert/count.rs`, `crates/eunomia/src/convert/count/tests.rs`.
+
+<a id="EUNOMIA-FROM-F64-RENAME"></a>
+## EUNOMIA-FROM-F64-RENAME — `FloatElement::from_f64` names its source type [major]
+- status: todo; priority: tightening; milestone: M-special-functions; needs: none; basis: e5b65f5edae5.
+- Outcome: the trait method `FloatElement::from_f64` (`crates/eunomia/src/traits/float.rs:23`) carries a name that holds no source type, as the integrity conversion rule schedules for the next change of that method.
+- Evidence (read; verdict F6 of eunomia#182): #182 changed its primitive and wrapper implementations without the rename; `git grep -c from_f64 -- crates` sums to 111 lines at the basis.
+  A rename of a public trait method is a SemVer break, admitted by the 0.13.0 milestone.
+- Acceptance: `git grep -n -w from_f64 -- crates` prints nothing; every in-stack caller is updated in the same co-evolution unit; the replacement name and migration are in an ADR drafted first;
+  `cargo semver-checks` reports the break under `[major]`.
+- Next step: draft the ADR with the recommended name and a caller count per consumer repository.
+- Scope: `crates/eunomia/src/traits/float.rs`, its implementations, tests and docs, `CHANGELOG.md`, `docs/adr/`.
 
 <a id="EUNOMIA-CHECKLIST-RETIRE"></a>
 ## EUNOMIA-CHECKLIST-RETIRE — root `checklist.md` is a retired board form [patch]
@@ -144,7 +162,7 @@
   The board lint counts the file (`board_checklist_files` in `scripts/atlas-board-lint.py`, atlas) and the conformance scan holds that count non-increasing per member.
 - Evidence (`2327b325c5fc`, read): the 12 `- [ ]` boxes sit in `EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE` (3: file lines 18, 20, 21), `EUNOMIA-CONST-NATIVE-FLOAT` (4), `E-037` (1),
   `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21` (3), `ATLAS-EUNOMIA-NUMPY-CI-2026-08-20` (1). Line 21 (merge and publication) closes with the #182 merge (`b2477bd8fde1`) and the 0.12.0 publication.
-  Lines 18 and 20 hold the independent review, open and carried by `EUNOMIA-0-12-COHORT-REVIEW`, and gates, checks and floors: the closing PR names their receipts; floors belong on consumer boards.
+  Lines 18 and 20 hold the independent review, closed by the post-merge review of #182 and the `Item: EUNOMIA-0-12-COHORT-REVIEW` commits, and gates, checks and floors: the closing PR names their receipts; floors belong on consumer boards.
   `e-037-oracle` (`a296e12`, PR #85), `atlas-eunomia-nan-contract` and `atlas-eunomia-numpy-ci` are done blocks; ADR 0010 delivers CONST-NATIVE-FLOAT in 0.12.0
   (`0dccc32`, in tag `crate-eunomia-v0.12.0`). Outside the file, `docs/adr/0009-default-release-version.md:43` reads "the backlog and checklist record the release as pending".
 - Acceptance: `git ls-files checklist.md` prints nothing at the closing PR head (it prints the file at the basis); the closing PR body names, for each of the 12 boxes,

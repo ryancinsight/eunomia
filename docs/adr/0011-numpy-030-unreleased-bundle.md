@@ -8,13 +8,22 @@ Revision 2026-10-29: the bundle ships in the 0.12.0 cohort because Eunomia
 0.11.0 was published on 2026-10-26 before this merge; the accepted decision
 (NumPy/PyO3 0.30 optional boundary, bridge-first consumer order) is
 unchanged, and the derive package inherits the workspace version.
+Revision 2026-11-16: the body is rewritten in 0.12 terms (published
+2026-10-29, derive 0.12.0 beside it) after the post-merge review of #182 at
+`0dccc32c0da7` found the migration instruction, version statements and
+verification text still naming 0.11 and derive 0.10 (finding G2 of the
+verdict at
+https://github.com/ryancinsight/eunomia/pull/182#issuecomment-6917989787).
+The file name keeps "unreleased"; renaming it changes the ADR index and links.
 
 ## Context
 
-The user-approved provider plan (2026-10-19) targets Eunomia 0.11, Aequitas 0.4,
-binding 0.2 and a common NumPy/PyO3 0.30 boundary, in bridge-first order. PR #182 already prepares
-facade 0.11 for the const float factory. Its accepted ADR 0010 covers that
-addition; its additive compatibility result does not cover dependency identity.
+The user-approved provider plan (2026-10-19) targeted Eunomia 0.11, Aequitas 0.4,
+binding 0.2 and a common NumPy/PyO3 0.30 boundary, in bridge-first order.
+Eunomia 0.11.0 was published on 2026-10-26 without the boundary, so it ships in
+0.12.0 (2026-10-29). PR #182 prepared the const float factory in the same
+release. Its accepted ADR 0010 covers that addition; its additive compatibility
+result does not cover dependency identity.
 
 Eunomia's optional `numpy` feature implements `numpy::Element` for its canonical
 complex types. NumPy 0.30's trait is distinct from NumPy 0.29's trait even when
@@ -25,14 +34,16 @@ passing public-item API checks alone does not establish consumer compatibility.
 ## Decision
 
 Include the two optional requirement updates and their ordinarily resolved lock
-delta in the still-unreleased 0.11 bundle. Preserve every factory source/test,
-the accepted ADR 0010, facade 0.11 and unchanged derive 0.10. No numeric kernel,
-representation, trait implementation body or feature selection changes.
+delta in the 0.12 bundle. Preserve every factory source/test, the accepted
+ADR 0010 and facade 0.12.0; the derive package inherits the workspace version
+(0.12.0). No numeric kernel, representation, trait implementation body or
+feature selection changes.
 
-Do not publish factory-only 0.11 first: this subsequent breaking optional-feature
-change would then need 0.12 under normal pre-1.0 policy, beyond the Aequitas #140
-bridge's current <0.12 ceiling. The approved version policy is resolved. The factory owner accepts this
-decision as part of PR #182; the bridge owner retains the integration order.
+Do not publish a factory-only release ahead of the boundary: the subsequent
+breaking optional-feature change would then need another pre-1.0 minor under
+normal policy. The approved version policy is resolved. The factory owner
+accepts this decision as part of PR #182; the bridge owner retains the
+integration order.
 
 The optional Python boundary requires Python 3.9 rather than 3.8. Core builds
 retain Rust MSRV 1.95 and acquire no Python dependency. NumPy 2 runtime support is
@@ -41,8 +52,8 @@ dependency version. No free-threaded or all-platform guarantee follows here.
 
 ## Migration and invariants
 
-Python extension consumers select Eunomia 0.11 with NumPy 0.30 and PyO3 0.30
-together, regenerate their locks normally and rebuild their extensions. The
+Python extension consumers select Eunomia 0.12 with NumPy 0.30 and PyO3 0.30
+together (Eunomia 0.11 depends on NumPy 0.29 and PyO3 0.29), regenerate their locks normally and rebuild their extensions. The
 canonical Eunomia complex types and their byte/dtype contracts remain the only
 provider; no duplicate types, compatibility aliases, link override, path patch,
 manual lock SourceId or ABI-forward-compatibility switch is a release solution.
@@ -62,9 +73,12 @@ Rust MSRV 1.95, no-std, supply-chain, standard packages and blocking API/release
 validation. Keep explicit old/new NumPy consumer tests: signature checks alone
 miss the dependency-identity break. Renew independent review and actual GitHub
 required checks/approvals; a local review does not replace a server approval.
+#182 merged with no review and a failed ADR index check on its head; the
+post-merge independent review of that head supplied the review, and its gating
+findings are fixed forward in the release documents.
 
 Coordinate Aequitas #140/141 and downstream public scalar/quantity boundaries
-before the automatic publisher runs. Verify immutable 0.11 archive identity and
+before the automatic publisher runs. Verify immutable 0.12 archive identity and
 checksum after authorized publication. Owner integration changes the coordinated source bundle only. It changes no
 workflow, baseline, gate, credential, registry or deployment.
 Coeus Miri remains deferred and unverified.
