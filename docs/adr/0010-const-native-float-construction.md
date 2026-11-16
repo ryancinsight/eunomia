@@ -9,6 +9,11 @@ Revision 2026-10-29: the delivery version moved from 0.11.0 to 0.12.0 because
 package now inherits the workspace version instead of staying at 0.10.0.
 The accepted decision (one provider-owned native const narrowing factory
 over the full binary64 domain) is unchanged.
+Revision 2026-11-16: the "Version and consumers" section is rewritten for the
+released state (Eunomia and derive 0.12.0) after the post-merge review of #182
+at `0dccc32c0da7` found it still describing 0.11.0 and an unchanged derive
+0.10.0 (finding G3 of the verdict at
+https://github.com/ryancinsight/eunomia/pull/182#issuecomment-6917989787).
 
 ## Context
 
@@ -38,15 +43,16 @@ promise about payload/sign across const and runtime than Rust provides.
 ## Version and consumers
 
 This adds a public item, so repository versioning policy requires a minor
-release: Eunomia 0.11.0. The unchanged derive package stays at 0.10.0 and its
-internal requirement remains 0.10; no unrelated macro publication is needed.
-There is no removed item or changed runtime conversion behavior in this slice.
+release. It shipped in Eunomia 0.12.0 (2026-10-29); 0.11.0 had been published
+on 2026-10-26 without it. The derive package inherits the workspace version
+and was published as `eunomia-derive` 0.12.0 beside it, with its internal
+requirement at 0.12.0 (`Cargo.toml:71`). There is no removed item or changed
+runtime conversion behavior in this slice.
 
-Existing canonical Git consumers requiring `^0.10` cannot resolve a default
-that declares 0.11. Before merging this automatic-publisher prerequisite,
-prepare/review the coordinated provider requirement and public-boundary
-updates. Coeus must consume one verified canonical source throughout its
-graph; no path patch, dual identity or old-line compatibility release is used.
+Consumers requiring `^0.10` or `^0.11` cannot resolve a default that declares
+0.12.0 and advance their requirement to 0.12. Coeus must consume one
+verified canonical source throughout its graph; no path patch, dual identity
+or old-line compatibility release is used.
 
 ## Verification
 
@@ -59,6 +65,6 @@ bits; NaNs compare classification, matching the documented language contract.
 
 Require the existing six-way feature matrix, native and NumPy tests, strict
 lint/docs/doctests, MSRV, supply-chain, standard package and blocking API gates
-at the final head. Publication and immutable registry receipts remain pending
-until those gates and consumer coordination complete. No Miri or hardware
+at the final head. Eunomia 0.12.0 was published on 2026-10-29 (GitHub release
+`eunomia 0.12.0`); registry receipts are not restated here. No Miri or hardware
 verification is claimed by this conversion change.
