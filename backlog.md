@@ -609,7 +609,7 @@ for the remaining ~19 apollo crates):
 - **E-015 [patch]** Native f64 transcendentals for the `F64` wrapper (was
   f32-routed → widen-narrow defect). — eunomia PR #5.
 - **E-016 [minor]** Completed `FloatElement` to num-traits `Float` parity:
-  floor/ceil/round/trunc/signum + exact `powi`. — eunomia PR #6.
+  floor/ceil/round/trunc/signum + `powi`. — eunomia PR #6.
 - **E-020 [minor]** Added `FloatElement::acos` with libm-backed reduced-
   precision defaults and native f64 primitive/wrapper overrides. Driver: CFDrs
   Murray's-law bifurcation migration needs inverse-cosine geometry without

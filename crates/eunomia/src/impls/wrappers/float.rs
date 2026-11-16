@@ -207,7 +207,7 @@ mod tests {
         // powi: powers of two are exact; the sign follows the exponent's parity.
         assert_eq!(FloatElement::powi(2.0_f64, 10), 1024.0);
         assert_eq!(FloatElement::powi(-2.0_f64, 3), -8.0);
-        assert!((FloatElement::powi(2.0_f64, -2) - 0.25).abs() < 1e-15);
+        assert_eq!(FloatElement::powi(2.0_f64, -2), 0.25);
         // F64 wrapper (native impl).
         assert_eq!(FloatElement::floor(F64(2.7)).0, 2.0);
         assert_eq!(FloatElement::powi(F64(2.0), 10).0, 1024.0);

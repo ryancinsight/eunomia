@@ -1,52 +1,39 @@
-//! Contract of [`FloatElement::powi`] for a negative exponent on the
-//! finite-only formats `Bf4`, `F8` and `F4`, whose overflowing product clamps
-//! to the largest finite value instead of reaching infinity.
-//!
-//! When the upward power `|x|^e` clamps, the clamped value is not the power,
-//! so inverting it is wrong: `F8` `powi(2, -9)` upward is `512`, clamped to
-//! `240`, and `1/240` rounds to `2^-8`. The result must be the exact `x^-e`
-//! rounded once into the format.
+//! Contract of [`FloatElement::powi`] for a negative exponent on the finite-only formats `Bf4`,
+//! `F8` and `F4`, whose overflowing product clamps to the largest finite value. When the upward
+//! power `|x|^e` clamps, its reciprocal is not `x^-e` (`F8` `powi(2, -9)`: `512` clamps to `240`
+//! and `1/240` rounds to `2^-8`); the result must be the exact `x^-e` rounded once into the
+//! format.
 //!
 //! Two independent references check every saturated row:
 //!
-//! * an exact integer oracle. A base is `±m·2^κ` with `m` odd, so
-//!   `|x^-e| / s = 2^a / m^e` with `s = 2^-σ` the format's least positive
-//!   value and `a = σ − κ·e`. The format's grid starts `{0, s, 2s, …}`, and
-//!   the quotient lies above the midpoint `(c + c')·s/2` of two neighbours
-//!   `c·s`, `c'·s` exactly when `2^(a+1) > (c + c')·m^e`, which an
-//!   arbitrary-precision integer decides. For `m > 1` that comparison never
-//!   ties, since `m^e` is odd and exceeds one; for `m = 1` the quotient is a
-//!   power of two, exact in `f64`, and the format's own `from_f64` rounds it
-//!   (ties to even).
-//! * the exact power in `f64`, valid for `e ≤ 9`: `m ≤ 15` makes `m^e < 2^36`
-//!   exact, the quotient is then one correctly rounded `f64` division, and
-//!   `from_f64` rounds that to the format. The two roundings agree because a
-//!   quotient with `m > 1` is, relative to a midpoint, at least
-//!   `1 / (c·m^e) > 2^-42` away, far above the `2^-53` the division moves it.
+//! * an exact integer oracle. A base is `±m·2^κ` with `m` odd, so `|x^-e| / s = 2^a / m^e` with
+//!   `s = 2^-σ` the least positive value and `a = σ − κ·e`; the quotient lies above the midpoint
+//!   `(c + c')·s/2` of grid neighbours `c·s`, `c'·s` exactly when `2^(a+1) > (c + c')·m^e`,
+//!   decided in arbitrary precision. That never ties for `m > 1` (`m^e` is odd); for `m = 1` the
+//!   quotient is a power of two and the format's `from_f64` rounds it.
+//! * the exact power in `f64`, for `e ≤ 9` (`m^e < 2^36`): one correctly rounded division, then
+//!   `from_f64`. The two roundings agree because a quotient with `m > 1` is at least
+//!   `1/((c + c')·m^e) ≥ 15^-10 > 2^-40` from a midpoint, above the `2^-53` the division moves it.
 //!
-//! Past `e = 128` the least `|x| > 1` of a finite-only format, `9/8`, has
-//! `(9/8)^e > 2^21`, the quotient is below half of `s`, and the result is a
-//! signed zero. Observations are `f64` widenings compared by bit pattern, so
-//! the sign of zero is asserted and no assertion carries a tolerance.
+//! Past `e = 128` the result is a signed zero (`(9/8)^e > 2^21`). Observations are `f64` widenings
+//! compared by bit pattern, so the sign of zero is asserted; no assertion carries a tolerance.
 
-use eunomia::{Bf4, FloatElement, NumericElement, F4, F8};
+use eunomia::{Bf4, FloatElement, NumericElement, F16, F4, F8};
 
 use super::integer_power::{assert_bits, make, power_of_two};
 
 /// Largest `|n|` with an exact integer oracle row.
 const ORACLE_EXPONENT_LIMIT: u32 = 128;
-/// Largest `|n|` whose exact power fits `f64` for every base: `m < 2^4`, so
-/// `m^9 < 2^36 ≤ 2^53`.
+/// Largest `|n|` with an exact `f64` power for every base: `m^9 < 2^36 ≤ 2^53`.
 const WIDE_EXACT_EXPONENT_LIMIT: u32 = 9;
 /// Exponents past the oracle limit, up to `i32::MIN`.
-const FAR_EXPONENTS: [i32; 8] = [
+const FAR_EXPONENTS: [i32; 7] = [
     -129,
-    -199,
     -200,
     -(1 << 23),
     -(1 << 24),
-    -(1 << 24) - 1,
-    i32::MIN + 1,
+    -16_777_217,
+    -i32::MAX,
     i32::MIN,
 ];
 
@@ -254,12 +241,9 @@ fn powi_negative_exponent_rounds_the_exact_power_when_upward_saturates() {
     check_saturated_sweep::<Bf4>();
     check_saturated_sweep::<F8>();
     check_saturated_sweep::<F4>();
-    // 0.25 is half the least `Bf4` value and ties to even, zero; 1.5^3 = 3.375
-    // clamps to 3 without the power being far above it, and 1/3.375 = 0.296
-    // rounds to 0.5.
+    // 0.25 is half the least `Bf4` value, a tie to zero; 1.5^3 clamps to 3 but 1/3.375 rounds to 0.5.
     check_rows::<Bf4>(&[(2.0, -2, 0.0), (1.5, -3, 0.5), (-1.5, -3, -0.5)]);
-    // 2^-9 is the least `F8` value and 2^-10 half of it, a tie that rounds to
-    // zero; 2.25^7 = 291.9 clamps to 240 and 1/291.9 = 0.003425 rounds to 2^-8.
+    // 2^-9 is the least `F8` value and 2^-10 a tie to zero; 2.25^7 clamps to 240, 1/291.9 rounds to 2^-8.
     check_rows::<F8>(&[
         (2.0, -9, power_of_two(-9)),
         (2.0, -10, 0.0),
@@ -268,4 +252,20 @@ fn powi_negative_exponent_rounds_the_exact_power_when_upward_saturates() {
     ]);
     // 1/8 is half the least `F4` value and ties to even, zero.
     check_rows::<F4>(&[(2.0, -3, 0.0), (-2.0, -3, -0.0)]);
+}
+
+/// The `n < 0` bound excludes a subnormal upward power: `F16` `x = 1031·2^-18`
+/// squares to the subnormal `260·2^-24`, and the normal reciprocal misses the
+/// exact `2^36 / 1062961` by more than `(1 − u)^−2 − 1`, `u = 2^-11`.
+#[test]
+fn powi_bound_excludes_a_subnormal_upward_power() {
+    let result = NumericElement::to_f64(FloatElement::powi(F16::from_bits(0x1C07), -2));
+    let exact = power_of_two(36) / 1_062_961.0;
+    let roundoff = power_of_two(-11);
+    let bound = 1.0 / ((1.0 - roundoff) * (1.0 - roundoff)) - 1.0;
+    assert_bits::<F16>(result, 64512.0, "powi(0x1C07, -2)");
+    assert!(
+        (exact - result) / exact > bound,
+        "the bound {bound} holds at the subnormal row"
+    );
 }

@@ -43,51 +43,48 @@ pub(super) fn nth_power<T: NumericElement>(mut base: T, mut exp: u32) -> T {
     acc
 }
 
-/// `base^n` for a signed exponent: the positive power, or for a negative
-/// exponent its reciprocal, with the underflow-preserving downward
-/// recomputation when the upward power overflows, and the rounded exact power
-/// when it saturates a finite-only format.
+/// `base^n` for a signed exponent: the positive power, or for a negative exponent its reciprocal,
+/// with the underflow-preserving downward recomputation when the upward power overflows, and the
+/// rounded exact power when it saturates a finite-only format.
 ///
 /// # Error
 ///
-/// `n = 0` is exact. Let `e = |n| ≥ 1`, `u` the unit roundoff of `T`, and every
-/// product and the result be normal (no overflow or underflow, the result
-/// included: a subnormal quotient carries a larger rounding error). For
-/// `n > 0` the bound is that of [`nth_power`]. For `n < 0` the reciprocal of
-/// the upward power `x^e·Π`, a product of `e − 1` factors `1 + δ_j` with
-/// `Π` in `[(1 − u)^(e−1), (1 + u)^(e−1)]`, is `x^−e·(1 + δ₀) / Π`, so the
-/// relative error is at most `(1 + u)(1 − u)^−(e−1) − 1 ≤ (1 − u)^−e − 1`
-/// (`(1 + u)(1 − u) ≤ 1`; the other side is smaller), which is at most
-/// `e·u / (1 − e·u)` for `e·u < 1` (Bernoulli, as for the kernel bound).
+/// `n = 0` is exact. Let `e = |n| ≥ 1`, `u` the unit roundoff of `T`, and every product and the
+/// result be normal (a subnormal quotient carries a larger rounding error). For `n > 0` the bound
+/// is that of [`nth_power`]. For `n < 0` the reciprocal of the upward power `x^e·Π`, a product of
+/// `e − 1` factors `1 + δ_j` with `Π` in `[(1 − u)^(e−1), (1 + u)^(e−1)]`, is
+/// `x^−e·(1 + δ₀) / Π`, so the relative error is at most
+/// `(1 + u)(1 − u)^−(e−1) − 1 ≤ (1 − u)^−e − 1` (as `(1 + u)(1 − u) ≤ 1`; the other side is
+/// smaller), and at most `e·u / (1 − e·u)` for `e·u < 1`.
 ///
 /// # Saturation
 ///
-/// A finite-only format (`Bf4`, `F8`, `F4`: its
-/// [`INFINITY`](NumericElement::INFINITY) is finite) clamps an overflowing
-/// product to its largest finite value `M`, so an upward power equal to `M` may
-/// stand for any exact power from about `M` up and `1 / M` is not its
-/// quotient: `F8` `powi(2, -9)` has upward power `512`, clamped to `240`, and
-/// `1 / 240` rounds to `2^-8` where `2^-9` is correct. Recomputing as
-/// `nth_power(1 / x, |n|)` rounds `1 / x` early and turns `Bf4`
-/// `powi(1.5, -3)` (correct `0.5`) into `0`. The path instead forms the power
-/// `P̂` in [`Accumulator`](FloatElement::Accumulator), inverts it there and
-/// rounds into `T` once, by the `from_f64` contract.
+/// A finite-only format (`Bf4`, `F8`, `F4`: its [`INFINITY`](NumericElement::INFINITY) is finite)
+/// clamps an overflowing product to its largest finite value `M`, so an upward power equal to `M`
+/// may stand for any exact power from about `M` up and `1 / M` is not its quotient: `F8` `powi(2,
+/// -9)` has upward power `512`, clamped to `240`, and `1 / 240` rounds to `2^-8` where `2^-9` is
+/// correct. Inverting `x` first is no repair (`Bf4` `powi(1.5, -3)` becomes `0` for `0.5`), so
+/// the path forms the power `P̂` in [`Accumulator`](FloatElement::Accumulator), inverts it there
+/// and rounds into `T` once, by the `from_f64` contract.
 ///
-/// Take `|x| > 1` (only such a power reaches `M`) and `u = 2^-24`, the roundoff
-/// of the `f32` accumulator of all three formats. The accumulator quotient is
-/// within the `n < 0` bound above, and its conversion is the correctly rounded
-/// `|x|^−e` unless a rounding midpoint of `T` lies inside that interval. A
-/// power of two is exact in `f32`; that no midpoint is reached for any other
-/// base is finite arithmetic, which `tests/float_element/powi_saturation.rs`
-/// settles with an exact integer oracle for every base and `e ≤ 128`.
+/// Take `|x| > 1` (only such a power reaches `M`) and `u = 2^-24`, the roundoff of the `f32`
+/// accumulator of all three formats. While `P̂ < 2^126` every accumulator product and the
+/// quotient are normal, so the quotient is within the `n < 0` bound above and its conversion is
+/// the correctly rounded `|x|^−e` unless a rounding midpoint of `T` lies inside that interval. A
+/// power of two is exact there, so its quotient is the tie itself and rounds to even. From
+/// `P̂ ≥ 2^126`, or once the product overflows, the quotient is at most `2^-126` and converts to zero,
+/// which is correct: for `e < 2^23`, `(e − 1)·u < 1/2` keeps `|x|^e` above `2^125`, so the exact
+/// quotient is far below half the least positive value of `T` (at least `2^-10`). That no
+/// midpoint lies inside the interval is finite arithmetic, which
+/// `tests/float_element/powi_saturation.rs` settles with an exact integer oracle for every base
+/// and `e ≤ 128`, in both regimes.
 ///
-/// Beyond `e = 128` the result is a signed zero. `F8`'s least `|x| > 1` is
-/// `9/8` and its least positive value `2^-9` (the others have larger ones), and
-/// the quotient rounds to zero once `P̂ > 2^10`. For `128 < e < 2^23`,
-/// `(e − 1)·u < 1/2` gives `P̂ ≥ |x|^e / 2 > 2^20`, since `(9/8)^128 > 2^21`.
-/// For `e ≥ 2^23`, `P̂` is at least the 23rd square of the base, which is
-/// `(9/8)^(2^23)` within a factor of two and overflows `f32`: `P̂ = ∞`, and
-/// `1 / ∞ = 0` takes the sign of `x^n`.
+/// Beyond `e = 128` the result is a signed zero. `F8`'s least `|x| > 1` is `9/8` and its least
+/// positive value `2^-9` (the others have larger ones), and the quotient rounds to zero once
+/// `P̂` exceeds `2^10`. For `128 < e < 2^23`, `(e − 1)·u < 1/2` gives `P̂ ≥ |x|^e / 2 > 2^20`, since
+/// `(9/8)^128 > 2^21`. For `e ≥ 2^23`, `P̂` is at least the 23rd square of the base,
+/// `(9/8)^(2^23)` within a factor of two, which overflows `f32`: `P̂ = ∞`, and `1 / ∞ = 0` takes
+/// the sign of `x^n`.
 #[inline(always)]
 pub(super) fn powi<T: FloatElement>(base: T, n: i32) -> T {
     // `unsigned_abs`, never `-n`: `i32::MIN` has no positive `i32`
