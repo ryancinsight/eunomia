@@ -2,18 +2,23 @@
 //! in the element type, including the reciprocal and underflow-preserving
 //! paths of negative exponents.
 //!
-//! Two independent references. For `±2^k` the correctly rounded value is known
-//! in closed form: `2^k` is an exact `f64` over `-1074..=1023`, and rounding it
-//! into the format is the conversion, not the squaring loop. For other bases
-//! the result is pinned bit for bit to the loop `powi` ran before its kernel
-//! moved, except a finite-only format's negative exponent whose upward power
-//! clamps, which `powi_saturation` holds to the exact power, and a subnormal
-//! upward power, which `powi_subnormal` bounds. Every observation
-//! is the exact `f64` widening of the result, compared by bit pattern, so the
-//! sign of zero and of infinity is asserted and no assertion carries a
+//! Two independent references. For `±2`, `±1/2` and `±1/4` the correctly rounded
+//! value is known in closed form: `2^k` is an exact `f64` over `-1074..=1023`,
+//! and rounding it into the format is the conversion, not the squaring loop.
+//! For other bases the result is pinned bit for bit to the loop `powi` ran
+//! before its kernel moved, except a finite-only format's negative exponent
+//! whose upward power clamps, which `powi_saturation` holds to the exact power,
+//! and a subnormal upward power, whose rounding the reciprocal carried: those
+//! rows leave the pin and `powi_subnormal::check_row` holds each to its derived
+//! bound here, on every format (weak where `B_e` reaches one, as for `F4`, whose
+//! rows the closed form and the pin hold exactly). Every pinned observation is
+//! the exact `f64` widening of the result, compared by bit pattern, so the sign
+//! of zero and of infinity is asserted and no pinned assertion carries a
 //! tolerance.
 
 use eunomia::{Bf16, Bf4, Bf8, FloatElement, NumericElement, F16, F32, F4, F64, F8};
+
+use super::powi_subnormal::{check_row, Format};
 
 /// Run a generic check on every shipped `FloatElement` implementor.
 macro_rules! every_format {
@@ -84,14 +89,19 @@ fn rounded_power_of_two<T: FloatElement>(negative: bool, exponent: i32) -> f64 {
 }
 
 fn check_powers_of_two<T: FloatElement>() {
-    for exponent in exponents() {
-        for negative in [false, true] {
-            let base = make::<T>(if negative { -2.0 } else { 2.0 });
-            assert_bits::<T>(
-                NumericElement::to_f64(FloatElement::powi(base, exponent)),
-                rounded_power_of_two::<T>(negative && exponent % 2 != 0, exponent),
-                &format!("{}2^{exponent}", if negative { "-" } else { "" }),
-            );
+    for (log2, magnitude) in [(1, 2.0), (-1, 0.5), (-2, 0.25)] {
+        for exponent in exponents() {
+            for negative in [false, true] {
+                let base = make::<T>(if negative { -magnitude } else { magnitude });
+                assert_bits::<T>(
+                    NumericElement::to_f64(FloatElement::powi(base, exponent)),
+                    rounded_power_of_two::<T>(
+                        negative && exponent % 2 != 0,
+                        exponent.saturating_mul(log2),
+                    ),
+                    &format!("{}{magnitude}^{exponent}", if negative { "-" } else { "" }),
+                );
+            }
         }
     }
 }
@@ -133,7 +143,7 @@ fn inverts_clamped_power<T: FloatElement>(base: T, n: i32) -> bool {
 }
 
 /// The exponent `emax` of the largest finite value of `T`: the least normal exponent is `1 - emax`.
-fn largest_exponent<T: FloatElement>() -> i32 {
+pub(super) fn largest_exponent<T: FloatElement>() -> i32 {
     (0..=1023)
         .rev()
         .find(|&k| NumericElement::to_f64(make::<T>(power_of_two(k))) == power_of_two(k))
@@ -150,6 +160,7 @@ fn inverts_subnormal_power<T: FloatElement>(base: T, n: i32) -> bool {
 }
 
 fn check_previous_powi<T: FloatElement>() {
+    let format = Format::of::<T>();
     let bases = [
         1.5,
         -1.25,
@@ -169,7 +180,15 @@ fn check_previous_powi<T: FloatElement>() {
     for base in bases {
         let base = make::<T>(base);
         for exponent in exponents().chain(-70..=70) {
-            if inverts_clamped_power(base, exponent) || inverts_subnormal_power(base, exponent) {
+            if inverts_subnormal_power(base, exponent) {
+                check_row::<T>(
+                    &format,
+                    NumericElement::to_f64(base),
+                    exponent.unsigned_abs(),
+                );
+                continue;
+            }
+            if inverts_clamped_power(base, exponent) {
                 continue;
             }
             let got = NumericElement::to_f64(FloatElement::powi(base, exponent));
