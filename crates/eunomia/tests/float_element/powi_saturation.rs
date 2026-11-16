@@ -37,9 +37,11 @@ use super::integer_power::{assert_bits, make, power_of_two};
 const ORACLE_EXPONENT_LIMIT: u32 = 128;
 /// Largest `|n|` whose exact power fits `f64` for every base: `m < 2^4`, so
 /// `m^9 < 2^36 ≤ 2^53`.
-const F64_EXACT_EXPONENT_LIMIT: u32 = 9;
+const WIDE_EXACT_EXPONENT_LIMIT: u32 = 9;
 /// Exponents past the oracle limit, up to `i32::MIN`.
-const FAR_EXPONENTS: [i32; 6] = [
+const FAR_EXPONENTS: [i32; 8] = [
+    -129,
+    -199,
     -200,
     -(1 << 23),
     -(1 << 24),
@@ -156,7 +158,7 @@ fn oracle_magnitude<T: FloatElement>(base: f64, exponent: u32) -> f64 {
 
 /// The exact `x^-e` as an `f64` magnitude rounded into `T`, for `e` with an
 /// exact `f64` power: one `f64` division, then the format's conversion.
-fn f64_route_magnitude<T: FloatElement>(base: f64, exponent: u32) -> f64 {
+fn wide_route_magnitude<T: FloatElement>(base: f64, exponent: u32) -> f64 {
     let power = (0..exponent).fold(1.0_f64, |product, _| product * base);
     NumericElement::to_f64(make::<T>(1.0 / power))
 }
@@ -204,10 +206,10 @@ fn check_saturated_sweep<T: FloatElement>() {
             }
             rows += 1;
             let magnitude = oracle_magnitude::<T>(base.abs(), exponent);
-            if exponent <= F64_EXACT_EXPONENT_LIMIT {
+            if exponent <= WIDE_EXACT_EXPONENT_LIMIT {
                 assert_bits::<T>(
                     magnitude,
-                    f64_route_magnitude::<T>(base.abs(), exponent),
+                    wide_route_magnitude::<T>(base.abs(), exponent),
                     &format!("oracle against the f64 route at {}^-{exponent}", base.abs()),
                 );
             }

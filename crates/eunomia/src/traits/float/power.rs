@@ -65,14 +65,19 @@ pub(super) fn nth_power<T: NumericElement>(mut base: T, mut exp: u32) -> T {
 /// Take `|x| > 1` (only such a power reaches `M`), `e = |n|`, and
 /// `u = 2^-24`, the unit roundoff of the `f32` accumulator of all three
 /// formats. The kernel bound of [`nth_power`] gives the accumulator power
-/// `P̂ = |x|^e·(1 + θ)` with `|θ| ≤ (1 + u)^(e−1) − 1` while no product
-/// overflows; every product is at least one, so none is subnormal. The
-/// quotient `q̂ = fl(1 / P̂)` then lies within relative `(1 + u)^e − 1`
-/// of `|x|^−e` (a factor `1 / (1 + θ)` and one rounding), and converting `q̂`
-/// into `T` returns the correctly rounded `|x|^−e` unless a rounding midpoint
-/// of `T` lies inside that interval. A power of two is exact in `f32`. For
-/// any other base whether the interval reaches a midpoint is arithmetic over
-/// the formats' finitely many bases and exponents, which
+/// `P̂ = |x|^e·Π` over `e − 1` factors `1 + δ_j`, `|δ_j| ≤ u`, while no
+/// product overflows; every product is at least one, so none is subnormal.
+/// The quotient is `q̂ = fl(1 / P̂) = |x|^−e·(1 + δ₀) / Π`, and
+/// `(1 − u)^(e−1) ≤ Π ≤ (1 + u)^(e−1)` bounds its relative error by
+/// `(1 + u)·(1 − u)^−(e−1) − 1 ≤ (1 − u)^−e − 1`, using
+/// `(1 + u)(1 − u) ≤ 1`; for `e·u < 1` that is at most `e·u / (1 − e·u)`
+/// (Bernoulli, as for the kernel bound). With `u` of `T` the same derivation
+/// gives the bound `FloatElement::powi` states for `n < 0`. Converting `q̂` into
+/// `T`, a single rounding by the `from_f64` contract, returns the correctly rounded
+/// `|x|^−e` unless a rounding midpoint of `T` lies inside that interval around
+/// it. A power of two is exact in `f32`. For any other base whether the
+/// interval reaches a midpoint is arithmetic over the formats' finitely many
+/// bases and exponents, which
 /// `tests/float_element/powi_saturation.rs` settles with an exact integer
 /// oracle for every base and every `e ≤ 128`: no row differs from the exactly
 /// rounded power.

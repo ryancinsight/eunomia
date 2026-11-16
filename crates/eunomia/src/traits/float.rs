@@ -376,21 +376,9 @@ pub trait FloatElement: private::Sealed + NumericElement {
 
     /// `self` raised to an integer power via exponentiation by squaring.
     ///
-    /// Correct for negative bases (unlike [`powf`](Self::powf)). A default over
-    /// the [`NumericElement`] arithmetic, so no per-type implementation is
-    /// needed and no precision is lost.
-    ///
-    /// With `u` the unit roundoff of `Self`, `e = |n|`, and no intermediate
-    /// overflow or subnormal result, the relative error is at most
-    /// `(1 + u)^(e−1) − 1` for `n ≥ 0`, as for [`nth_power`](Self::nth_power),
-    /// and `(1 + u)^e − 1` for `n < 0`, which adds the rounding of the
-    /// reciprocal. A negative exponent whose upward power overflows is
-    /// recomputed downward, which preserves gradual underflow. On the
-    /// finite-only [`F4`](crate::F4), [`Bf4`](crate::Bf4) and [`F8`](crate::F8),
-    /// whose overflow clamps to the largest finite value, a negative exponent
-    /// whose upward power clamps returns the exact power rounded once into
-    /// `Self`: the power is formed in [`Accumulator`](Self::Accumulator) and
-    /// inverted there. A subnormal upward power lies outside the bound.
+    /// Correct for negative bases (unlike [`powf`](Self::powf)). Without overflow or subnormal
+    /// intermediates the relative error is at most `(1 + u)^(e−1) − 1` (`n ≥ 0`) or `(1 − u)^−e − 1`
+    /// (`n < 0`), `e = |n|`, `u` the roundoff; a clamped `F4`/`Bf4`/`F8` upward power returns the rounded exact power.
     #[inline]
     fn powi(self, n: i32) -> Self {
         power::powi(self, n)
