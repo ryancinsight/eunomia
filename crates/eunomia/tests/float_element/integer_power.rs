@@ -6,9 +6,11 @@
 //! in closed form: `2^k` is an exact `f64` over `-1074..=1023`, and rounding it
 //! into the format is the conversion, not the squaring loop. For other bases
 //! the result is pinned bit for bit to the loop `powi` ran before its kernel
-//! moved. Every observation is the exact `f64` widening of the result,
-//! compared by bit pattern, so the sign of zero and of infinity is asserted
-//! and no assertion carries a tolerance.
+//! moved, except a finite-only format's negative exponent whose upward power
+//! clamps, which `powi_saturation` holds to the exact power. Every observation
+//! is the exact `f64` widening of the result, compared by bit pattern, so the
+//! sign of zero and of infinity is asserted and no assertion carries a
+//! tolerance.
 
 use eunomia::{Bf16, Bf4, Bf8, FloatElement, NumericElement, F16, F32, F4, F64, F8};
 
@@ -81,18 +83,8 @@ fn rounded_power_of_two<T: FloatElement>(negative: bool, exponent: i32) -> f64 {
 }
 
 fn check_powers_of_two<T: FloatElement>() {
-    // A finite-only format saturates an overflowing power instead of reaching
-    // infinity, so `powi` inverts the saturated value for a negative
-    // exponent; the closed form holds for those only while `2^|k|` is exact.
-    let infinite = NumericElement::to_f64(make::<T>(f64::INFINITY)).is_infinite();
     for exponent in exponents() {
-        let magnitude = exponent.saturating_abs();
-        let exact = magnitude <= 1023
-            && rounded_power_of_two::<T>(false, magnitude) == power_of_two(magnitude);
         for negative in [false, true] {
-            if exponent < 0 && !exact && !infinite {
-                continue;
-            }
             let base = make::<T>(if negative { -2.0 } else { 2.0 });
             assert_bits::<T>(
                 NumericElement::to_f64(FloatElement::powi(base, exponent)),
@@ -103,29 +95,40 @@ fn check_powers_of_two<T: FloatElement>() {
     }
 }
 
+/// The squaring loop `powi` ran before its kernel moved: the upward power.
+fn previous_upward<T: FloatElement>(mut base: T, mut exponent: u32) -> T {
+    let mut accumulator = <T as NumericElement>::ONE;
+    while exponent > 0 {
+        if exponent & 1 == 1 {
+            accumulator *= base;
+        }
+        base *= base;
+        exponent >>= 1;
+    }
+    accumulator
+}
+
 /// `powi` as it stood before its kernel moved: the squaring loop forms one
 /// square past the last exponent bit.
 fn previous_powi<T: FloatElement>(base: T, n: i32) -> T {
-    fn upward<T: FloatElement>(mut base: T, mut exponent: u32) -> T {
-        let mut accumulator = <T as NumericElement>::ONE;
-        while exponent > 0 {
-            if exponent & 1 == 1 {
-                accumulator *= base;
-            }
-            base *= base;
-            exponent >>= 1;
-        }
-        accumulator
-    }
     let exponent = n.unsigned_abs();
-    let accumulator = upward(base, exponent);
+    let accumulator = previous_upward(base, exponent);
     if n >= 0 {
         accumulator
     } else if !NumericElement::is_finite(accumulator) && !NumericElement::is_nan(accumulator) {
-        upward(<T as NumericElement>::ONE / base, exponent)
+        previous_upward(<T as NumericElement>::ONE / base, exponent)
     } else {
         <T as NumericElement>::ONE / accumulator
     }
+}
+
+/// The previous loop inverted a clamped power: a finite-only format with a
+/// negative exponent whose upward power is its largest finite value. Those
+/// rows are held to the exact power by `powi_saturation`, not to the loop.
+fn inverts_clamped_power<T: FloatElement>(base: T, n: i32) -> bool {
+    let infinite = NumericElement::to_f64(make::<T>(f64::INFINITY)).is_infinite();
+    let upward = NumericElement::to_f64(previous_upward(base, n.unsigned_abs())).abs();
+    n < 0 && !infinite && upward == NumericElement::to_f64(<T as NumericElement>::MAX_VALUE)
 }
 
 fn check_previous_powi<T: FloatElement>() {
@@ -148,6 +151,9 @@ fn check_previous_powi<T: FloatElement>() {
     for base in bases {
         let base = make::<T>(base);
         for exponent in exponents().chain(-70..=70) {
+            if inverts_clamped_power(base, exponent) {
+                continue;
+            }
             let got = NumericElement::to_f64(FloatElement::powi(base, exponent));
             let before = NumericElement::to_f64(previous_powi(base, exponent));
             assert!(

@@ -2,7 +2,7 @@
 //! [`FloatElement::nth_power`](super::FloatElement::nth_power) and
 //! [`FloatElement::powi`](super::FloatElement::powi).
 
-use super::NumericElement;
+use super::{FloatElement, NumericElement};
 
 /// `base^exp` for a `u32` exponent, by squaring in `T`.
 ///
@@ -45,9 +45,50 @@ pub(super) fn nth_power<T: NumericElement>(mut base: T, mut exp: u32) -> T {
 
 /// `base^n` for a signed exponent: the positive power, or for a negative
 /// exponent its reciprocal, with the underflow-preserving downward
-/// recomputation when the upward power overflows.
+/// recomputation when the upward power overflows, and the rounded exact power
+/// when it saturates a finite-only format.
+///
+/// # Saturation
+///
+/// A finite-only format (`Bf4`, `F8`, `F4`: its
+/// [`INFINITY`](NumericElement::INFINITY) is finite) clamps an overflowing
+/// product to its largest finite value `M`, so an upward power equal to `M` may
+/// stand for any exact power from about `M` up, and `1 / M` is not its
+/// quotient: `F8` `powi(2, -9)` has upward power `512`, clamped to `240`, and
+/// `1 / 240` rounds to `2^-8` where `2^-9` is correct. Recomputing as
+/// `nth_power(1 / x, |n|)` is no repair: it rounds `1 / x` once and amplifies
+/// that error `|n|`-fold, which turns `Bf4` `powi(1.5, -3)` (correct `0.5`)
+/// into `0`. The path instead forms the power in
+/// [`Accumulator`](FloatElement::Accumulator), whose range holds it, inverts
+/// it there and rounds into `T` once.
+///
+/// Take `|x| > 1` (only such a power reaches `M`), `e = |n|`, and
+/// `u = 2^-24`, the unit roundoff of the `f32` accumulator of all three
+/// formats. The kernel bound of [`nth_power`] gives the accumulator power
+/// `P̂ = |x|^e·(1 + θ)` with `|θ| ≤ (1 + u)^(e−1) − 1` while no product
+/// overflows; every product is at least one, so none is subnormal. The
+/// quotient `q̂ = fl(1 / P̂)` then lies within relative `(1 + u)^e − 1`
+/// of `|x|^−e` (a factor `1 / (1 + θ)` and one rounding), and converting `q̂`
+/// into `T` returns the correctly rounded `|x|^−e` unless a rounding midpoint
+/// of `T` lies inside that interval. A power of two is exact in `f32`. For
+/// any other base whether the interval reaches a midpoint is arithmetic over
+/// the formats' finitely many bases and exponents, which
+/// `tests/float_element/powi_saturation.rs` settles with an exact integer
+/// oracle for every base and every `e ≤ 128`: no row differs from the exactly
+/// rounded power.
+///
+/// Beyond `e = 128` the result is a signed zero. `F8`'s least `|x| > 1` is
+/// `9/8` and its least positive value `2^-9`; `Bf4` and `F4` have a larger
+/// least value and a larger least base above one, so `F8` bounds the three.
+/// The quotient is below half the least value, and rounds to zero, once
+/// `P̂ > 2^10`. For `128 < e < 2^23`, `(e − 1)·u < 1/2` gives
+/// `P̂ ≥ |x|^e / 2 > 2^20`, since `(9/8)^128 > 2^21`. For `e ≥ 2^23` every
+/// factor of the accumulator product is at least one, so `P̂` is at least the
+/// 23rd square of the base, which by the same bound is `(9/8)^(2^23)` within
+/// a factor of two and overflows `f32`: `P̂ = ∞`, and `1 / ∞ = 0` takes the
+/// sign of `x^n`.
 #[inline(always)]
-pub(super) fn powi<T: NumericElement>(base: T, n: i32) -> T {
+pub(super) fn powi<T: FloatElement>(base: T, n: i32) -> T {
     // `unsigned_abs`, never `-n`: `i32::MIN` has no positive `i32`
     // negation (`-n` panics in debug, wraps to `MIN` and returns `ONE` in
     // release). `u32` holds 2^31 exactly.
@@ -66,7 +107,18 @@ pub(super) fn powi<T: NumericElement>(base: T, n: i32) -> T {
         // reciprocal early and amplify that error |n|-fold (measured: 8 ulp
         // off std at |n| = 10).
         nth_power(T::ONE / base, exp)
+    } else if saturates(acc) {
+        let wide = nth_power(base.to_accumulator(), exp);
+        T::from_accumulator(<T::Accumulator as NumericElement>::ONE / wide)
     } else {
         T::ONE / acc
     }
+}
+
+/// Whether `power` is the clamped overflow of a finite-only format: the format
+/// has no infinity (its [`INFINITY`](NumericElement::INFINITY) is finite) and
+/// `power` has the largest finite magnitude.
+#[inline(always)]
+fn saturates<T: FloatElement>(power: T) -> bool {
+    T::INFINITY.is_finite() && power.abs() == T::MAX_VALUE
 }

@@ -376,9 +376,21 @@ pub trait FloatElement: private::Sealed + NumericElement {
 
     /// `self` raised to an integer power via exponentiation by squaring.
     ///
-    /// Exact for integer exponents and correct for negative bases (unlike
-    /// [`powf`](Self::powf)). A default over the [`NumericElement`] arithmetic —
-    /// no per-type implementation needed, so no precision is lost.
+    /// Correct for negative bases (unlike [`powf`](Self::powf)). A default over
+    /// the [`NumericElement`] arithmetic, so no per-type implementation is
+    /// needed and no precision is lost.
+    ///
+    /// With `u` the unit roundoff of `Self`, `e = |n|`, and no intermediate
+    /// overflow or subnormal result, the relative error is at most
+    /// `(1 + u)^(e−1) − 1` for `n ≥ 0`, as for [`nth_power`](Self::nth_power),
+    /// and `(1 + u)^e − 1` for `n < 0`, which adds the rounding of the
+    /// reciprocal. A negative exponent whose upward power overflows is
+    /// recomputed downward, which preserves gradual underflow. On the
+    /// finite-only [`F4`](crate::F4), [`Bf4`](crate::Bf4) and [`F8`](crate::F8),
+    /// whose overflow clamps to the largest finite value, a negative exponent
+    /// whose upward power clamps returns the exact power rounded once into
+    /// `Self`: the power is formed in [`Accumulator`](Self::Accumulator) and
+    /// inverted there. A subnormal upward power lies outside the bound.
     #[inline]
     fn powi(self, n: i32) -> Self {
         power::powi(self, n)
