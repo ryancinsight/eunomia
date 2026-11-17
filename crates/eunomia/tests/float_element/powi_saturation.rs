@@ -17,7 +17,7 @@
 //! Past `e = 128` the result is a signed zero (`(9/8)^e > 2^21`). Observations are `f64` widenings
 //! compared by bit pattern, so the sign of zero is asserted; no assertion carries a tolerance.
 
-use eunomia::{Bf4, FloatElement, NumericElement, F16, F4, F8};
+use eunomia::{Bf4, FloatElement, NumericElement, F4, F8};
 
 use super::integer_power::{assert_bits, make, power_of_two};
 
@@ -261,12 +261,9 @@ fn assert_outside_bound<T: FloatElement>(base: f64, n: i32, result: f64, exact: 
     );
 }
 
-/// The bound excludes subnormal and clamped products. `F16` `1031·2^-18` squares to the subnormal
-/// `260·2^-24` (EUNOMIA-POWI-SUBNORMAL-UPWARD owns that regime); `F8` 30^2 and `Bf4` 3^2 clamp.
+/// The bound excludes clamped products: `F8` 30^2 and `Bf4` 3^2 clamp.
 #[test]
-fn powi_bound_excludes_subnormal_and_clamped_products() {
-    let subnormal_exact = power_of_two(36) / 1_062_961.0;
-    assert_outside_bound::<F16>(1031.0 * power_of_two(-18), -2, 64512.0, subnormal_exact, 11);
+fn powi_bound_excludes_clamped_products() {
     assert_outside_bound::<F8>(30.0, 2, 240.0, 900.0, 4);
     assert_outside_bound::<Bf4>(3.0, 2, 3.0, 9.0, 2);
 }

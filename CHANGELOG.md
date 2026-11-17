@@ -19,6 +19,12 @@ All notable changes to Eunomia are documented here.
   correct `2^-9`, and `Bf4` `powi(2, -2)` returned `0.5` for `0`. A saturated
   power now rounds the exact power once into the format; other formats are
   unchanged. The `powi` docs now state the error bound.
+- `FloatElement::powi` with a negative exponent now stays within a stated
+  bound where the upward power is subnormal, whose rounding the reciprocal
+  carried into the result: `Bf8` `powi(7 * 2^-8, -3)` and an `f32` row
+  returned `+inf` for finite results near `49152` and `f32::MAX`, and `F16`
+  `powi(1031 * 2^-18, -2)` returned 64512 for 64640. A subnormal result adds
+  half the least positive value to the bound.
 - `RealField::max_value()` and `min_value()` returned `+inf`/`-inf` for
   `f32`, `f64`, `F32` and `F64` although the contract is the largest and
   smallest *finite* value. They now return `MAX` and `MIN` of the format

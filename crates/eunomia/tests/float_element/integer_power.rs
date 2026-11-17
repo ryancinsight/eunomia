@@ -2,12 +2,13 @@
 //! in the element type, including the reciprocal and underflow-preserving
 //! paths of negative exponents.
 //!
-//! Two independent references. For `±2^k` the correctly rounded value is known
-//! in closed form: `2^k` is an exact `f64` over `-1074..=1023`, and rounding it
-//! into the format is the conversion, not the squaring loop. For other bases
-//! the result is pinned bit for bit to the loop `powi` ran before its kernel
-//! moved, except a finite-only format's negative exponent whose upward power
-//! clamps, which `powi_saturation` holds to the exact power. Every observation
+//! Two independent references. For `±2`, `±1/2` and `±1/4` the correctly rounded
+//! value is known in closed form: `2^k` is an exact `f64` over `-1074..=1023`,
+//! and rounding it into the format is the conversion, not the squaring loop.
+//! For other bases the result is pinned bit for bit to the loop `powi` ran
+//! before its kernel moved, except a finite-only format's negative exponent
+//! whose upward power clamps, which `powi_saturation` holds to the exact power,
+//! and a subnormal upward power, which `powi_subnormal` bounds. Every observation
 //! is the exact `f64` widening of the result, compared by bit pattern, so the
 //! sign of zero and of infinity is asserted and no assertion carries a
 //! tolerance.
@@ -83,14 +84,19 @@ fn rounded_power_of_two<T: FloatElement>(negative: bool, exponent: i32) -> f64 {
 }
 
 fn check_powers_of_two<T: FloatElement>() {
-    for exponent in exponents() {
-        for negative in [false, true] {
-            let base = make::<T>(if negative { -2.0 } else { 2.0 });
-            assert_bits::<T>(
-                NumericElement::to_f64(FloatElement::powi(base, exponent)),
-                rounded_power_of_two::<T>(negative && exponent % 2 != 0, exponent),
-                &format!("{}2^{exponent}", if negative { "-" } else { "" }),
-            );
+    for (log2, magnitude) in [(1, 2.0), (-1, 0.5), (-2, 0.25)] {
+        for exponent in exponents() {
+            for negative in [false, true] {
+                let base = make::<T>(if negative { -magnitude } else { magnitude });
+                assert_bits::<T>(
+                    NumericElement::to_f64(FloatElement::powi(base, exponent)),
+                    rounded_power_of_two::<T>(
+                        negative && exponent % 2 != 0,
+                        exponent.saturating_mul(log2),
+                    ),
+                    &format!("{}{magnitude}^{exponent}", if negative { "-" } else { "" }),
+                );
+            }
         }
     }
 }
@@ -131,6 +137,23 @@ fn inverts_clamped_power<T: FloatElement>(base: T, n: i32) -> bool {
     n < 0 && !infinite && upward == NumericElement::to_f64(<T as NumericElement>::MAX_VALUE)
 }
 
+/// The exponent `emax` of the largest finite value of `T`: the least normal exponent is `1 - emax`.
+pub(super) fn largest_exponent<T: FloatElement>() -> i32 {
+    (0..=1023)
+        .rev()
+        .find(|&k| NumericElement::to_f64(make::<T>(power_of_two(k))) == power_of_two(k))
+        .expect("invariant: every format holds 2^0")
+}
+
+/// The previous loop's upward power is a nonzero subnormal of `T`, a rounding it inverted.
+fn inverts_subnormal_power<T: FloatElement>(base: T, n: i32) -> bool {
+    let upward = previous_upward(base, n.unsigned_abs());
+    n < 0
+        && NumericElement::is_finite(upward)
+        && FloatElement::binary_exponent(upward)
+            .is_some_and(|exponent| exponent < 1 - largest_exponent::<T>())
+}
+
 fn check_previous_powi<T: FloatElement>() {
     let bases = [
         1.5,
@@ -151,7 +174,7 @@ fn check_previous_powi<T: FloatElement>() {
     for base in bases {
         let base = make::<T>(base);
         for exponent in exponents().chain(-70..=70) {
-            if inverts_clamped_power(base, exponent) {
+            if inverts_clamped_power(base, exponent) || inverts_subnormal_power(base, exponent) {
                 continue;
             }
             let got = NumericElement::to_f64(FloatElement::powi(base, exponent));

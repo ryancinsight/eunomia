@@ -24,6 +24,8 @@ mod integer_power;
 mod nth_power;
 #[path = "float_element/powi_saturation.rs"]
 mod powi_saturation;
+#[path = "float_element/powi_subnormal.rs"]
+mod powi_subnormal;
 #[path = "float_element/reduced_arithmetic.rs"]
 mod reduced_arithmetic;
 mod support;

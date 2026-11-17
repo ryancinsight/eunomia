@@ -27,37 +27,70 @@ use super::{FloatElement, NumericElement};
 /// `m·u ≥ 1` (`n > 2^24` for `f32`) `γ_m` is undefined and only the first
 /// bound holds.
 #[inline(always)]
-pub(super) fn nth_power<T: NumericElement>(mut base: T, mut exp: u32) -> T {
-    let mut acc = T::ONE;
+pub(super) fn nth_power<T: NumericElement>(base: T, exp: u32) -> T {
+    square_and_multiply(base, exp, T::ONE, |left, right| left * right)
+}
+
+/// The squaring schedule of [`nth_power`] over any associative product, so that the exponent-carrying
+/// power of [`powi`] forms the same products.
+#[inline(always)]
+fn square_and_multiply<M: Copy>(
+    mut base: M,
+    mut exp: u32,
+    one: M,
+    multiply: impl Fn(M, M) -> M,
+) -> M {
+    let mut acc = one;
     while exp > 0 {
         if exp & 1 == 1 {
-            acc *= base;
+            acc = multiply(acc, base);
         }
         exp >>= 1;
         // A square is formed only while a higher bit remains: the one after
         // the last bit would never be read.
         if exp > 0 {
-            base *= base;
+            base = multiply(base, base);
         }
     }
     acc
 }
 
 /// `base^n` for a signed exponent: the positive power, or for a negative exponent its reciprocal,
-/// with the underflow-preserving downward recomputation when the upward power overflows, and for
-/// a negative exponent the rounded exact power when the upward power saturates a finite-only
-/// format.
+/// with the underflow-preserving downward recomputation when the upward power overflows, the
+/// rounded exact power when the upward power saturates a finite-only format, and the
+/// exponent-carrying power when the upward power is subnormal.
 ///
 /// # Error
 ///
-/// `n = 0` is exact. Let `e = |n| ≥ 1`, `u` the unit roundoff of `T`, and every product and the
-/// result be normal and unclamped: a subnormal product or quotient loses precision, and on a
-/// finite-only format an overflowing product clamps to the largest finite value `M`, which is
-/// normal. For `n > 0` the bound is that of [`nth_power`]. For `n < 0` the reciprocal of the
-/// upward power `x^e·Π`, a product of `e − 1` factors `1 + δ_j` with `Π` in `[(1 − u)^(e−1), (1 +
-/// u)^(e−1)]`, is `x^−e·(1 + δ₀) / Π`, so the relative error is at most `(1 + u)(1 − u)^−(e−1) −
-/// 1 ≤ (1 − u)^−e − 1` (as `(1 + u)(1 − u) ≤ 1`; the other side is smaller), and at most `e·u /
-/// (1 − e·u)` for `e·u < 1`.
+/// `n = 0` is exact. Let `e = |n| ≥ 1`, `u` the unit roundoff of `T`, `s` its least positive
+/// value, `y = x^−e` and `B_e = (1 − u)^−e − 1`, at most `e·u / (1 − e·u)` for `e·u < 1`. For
+/// `n > 0` the bound is that of [`nth_power`], while no product is subnormal or, on a finite-only
+/// format, clamped to the largest finite value `M`, which is normal.
+///
+/// For `n < 0` the upward power `P̂` is `x^e·Π`, with `Π` a product of `e − 1` factors `1 + δ_j`
+/// in `[(1 − u)^(e−1), (1 + u)^(e−1)]`, so `|1/P̂ − y| ≤ ((1 − u)^−(e−1) − 1)·|y|` while every
+/// product is normal: always for `|x| > 1`, and for `|x| < 1` once `P̂` is above the least normal
+/// value, as every product is at least `|P̂|`. The result `ŷ` is one of:
+///
+/// * The quotient `fl(1/P̂)`, when `P̂` is finite, unclamped and above the least normal. Its
+///   rounding adds at most `u` relative where the quotient is normal, so `|ŷ − y| ≤ B_e·|y|` (as
+///   `(1 + u)(1 − u)^−(e−1) ≤ (1 − u)^−e`), and at most `s/2` where it is subnormal, however small
+///   `|y|`: `|ŷ − y| ≤ B_e·|y| + s/2` (`F8` `powi(224, -1)` is `2^-8` for `4.464e-3`, `0.125·|y|`).
+/// * The exponent-carrying power, when `P̂` is at most the least normal: a subnormal `P̂` has lost
+///   relative precision that the reciprocal carries into the result (`Bf8` `powi(7·2^-8, -3)`:
+///   `P̂ = 2^-16` for `343·2^-24`, and `1/P̂` overflows for `y = 48913`). With `x = m·2^k` and `m`
+///   in `[1, 2)`, the schedule of [`nth_power`] runs on pairs `(m, k)` whose products renormalize
+///   by one exact halving, and `ŷ = scale(fl(1/m), −k)`. Products of magnitudes in `[1, 2)` are
+///   normal, so the factors are the same `e − 1`, `fl(1/m)` adds the one of `B_e`, and the scaling
+///   is exact unless the result is subnormal (`s/2` more) or overflows: `|ŷ − y| ≤ B_e·|y| + s/2`
+///   again. The exponent saturates at `±2^31`, past every range.
+///
+/// Both bounds assume no overflow. The value before it is within `B_e` of `y`, so `ŷ` is finite
+/// and within the bound when `|y|(1 + B_e)` is below `M + ulp(M)/2`, infinite (on a finite-only
+/// format, `M`) when `|y|(1 − B_e)` reaches it, and either between (within the bound unless it
+/// is that overflow value).
+/// An overflowing upward power takes the downward recomputation (products of `1/x`, rounded `e`
+/// times, possibly subnormal) and a saturated one the exact path below; neither is covered.
 ///
 /// # Saturation
 ///
@@ -109,8 +142,74 @@ pub(super) fn powi<T: FloatElement>(base: T, n: i32) -> T {
         let wide = nth_power(base.to_accumulator(), exp);
         T::from_accumulator(<T::Accumulator as NumericElement>::ONE / wide)
     } else {
-        T::ONE / acc
+        let quotient = T::ONE / acc;
+        if upward_power_may_be_subnormal(quotient) {
+            if let Some(exponent) = base.binary_exponent() {
+                return carried_reciprocal_power(base, exponent, exp);
+            }
+        }
+        quotient
     }
+}
+
+/// Whether the quotient `1/P̂` of the upward power `P̂` reaches the top two binades of `T`, which
+/// every subnormal `P̂` does, and so does `P̂ = 0` (`1/0` is infinite or the largest finite value).
+///
+/// With least normal exponent `1 - emax`, `P̂` below `2^(1-emax)` gives a quotient of at least
+/// `2^(emax-1)` (rounding is monotone and `2^(emax-1)` is representable), and four times it
+/// overflows or clamps (`MAX + ulp/2 < 2^(emax+1)`). Every shipped format has that exponent range.
+/// A `P̂` at the least normal also passes,
+/// and `F4` passes `P̂ = 1/2` (its fourfold `M` clamps), harmlessly: the carried power meets the
+/// same bound. NaN is neither infinite nor clamped.
+#[inline(always)]
+fn upward_power_may_be_subnormal<T: FloatElement>(quotient: T) -> bool {
+    let doubled = quotient + quotient;
+    let quadrupled = doubled + doubled;
+    (!quadrupled.is_finite() && !quadrupled.is_nan()) || saturates(quadrupled)
+}
+
+/// A power as `significand·2^exponent` with the significand of magnitude in `[1, 2)`, so that
+/// squaring leaves the range of `T` only when the power itself does.
+#[derive(Clone, Copy)]
+struct Carried<T> {
+    significand: T,
+    exponent: i32,
+}
+
+impl<T: FloatElement> Carried<T> {
+    /// The product, renormalized by one exact halving when the significands reach `2`.
+    #[inline(always)]
+    fn multiply(self, other: Self) -> Self {
+        let product = self.significand * other.significand;
+        // Magnitudes in `[1, 2)` multiply to `[1, 4)`: finite, nonzero, binary exponent 0 or 1.
+        let carry = product
+            .binary_exponent()
+            .expect("invariant: a product of significands in [1, 2) is finite and nonzero");
+        Self {
+            significand: product.scale_binary(-carry),
+            exponent: self
+                .exponent
+                .saturating_add(other.exponent)
+                .saturating_add(carry),
+        }
+    }
+}
+
+/// `base^-exp` for a finite nonzero `base` of binary exponent `base_exponent`, formed as a
+/// [`Carried`] power so that no intermediate is subnormal: the reciprocal of the significand
+/// scaled by the negated exponent.
+#[inline(always)]
+fn carried_reciprocal_power<T: FloatElement>(base: T, base_exponent: i32, exp: u32) -> T {
+    let first = Carried {
+        significand: base.scale_binary(-base_exponent),
+        exponent: base_exponent,
+    };
+    let one = Carried {
+        significand: T::ONE,
+        exponent: 0,
+    };
+    let power = square_and_multiply(first, exp, one, Carried::multiply);
+    (T::ONE / power.significand).scale_binary(power.exponent.saturating_neg())
 }
 
 /// Whether `power` is the clamped overflow of a finite-only format: the format

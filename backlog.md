@@ -1,20 +1,17 @@
 # Eunomia backlog
 
-<a id="EUNOMIA-POWI-SUBNORMAL-UPWARD"></a>
-## EUNOMIA-POWI-SUBNORMAL-UPWARD — powi has no bound where a product or the result is subnormal [patch]
-- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
-- Outcome: `powi` with `n < 0` stays within a stated, derived bound where `power.rs:53-56` and `float.rs:379-381` stop: a subnormal
-  upward power (its rounding loses relative precision, which the reciprocal carries into a normal or overflowing result; `power.rs:12-28`
-  assumes none) and a subnormal result (one rounding of the quotient, whose relative error can exceed `u`).
-- Evidence (run at `0ae80384255f`: `F8`/`Bf8` codes, `n` in -128..=-1, plus `f32`; exact rationals): `Bf8` powi(0.02734375, -3) = +inf for
-  exact 48913.17 (correct 49152); `f32` powi(0x2a214518, -3) = +inf for exact 3.4028234746e38, under half an ulp (2^103) above `f32::MAX`,
-  so correct is `f32::MAX`; `F8` powi(224, -1) = 2^-8 for exact 4.464e-3, error 0.125 over 1/15 (correctly rounded; the range is wrong).
-- Acceptance: test `powi_negative_exponent_with_subnormal_upward_power_stays_within_bound` in `crates/eunomia/tests/float_element/`, generic
-  over `Bf8`, `f32`, `F16`: the two +inf rows (they fail at the basis) and the finite `F16` row pinned at `powi_saturation.rs:269`
-  (powi(1031*2^-18, -2) = 64512 for exact 64649.10, error 2.121e-3 over 9.773e-4) lie within the derived bound; test
-  `powi_negative_exponent_with_subnormal_result_stays_within_bound` holds `F8` powi(224, -1) to the stated result bound; `power.rs` and `float.rs` state both.
-- Next step: derive both bounds, extend `power.rs:12-28`, then pick a path meeting the first on every format (the branch `powi` holds for a non-finite or saturated upward power).
-- Scope: `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/src/traits/float.rs`, `crates/eunomia/tests/float_element/`, `crates/eunomia/tests/float_element.rs`, `CHANGELOG.md`.
+<a id="EUNOMIA-POWI-SUBNORMAL-SWEEP"></a>
+## EUNOMIA-POWI-SUBNORMAL-SWEEP — the powi subnormal bound is pinned on three rows, not swept on every format [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
+- Outcome: `powi_subnormal.rs` holds the bound of `power.rs` on every shipped format (`F4`, `Bf4`, `F8`, `Bf8`, `F16`, `Bf16`, `F32`, `f32`, `F64`, `f64`),
+  not only on the `Bf8`, `f32`, `F16` and `F8` pinned rows, and `integer_power.rs` holds each row its pin drops (`inverts_subnormal_power`) to `check_row`.
+- Evidence: the rescue PR #218 (`refs/pull/218/head`) carries both: `every_format!` over `upward_sweep` (log grid, powers from `2^(emin-2)` to `2^(emin+1)`,
+  `e` up to 24) and `result_sweep` (results `2^(emax-1)` to `2^(emax+1)`; skipped for `F4`, which has no subnormal), the dropped rows forwarded in `check_previous_powi`, and
+  `check_row`, `Format`, `largest_exponent` made `pub(super)`. At that head every format passes; dropping the exponent carry fails the upward sweep on `F8`..`f64`.
+- Acceptance: the upward sweep kills the carry-drop mutant (`Carried::multiply` without `.saturating_add(carry)`) on `F8`, `Bf8`, `F16`, `Bf16`, `F32`, `f32`, `F64`, `f64`; it fails at the
+  basis on `F16`, `Bf16`, `F32`, `f32`; `F4` and `Bf4` stay held by the pins (every row has `m = 1`, so the carry is zero).
+- Next step: restore the sweep and the hook from `refs/pull/218/head`; the counted diff is about 236 lines against `main` once the fix has landed.
+- Scope: `crates/eunomia/tests/float_element/powi_subnormal.rs`, `crates/eunomia/tests/float_element/integer_power.rs`.
 
 <a id="EUNOMIA-COMPLEX-REDUCTION-IDENTITY"></a>
 ## EUNOMIA-COMPLEX-REDUCTION-IDENTITY — Complex MIN_VALUE/MAX_VALUE are not Max/Min fold identities [patch]
