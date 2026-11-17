@@ -14,6 +14,13 @@ All notable changes to Eunomia are documented here.
 
 ### Fixed
 
+- `Complex<T>::MIN_VALUE` and `MAX_VALUE` are now `(T::MIN_VALUE, T::MIN_VALUE)`
+  and `(T::MAX_VALUE, T::MAX_VALUE)`, the least and greatest pairs under the
+  `re`-then-`im` order of `max_scalar`/`min_scalar`. The previous
+  `(T::MIN_VALUE, 0)` and `(T::MAX_VALUE, 0)` were not fold identities: a Max
+  fold dropped an element with `re = MIN_VALUE` and `im < 0`, and a Min fold one
+  with `re = MAX_VALUE` and `im > 0`. A fold through `max_scalar`/`min_scalar`
+  seeded from the constants now returns the element.
 - `FloatElement::powi` with a negative exponent inverted the clamped upward
   power on `Bf4`, `F8` and `F4`: `F8` `powi(2, -9)` returned `2^-8` for the
   correct `2^-9`, and `Bf4` `powi(2, -2)` returned `0.5` for `0`. A saturated

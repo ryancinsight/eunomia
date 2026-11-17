@@ -263,11 +263,11 @@ where
     );
     const MIN_VALUE: Self = Self::new(
         <T as NumericElement>::MIN_VALUE,
-        <T as NumericElement>::ZERO,
+        <T as NumericElement>::MIN_VALUE,
     );
     const MAX_VALUE: Self = Self::new(
         <T as NumericElement>::MAX_VALUE,
-        <T as NumericElement>::ZERO,
+        <T as NumericElement>::MAX_VALUE,
     );
 
     #[inline(always)]
