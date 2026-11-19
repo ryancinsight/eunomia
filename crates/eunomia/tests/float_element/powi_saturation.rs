@@ -154,8 +154,17 @@ fn bases_above_one<T: FloatElement>() -> Vec<f64> {
 
 /// The upward power formed in `T` is the format's clamped largest value.
 fn upward_saturates<T: FloatElement>(base: f64, exponent: u32) -> bool {
-    let upward = NumericElement::to_f64(FloatElement::nth_power(make::<T>(base), exponent));
-    upward.abs() == NumericElement::to_f64(<T as NumericElement>::MAX_VALUE)
+    let base = make::<T>(base);
+    let upward = if let Ok(signed) = i32::try_from(exponent) {
+        FloatElement::powi(base, signed)
+    } else {
+        // An i32 exponent has only one magnitude outside i32::MAX. Its last
+        // squaring step takes the exactly same power at exponent 2^30 twice.
+        assert_eq!(exponent, i32::MIN.unsigned_abs());
+        let half = FloatElement::powi(base, 1 << 30);
+        half * half
+    };
+    NumericElement::to_f64(upward).abs() == NumericElement::to_f64(<T as NumericElement>::MAX_VALUE)
 }
 
 fn with_parity_sign(base: f64, exponent: u32, magnitude: f64) -> f64 {

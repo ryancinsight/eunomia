@@ -4,13 +4,7 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
-### Added
-
-- `FloatElement::nth_power(self, n: u32)`, the `u32`-exponent counterpart of
-  `powi`: the sign of a negative base follows the parity of `n` past `2^24`
-  and `i32::MAX`, a zero base stays defined, overflow saturates by each
-  format's policy, and the documented relative error is at most
-  `(1 + u)^(n-1) - 1` while no intermediate overflows or is subnormal.
+## [0.12.1]
 
 ### Fixed
 
