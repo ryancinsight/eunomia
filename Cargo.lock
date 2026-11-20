@@ -217,7 +217,7 @@ checksum = "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be"
 
 [[package]]
 name = "eunomia"
-version = "0.12.0"
+version = "0.12.1"
 dependencies = [
  "bytemuck",
  "criterion",
@@ -233,7 +233,7 @@ dependencies = [
 
 [[package]]
 name = "eunomia-derive"
-version = "0.12.0"
+version = "0.12.1"
 dependencies = [
  "proc-macro2",
  "quote",

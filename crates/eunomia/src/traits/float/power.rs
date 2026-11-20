@@ -1,5 +1,4 @@
-//! Integer powers by repeated squaring: the kernel behind
-//! [`FloatElement::nth_power`](super::FloatElement::nth_power) and
+//! Integer powers by repeated squaring behind
 //! [`FloatElement::powi`](super::FloatElement::powi).
 
 use super::{FloatElement, NumericElement};

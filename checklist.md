@@ -1,8 +1,18 @@
 # Eunomia checklist
 
-Target version: 0.12.0
+Target version: 0.12.1
 
 Sprint phase: Execution
+
+## EUNOMIA-0121 [patch] — release the accepted numeric corrections
+
+- [x] Backport complex fold identities, finite real extremes, and bounded
+  integer powers without adding the unsigned-exponent method to the 0.12 API.
+- [x] Verify the released API baseline and both workspace archives.
+      The published 0.12.0 consumer reproduces the failures. The
+      maintenance source passes 237 tests, 196 API checks, and strict
+      Clippy. The derive crate source matches 0.12.0.
+- [ ] Publish derive before the scalar crate and verify registry-only consumers.
 
 ## EUNOMIA-NUMPY-030-UNRELEASED-BUNDLE [major] — 0.12.0 cohort integration
 
