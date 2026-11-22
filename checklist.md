@@ -1,5 +1,14 @@
 # Eunomia checklist
 
+## Stable release checklist
+
+Basis `cd2a7b388f0d`, representative manifest `eunomia 0.12.1`. Target 1.0.0. [Backlog item](backlog.md#eunomia-stable-qualification).
+
+- [ ] [patch] Compare the subnormal sweeps and boundary rows in EUNOMIA-POWI-SUBNORMAL-SWEEP to the derived error bound. Establish which carry-drop mutant is detected in each format and retain the exact original regressions.
+- [ ] [patch] Reconcile the 0.12 cohort milestone with the indexed 0.12.1 pair. Re-run layout-derive contracts in a Hephaestus consumer and verify the scalar law shared with Aequitas.
+- [ ] [major] Freeze numeric representation and promotion contracts with explicit rounding, accumulator and rejection cases for owned parity rows. Attach target-specific results before release review.
+- [ ] [patch] Run the [release scope](docs/adr/0012-release-scope-1-0.md) exits and attach reviewed, exact-revision evidence for this member’s [Atlas qualification criteria](https://github.com/ryancinsight/atlas/blob/17b0124a7548ad81e817284afc5cb115c1d1bc78/docs/parity/repositories.json).
+
 Target version: 0.12.1
 
 Sprint phase: Execution

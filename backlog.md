@@ -1,5 +1,11 @@
 # Eunomia backlog
 
+<a id="eunomia-stable-qualification"></a>
+## EUNOMIA-STABLE-QUALIFICATION — eunomia stable-release qualification [patch] — todo
+- priority: verification; milestone: M-special-functions; basis: `cd2a7b388f0d`.
+- Outcome: Close the subnormal integer-power proof across the shipped number formats. Follow the [release scope](docs/adr/0012-release-scope-1-0.md) and [milestone exits](backlog/milestones.md).
+- Acceptance and sequence: [stable-release checklist](checklist.md#stable-release-checklist).
+
 <a id="EUNOMIA-POWI-SUBNORMAL-SWEEP"></a>
 ## EUNOMIA-POWI-SUBNORMAL-SWEEP — the powi subnormal bound is pinned on three rows, not swept on every format [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
