@@ -1,5 +1,13 @@
 # Eunomia gap audit
 
+## Incremental release baseline
+
+Reviewed [eunomia 0.12.1](crates/eunomia/Cargo.toml) at [31f90b4808c0](https://github.com/ryancinsight/eunomia/tree/31f90b4808c0847d48b3af8a96baf685cdeacdbe). The exact version appears in the [registry](https://crates.io/crates/eunomia/0.12.1).
+
+The next [patch] checkpoint uses [powi subnormal](crates/eunomia/tests/float_element/powi_subnormal.rs). [Target version and acceptance criteria](checklist.md#stable-release-checklist).
+
+The Atlas board check reports 1 existing schema finding, including `EUNOMIA-UNIT-DIVISION`. Verify each item against its delivery evidence, archive completed work and rerun the board check before the freeze.
+
 ## Apollo-facing surface — zero-cost verification, 2026-09-06 — clean
 
 Method: codegen inspection of the three surfaces Apollo consumes at scale,
