@@ -8,9 +8,10 @@
 //!
 //! This is not cosmetic. `PartialOrd` remains unordered for NaN, while
 //! [`NumericElement::min_scalar`]/[`max_scalar`] define the separate value
-//! contract used by reductions and `clamp`: one NaN is ignored and signed-zero
-//! ties select the IEEE minimum or maximum independent of operand order. This
-//! file verifies both surfaces against independent encoding and value oracles.
+//! contract used by reductions and `clamp`: one NaN is ignored and, for the
+//! wrapper types, signed-zero ties select the IEEE minimum or maximum
+//! independent of operand order. This file verifies both surfaces against
+//! independent encoding and value oracles.
 //!
 //! [`max_scalar`]: NumericElement::max_scalar
 
@@ -244,12 +245,10 @@ fn nan_is_unordered_and_non_reflexive() {
     assert_nan_unordered!(F16, Bf16, Bf8, Bf4, F8, F4);
 }
 
-/// Assert the shared min/max special-value contract for one real scalar type.
+/// Assert the shared min/max NaN and clamp contract for one real scalar type.
 fn assert_real_min_max_contract<T: NumericElement>() {
     let nan = T::NAN;
     let one = T::ONE;
-    let positive_zero = T::ZERO;
-    let negative_zero = <T as NumericElement>::bitor(T::ZERO, T::SIGN_MASK);
 
     assert_eq!(
         <T as NumericElement>::min_scalar(nan, one),
@@ -280,42 +279,6 @@ fn assert_real_min_max_contract<T: NumericElement>() {
         "max(NaN, NaN) remains NaN"
     );
 
-    let min_zero = <T as NumericElement>::min_scalar(positive_zero, negative_zero);
-    let min_zero_reversed = <T as NumericElement>::min_scalar(negative_zero, positive_zero);
-    assert_eq!(min_zero, negative_zero, "min(+0, -0) returns exactly -0");
-    assert_eq!(
-        min_zero_reversed, negative_zero,
-        "min(-0, +0) returns exactly -0"
-    );
-    assert_eq!(
-        min_zero.bitand(T::SIGN_MASK),
-        T::SIGN_MASK,
-        "min(+0, -0) returns -0"
-    );
-    assert_eq!(
-        min_zero_reversed.bitand(T::SIGN_MASK),
-        T::SIGN_MASK,
-        "min(-0, +0) returns -0"
-    );
-
-    let max_zero = <T as NumericElement>::max_scalar(positive_zero, negative_zero);
-    let max_zero_reversed = <T as NumericElement>::max_scalar(negative_zero, positive_zero);
-    assert_eq!(max_zero, positive_zero, "max(+0, -0) returns exactly +0");
-    assert_eq!(
-        max_zero_reversed, positive_zero,
-        "max(-0, +0) returns exactly +0"
-    );
-    assert_eq!(
-        max_zero.bitand(T::SIGN_MASK),
-        T::ZERO,
-        "max(+0, -0) returns +0"
-    );
-    assert_eq!(
-        max_zero_reversed.bitand(T::SIGN_MASK),
-        T::ZERO,
-        "max(-0, +0) returns +0"
-    );
-
     let clamp = |value: T, min: T, max: T| {
         <T as NumericElement>::min_scalar(<T as NumericElement>::max_scalar(value, min), max)
     };
@@ -329,7 +292,7 @@ fn assert_real_min_max_contract<T: NumericElement>() {
 }
 
 #[test]
-fn real_scalars_share_nan_and_signed_zero_min_max() {
+fn real_scalars_share_nan_min_max() {
     assert_real_min_max_contract::<f32>();
     assert_real_min_max_contract::<f64>();
     assert_real_min_max_contract::<F16>();
@@ -340,6 +303,108 @@ fn real_scalars_share_nan_and_signed_zero_min_max() {
     assert_real_min_max_contract::<Bf4>();
     assert_real_min_max_contract::<F8>();
     assert_real_min_max_contract::<F4>();
+}
+
+/// Which zero a signed-zero tie returns.
+#[derive(Clone, Copy)]
+enum ZeroTie {
+    /// The [`NumericElement`] table: `-0` for the minimum and `+0` for the
+    /// maximum, in either operand order.
+    BySign,
+    /// `core`'s float `min` and `max`, whose documentation lets inputs that
+    /// compare equal, `+0.0` and `-0.0` included, return either operand.
+    EitherOperand,
+}
+
+/// Describe how `min_scalar` and `max_scalar` break `rule` on a signed-zero
+/// pair, or return `None` when they conform.
+///
+/// `sign` is the encoding of `-0` taken from the format layout (the sign bit
+/// alone) and `B::default()` the encoding of `+0`. `value` builds a scalar
+/// from an encoding and `code` reads the encoding back, so every comparison is
+/// on integers: float equality cannot tell the two zeros apart.
+fn zero_tie_mismatch<T, B>(
+    name: &str,
+    rule: ZeroTie,
+    sign: B,
+    value: impl Fn(B) -> T,
+    code: impl Fn(T) -> B,
+) -> Option<String>
+where
+    T: NumericElement,
+    B: Copy + Default + PartialEq + core::fmt::LowerHex,
+{
+    let positive_code = B::default();
+    let positive = value(positive_code);
+    let negative = value(sign);
+    let observed = [
+        code(<T as NumericElement>::min_scalar(positive, negative)),
+        code(<T as NumericElement>::min_scalar(negative, positive)),
+        code(<T as NumericElement>::max_scalar(positive, negative)),
+        code(<T as NumericElement>::max_scalar(negative, positive)),
+    ];
+    let conforms = match rule {
+        ZeroTie::BySign => observed == [sign, sign, positive_code, positive_code],
+        ZeroTie::EitherOperand => observed
+            .iter()
+            .all(|&returned| returned == sign || returned == positive_code),
+    };
+    let [min, min_reversed, max, max_reversed] = observed;
+    (!conforms).then(|| {
+        format!(
+            "{name}: min(+0, -0) = {min:#x}, min(-0, +0) = {min_reversed:#x}, \
+             max(+0, -0) = {max:#x}, max(-0, +0) = {max_reversed:#x}"
+        )
+    })
+}
+
+#[test]
+fn signed_zero_ties_return_the_contract_encoding() {
+    let mismatches: Vec<String> = [
+        zero_tie_mismatch(
+            "F32",
+            ZeroTie::BySign,
+            0x8000_0000_u32,
+            |bits| F32(f32::from_bits(bits)),
+            |scalar| scalar.0.to_bits(),
+        ),
+        zero_tie_mismatch(
+            "F64",
+            ZeroTie::BySign,
+            0x8000_0000_0000_0000_u64,
+            |bits| F64(f64::from_bits(bits)),
+            |scalar| scalar.0.to_bits(),
+        ),
+        zero_tie_mismatch("F16", ZeroTie::BySign, 0x8000_u16, F16, |scalar| scalar.0),
+        zero_tie_mismatch("Bf16", ZeroTie::BySign, 0x8000_u16, Bf16, |scalar| scalar.0),
+        zero_tie_mismatch("Bf8", ZeroTie::BySign, 0x80_u8, Bf8, |scalar| scalar.0),
+        zero_tie_mismatch("Bf4", ZeroTie::BySign, 0x08_u8, Bf4, |scalar| scalar.0),
+        zero_tie_mismatch("F8", ZeroTie::BySign, 0x80_u8, F8, |scalar| scalar.0),
+        zero_tie_mismatch("F4", ZeroTie::BySign, 0x08_u8, F4, |scalar| scalar.0),
+        zero_tie_mismatch(
+            "f32",
+            ZeroTie::EitherOperand,
+            0x8000_0000_u32,
+            f32::from_bits,
+            f32::to_bits,
+        ),
+        zero_tie_mismatch(
+            "f64",
+            ZeroTie::EitherOperand,
+            0x8000_0000_0000_0000_u64,
+            f64::from_bits,
+            f64::to_bits,
+        ),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+
+    assert_eq!(
+        mismatches,
+        Vec::<String>::new(),
+        "every row lists the encodings a signed-zero tie returned"
+    );
 }
 
 #[test]

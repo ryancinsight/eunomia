@@ -4,6 +4,11 @@
 - Date: 2026-08-21
 - Class: [major] [arch]
 - Driver: `ATLAS-EUNOMIA-NAN-CONTRACT-2026-08-21`
+- Revision 2026-11-24: records that the primitive overrides do not guarantee
+  the signed-zero row (`core`'s `min` and `max` may return either of two equal
+  inputs) and leaves their rule undecided; the default read `+0` as `-0`
+  through float equality and now reads the sign bit of the encoding
+  (eunomia#231).
 
 ## Context
 
@@ -32,10 +37,12 @@ implementations:
 
 The default implementation checks the NaN predicate and sign bit in the
 element's native representation, then uses `PartialOrd` for ordinary values.
-It does not widen or narrow a value. Primitive `f32` and `f64` retain native
-overrides because their operations implement the same table. Wrapper types use
-the one trait default. `Complex<T>` keeps its explicit lexicographic
-implementation and is not a real scalar.
+It does not widen or narrow a value. Wrapper types use the one trait default,
+which implements every row. Primitive `f32` and `f64` retain native overrides:
+`core`'s `min` and `max` implement the NaN rows and may return either input
+for a signed-zero pair, so the `-0` and `+0` row is not guaranteed for the two
+primitives. `Complex<T>` keeps its explicit lexicographic implementation and
+is not a real scalar.
 
 `RealField::clamp` inherits the table through its existing min/max composition:
 a NaN input reduces to the lower bound, and a NaN bound is ignored.
@@ -54,7 +61,8 @@ a NaN input reduces to the lower bound, and a NaN bound is ignored.
 
 ## Consequences
 
-- Reductions and clamps have operand-order-independent real-scalar semantics.
+- Reductions and clamps have operand-order-independent real-scalar semantics,
+  except the sign of a zero result for primitive `f32` and `f64`.
 - NaN comparison remains unordered; this decision does not add `Eq` or `Ord`.
 - The trait default performs the special-value checks for wrapper types, while
   primitive native overrides retain the existing zero-cost path.
@@ -64,8 +72,10 @@ a NaN input reduces to the lower bound, and a NaN bound is ignored.
 ## Verification
 
 `crates/eunomia/tests/float_order.rs` instantiates the contract for every
-shipped real scalar type and checks both operand orders, two-NaN behavior,
-signed-zero bit selection, and generic clamp composition. It also checks
+shipped real scalar type and checks both operand orders, two-NaN behavior and
+generic clamp composition. For a signed-zero pair it compares the integer
+encoding of each result in both orders: the eight wrapper types must return
+the sign-selected zero, and the two primitives either zero. It also checks
 `RealField::clamp` directly for primitive real fields. Provider format,
 warning-denied Clippy, Nextest, doctest, Rustdoc, package, and hosted gates are
 the remaining acceptance evidence for the implementation revision.

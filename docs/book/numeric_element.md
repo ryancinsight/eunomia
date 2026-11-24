@@ -58,8 +58,8 @@ pub trait NumericElement:
 ## Minimum and maximum special values
 
 `NumericElement::min_scalar` and `max_scalar` are value operations, not raw
-`PartialOrd` expressions. For every shipped real floating-point scalar they
-use the same table:
+`PartialOrd` expressions. For a real floating-point scalar their contract is
+this table, with the exception for the two primitives stated below it:
 
 | Inputs | `min_scalar` | `max_scalar` |
 | --- | --- | --- |
@@ -69,8 +69,11 @@ use the same table:
 | all other values | numeric minimum | numeric maximum |
 
 The NaN rule is commutative even though `PartialOrd` correctly reports every
-NaN comparison as unordered. The signed-zero rule is also independent of
-operand order. Primitive `f32`/`f64` implementations use their native
-operations; wrapper types inherit the single trait default, so reductions and
-`RealField::clamp` do not diverge by storage format. Integer sentinels named
-`NAN` are ordinary zero values and follow integer comparison semantics.
+NaN comparison as unordered. For the wrapper types the signed-zero rule is
+also independent of operand order: they inherit the single trait default,
+which reads the sign bit of the encoding. Primitive `f32` and `f64` use their
+native `min` and `max`, which follow the NaN rows and may return either zero
+of a signed-zero pair, so the signed-zero row is not guaranteed for them.
+Reductions and `RealField::clamp` otherwise do not diverge by storage format.
+Integer sentinels named `NAN` are ordinary zero values and follow integer
+comparison semantics.

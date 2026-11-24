@@ -91,14 +91,14 @@ macro_rules! impl_numeric_element_float {
             fn count_ones(self) -> u32 {
                 self.to_bits().count_ones()
             }
-            /// Use the native float `min`, which matches the shared NaN and
-            /// signed-zero contract.
+            /// Use the native float `min`: `core` guarantees the shared NaN
+            /// rows and lets a signed-zero tie return either input.
             #[inline(always)]
             fn min_scalar(self, other: Self) -> Self {
                 self.min(other)
             }
-            /// Use the native float `max`, which matches the shared NaN and
-            /// signed-zero contract.
+            /// Use the native float `max`: `core` guarantees the shared NaN
+            /// rows and lets a signed-zero tie return either input.
             #[inline(always)]
             fn max_scalar(self, other: Self) -> Self {
                 self.max(other)
