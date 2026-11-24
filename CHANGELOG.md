@@ -4,6 +4,30 @@ All notable changes to Eunomia are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- `RealElement`, a sealed marker for every element type that is not `Complex`:
+  the primitive floats and integers, `F16`, `Bf16`, `F32`, `F64`, `Bf8`, `Bf4`,
+  `F8`, `F4`, `I8`, `I16` and `I32`. `FloatElement` has it as a supertrait.
+
+### Breaking
+
+- [major] `Complex<T>` is a `NumericElement` only for
+  `T: RealElement + Neg<Output = T>`. `Complex<Complex<T>>` is no longer a
+  `NumericElement`: its `min_scalar` and `max_scalar` returned the second
+  argument for every pair, so a fold seeded from `MIN_VALUE` or `MAX_VALUE`
+  dropped the element, and its `sqrt` was wrong. Every admitted component is
+  unchanged. See [ADR 0013](docs/adr/0013-real-complex-components.md).
+
+### Migration
+
+- Use a real component, such as `Complex<f64>`, where `Complex<Complex<f64>>`
+  was spelled; a pair of complex values is a `[Complex<f64>; 2]` or a domain
+  type.
+- Generic code that relies on `Complex<T>: NumericElement` under
+  `T: NumericElement + Neg<Output = T>` adds `T: RealElement`. Code bounded by
+  `FloatElement` needs no change.
+
 ## [0.12.1]
 
 ### Fixed

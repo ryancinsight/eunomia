@@ -4,5 +4,6 @@
 mod field;
 mod native_f64;
 mod primitives;
+mod real;
 mod unit;
 mod wrappers;
