@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- Item: [EUNOMIA-BINARY-SCALE-001](../../backlog.md#EUNOMIA-BINARY-SCALE-001)
+- Item: EUNOMIA-BINARY-SCALE-001 (PR #104, `5e2c496`)
 - Stack contract: [ATLAS-GAIA-NURBS-SCALE-001](https://github.com/ryancinsight/atlas/pull/268)
 
 ## Context
