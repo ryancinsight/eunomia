@@ -6,6 +6,20 @@
 - Outcome: Close the subnormal integer-power proof across the shipped number formats. Follow the [release scope](docs/adr/0012-release-scope-1-0.md) and [milestone exits](backlog/milestones.md). Planning targets for `eunomia` are 0.12.2, then 0.13.0, then 1.0.0. Verification alone can advance the current version.
 - Acceptance and sequence: [stable-release checklist](checklist.md#stable-release-checklist).
 
+<a id="EUNOMIA-COMPLEX-NESTED-ELEMENT"></a>
+## EUNOMIA-COMPLEX-NESTED-ELEMENT — `Complex<Complex<T>>` is a `NumericElement` whose `max_scalar` and `min_scalar` return the seed [major]
+- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: no instantiation of `Complex<T>`'s `NumericElement` impl returns a wrong reduction: the impl admits only real components, or `Complex<Complex<T>>` meets the `MIN_VALUE`/`MAX_VALUE` fold-identity contract.
+  Recommended: reject nested complex, since the lexicographic order those constants rely on needs ordered components and `PartialOrd for Complex` is order-less (a bound change on a public impl: ADR first).
+- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read and derived; not compiled or run here): the impl at `crates/eunomia/src/impls/primitives/numeric.rs:247-250` bounds `T: NumericElement + Neg`; `Complex<f64>` meets both and is `Sealed` (`:353`),
+  and its other supertrait impls need no real component: the operators (`types/complex/ops.rs:7-53`; `Mul` and `Div` also bound `T: Clone`, `:29,:40`), the `*Assign` impls (`:147-176`, bounded by the by-value operator and `Copy`) and `TryFromCount` (`convert/count.rs:261`, `T: NumericElement`). So `Complex<Complex<f64>>` is a `NumericElement`.
+  Its `min_scalar` (`numeric.rs:335-341`) compares `re < other.re` and `im <= other.im`, its `max_scalar` (`:344-350`) `re > other.re` and `im >= other.im`; on `Complex<f64>`, whose `partial_cmp` is always `None` (`ops.rs:256-262`), all four are false, so both return `other`:
+  `max_scalar(element, MIN_VALUE)` returns the seed. `complex_reduction_identity_failures` (`tests/complex_provider_contract.rs:82-128`) runs only real `T`.
+- Acceptance: `complex_reduction_identity_failures::<Complex64>()` added to `complex_reduction_identity_returns_the_element` fails at the basis (right-hand `max` and `min` cells) and passes at the closing head, together with a cell asserting `max_scalar(a, b) == max_scalar(b, a)` for two distinct non-seed `Complex<Complex64>` elements (a special case on the seed passes the grid alone),
+  or a `compile_fail,E0277` doctest on the impl shows `Complex<Complex<f64>>: NumericElement` rejected (it compiles at the basis): `cargo nextest run -p eunomia --test complex_provider_contract` and `cargo test --doc -p eunomia`.
+- Next step: draft the ADR with the recommended bound and the in-stack nested-`Complex` caller count (`git grep -n 'Complex<Complex'` per consumer repository) before editing the impl.
+- Scope: `crates/eunomia/src/impls/primitives/numeric.rs`, `crates/eunomia/tests/complex_provider_contract.rs`, `docs/adr/`.
+
 <a id="EUNOMIA-POWI-SUBNORMAL-SWEEP"></a>
 ## EUNOMIA-POWI-SUBNORMAL-SWEEP — the powi subnormal bound is pinned on three rows, not swept on every format [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
@@ -20,28 +34,26 @@
 - Scope: `crates/eunomia/tests/float_element/powi_subnormal.rs`, `crates/eunomia/tests/float_element/integer_power.rs`.
 
 <a id="EUNOMIA-POWI-DOC-CLAIMS"></a>
-## EUNOMIA-POWI-DOC-CLAIMS — three powi statements read false as written [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0ae80384255f.
-- Outcome: each statement is true as written or says what it holds for. (1) `crates/eunomia/src/traits/float.rs:381`, "a clamped
-  `F4`/`Bf4`/`F8` power rounds exactly", holds for the clamped upward power, not the returned value; it names the upward power.
-  (2) `crates/eunomia/src/traits/float/power.rs:80-81`, "keeps `|x|^e` above `2^125`, far below half the least positive value of `T`",
-  has the wrong subject: the exact `|x|^-e` lies below `2^-125`. (3) `assert_outside_bound` (`powi_saturation.rs:246-262`) evaluates its bound in `f64` and does not say why that cannot flip it.
-- Evidence (`0ae80384255f`, read; row (1) run; ratio in (3) derived in exact rationals): (1) `F8` powi(0.34375, -5), code 0x2b, returns code 0x77 = 240
-  for exact 208.35, correctly rounded 208, because the upward power is subnormal and its reciprocal clamps; (3) the `F16` row has error 2.121e-3
-  against bound 9.773e-4, ratio 2.17, so `f64` rounding of the bound cannot flip the comparison; its `.powi` binds to `f64::powi`, not the trait method.
-- Acceptance: `git grep -n 'rounds exactly' crates/eunomia/src/traits/float.rs` shows the upward power named; the sentence at `power.rs:80-81` has
-  `|x|^-e` as its subject; a comment above `assert_outside_bound` states the margin and why `f64` suffices, or the comparison is made in exact integers;
-  `float.rs` still counts at most 500 lines and has no line over 100 characters.
-- Next step: reword the three sites; `float.rs:379-381` are 100, 100 and 98 characters and the file is at the ratchet's 500-line count (newlines plus one), so it must not grow.
-- Scope: `crates/eunomia/src/traits/float.rs`, `crates/eunomia/src/traits/float/power.rs`, `crates/eunomia/tests/float_element/powi_saturation.rs`.
+## EUNOMIA-POWI-DOC-CLAIMS — two powi doc statements read false as written [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: each statement is true as written or says what it holds for. (1) `crates/eunomia/src/traits/float.rs:380-381`, "(exact when a `F4`/`Bf4`/`F8` upward power clamps)", reads as an exact returned value; for `n < 0` the clamped case returns the correctly rounded `x^n`, and the doc says so.
+  (2) `crates/eunomia/src/traits/float/power.rs:112-113`, "`(e − 1)·u < 1/2` keeps `|x|^e` above `2^125`, far below half the least positive value of `T`", has the wrong subject for "far below": the exact `|x|^-e` lies below `2^-125`, far below that value (at least `2^-10`).
+  This item owns the width clause: `float.rs` has no line over 100 characters; EUNOMIA-POWI-ROUNDOFF-OWNER references it.
+- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read; (1) from the pinned row): `powi_saturation.rs:247` pins `F8` `powi(2.25, -7)`, whose upward power 291.9 clamps to 240, to `2^-8` = 3.906e-3 where the exact value is 3.4255e-3 (derived: `2.25^7`), so the value is rounded, not exact (`power.rs:98-99` says an `n > 0` clamp is the result, `208.6` rounding to `208`); `power.rs:107` says the clamped quotient converts to the correctly rounded `|x|^−e`, settled by the exact-integer oracle in that test file.
+  (2) the sentence follows "the quotient is at most `2^-126` and converts to zero, correctly" (`power.rs:111-112`); `|x|^e` above `2^125` is true (derived: `P̂ ≥ 2^126` and `P̂ ≤ |x|^e·(1+u)^(e−1) < 2·|x|^e`), but as written it is the thing said to be far below `2^-10`. `float.rs:380` and `:381` are 102 and 111 characters; the file is 476 lines.
+- Acceptance: with `DOC` = ``awk '/^ *\/\/\//{b=b" "$0;next} /^ *#\[/{next} /fn powi\(self/{print b} {b=""}' crates/eunomia/src/traits/float.rs | sed -E 's#/// ?##g' | tr -s ' '`` (the doc comment above `fn powi(self` as one line, wherever its summary sits), ``DOC | grep -c -F 'correctly rounded'`` prints 1 and ``DOC | grep -c -F 'exact when'`` prints 0 (0 and 1 at the basis);
+  `git grep -n -P '(*UTF)^.{101,}$' -- crates/eunomia/src/traits/float.rs` prints nothing (`:380`, `:381` at the basis); `float.rs` counts at most 500 lines (newlines plus one); with `FLAT` = `git show HEAD:crates/eunomia/src/traits/float/power.rs | sed -E 's#^ *//[/!]? ?##' | tr '\n' ' '`,
+  ``FLAT | grep -c -E -e '`\|x\|\^.{1,3}e` [a-z ,]*below `2\^.{1,3}125`' -e '`\|x\|\^.{1,3}e *< *2\^.{1,3}125`'`` prints 1 and ``FLAT | grep -c -F '`2^125`, far below'`` prints 0 (0 and 1 at the basis); `.{1,3}` admits `-` or `−`.
+- Next step: reword `float.rs:380-381` and `power.rs:112-113`; `float.rs` sits at 476 lines and must not grow past 500.
+- Scope: `crates/eunomia/src/traits/float.rs`, `crates/eunomia/src/traits/float/power.rs`.
 
 <a id="EUNOMIA-POWI-SATURATION-GUARD"></a>
 ## EUNOMIA-POWI-SATURATION-GUARD — the finite-only guard of powi's saturation predicate cannot change a result [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-FLOAT-EXTREMES-BITS; basis: 38d0e2fff1c9.
-- Outcome: `saturates` (`crates/eunomia/src/traits/float/power.rs:119-122`) is `T::INFINITY.is_finite() && power.abs() == T::MAX_VALUE`; no test fails without its first conjunct.
-  `MAX_VALUE` and `INFINITY` are one constant expression in all ten formats (EUNOMIA-FLOAT-EXTREMES-BITS); `saturates` runs after the non-finite branch (`power.rs:100`), so it is false on an infinity.
+- status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-FLOAT-EXTREMES-BITS; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: `saturates` (`crates/eunomia/src/traits/float/power.rs:218-220`) is `T::INFINITY.is_finite() && power.abs() == T::MAX_VALUE`; no test fails without its first conjunct.
+  `MAX_VALUE` and `INFINITY` are one constant expression in all ten formats (EUNOMIA-FLOAT-EXTREMES-BITS); `saturates` runs after the non-finite branch (`power.rs:132`), so it is false on an infinity.
 - Evidence: the dropped-conjunct mutant passes `--test float_element` (20 of 20) and the package (234 of 234), relayed from the PR #210 judge at `2ef8acd`;
-  `power.rs` code is unchanged since. A rerun here is void, its disabled-branch control also passed.
+  `power.rs` has changed since (139 lines added since `2ef8acd`; `saturates` has a second use at `:167`, after an infinity test on the same line), so the survivor is relayed, not confirmed at the basis. A rerun here is void, its disabled-branch control also passed.
 - Risk: the conjunct is a per-monomorphization constant, so it may let LLVM drop the branch for the seven formats with an infinity.
 - Acceptance: `power::powi` and `saturates` are `#[inline(always)]` and `float.rs:382` is `#[inline]`, so take the asm of a non-inlined wrapper per format with an infinity,
   conjunct dropped against the basis. (i) No wrapper gains a compare or branch: delete the conjunct, record the clean asm diffs in the closing PR, keep
@@ -53,25 +65,25 @@
 
 <a id="EUNOMIA-FLOAT-EXTREMES-BITS"></a>
 ## EUNOMIA-FLOAT-EXTREMES-BITS — no test asserts `MAX_VALUE == INFINITY` under `T`'s own `==` [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 38d0e2fff1c9.
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
 - Outcome: for all ten `FloatElement` implementors `MAX_VALUE == INFINITY` under `T`'s own `==` (the comparison `saturates` makes) is pinned by a test, not by reading.
-- Evidence (`38d0e2fff1c9`, read): `reduction_identities_are_the_format_infinity_for_every_float` (`crates/eunomia/tests/float_special/finite_extremes.rs:50-86`)
+- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read): `reduction_identities_are_the_format_infinity_for_every_float` (`crates/eunomia/tests/float_special/finite_extremes.rs:50-86`)
   compares `to_f64` values of `MAX_VALUE`, `INFINITY` and the identity for f32, f64, F32, F64, F16, Bf16, Bf8, Bf4, F8 and F4, never `==` on `T`; the wrappers'
   `PartialEq` is float-semantic (`types/floats.rs:6`). The bits are already pinned for `Bf4`, `F8` and `F4`, the formats whose `INFINITY` is finite, by
   `numeric_constants_match_subbyte_value_contracts` (`crates/eunomia/tests/subbyte_convert.rs:107-125`: 0x05, 0x77, 0x06); the other seven have one infinity encoding.
   The constants are `impls/primitives/numeric.rs:26,31` and `impls/wrappers/numeric.rs` `$inf`/`$max`; `NumericElement` is sealed (`traits/numeric.rs:16-17`), so the ten are all.
 - Acceptance: `assert_reduction_identities` (`finite_extremes.rs:54-70`) also asserts `T::MAX_VALUE == T::INFINITY`:
-  `git grep -n -e 'MAX_VALUE ==' -e '== .*INFINITY' -e 'assert_eq!(.*MAX_VALUE, .*INFINITY' -- crates/eunomia/tests/float_special/finite_extremes.rs` prints a line
-  (`assert!` of `==` or `assert_eq!`; both compare under `T`'s own `PartialEq`, so the form is free: #213 round 2 N-2), and nothing at the basis. No bits assertion is added; the subbyte test owns them.
+  `git grep -n -e 'MAX_VALUE ==' -e '== .*INFINITY' -e 'assert_eq!(.*MAX_VALUE, .*INFINITY' -e 'MAX_VALUE,$' -- crates/eunomia/tests/float_special/finite_extremes.rs` prints a line
+  (`assert!` of `==` or `assert_eq!`; both compare under `T`'s own `PartialEq`, so the form is free: #213 round 2 N-2; the last pattern matches `T::MAX_VALUE,` alone on a line, where rustfmt wraps `assert_eq!`), and nothing at the basis. No bits assertion is added; the subbyte test owns them.
 - Next step: add the `==` assertion to `assert_reduction_identities`; EUNOMIA-POWI-SATURATION-GUARD needs it.
 - Scope: `crates/eunomia/tests/float_special/finite_extremes.rs`.
 
 <a id="EUNOMIA-POWI-QUOTIENT-BIAS-MUTANT"></a>
 ## EUNOMIA-POWI-QUOTIENT-BIAS-MUTANT — a downward 2^-20 bias on powi's saturated quotient survives every test [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 38d0e2fff1c9.
-- Outcome: mutant M2e, the accumulator quotient at `power.rs:110` times `1 - 2^-20` with its sign kept, is killed by a row, or is
-  recorded as an equivalent mutant together with the least bias exponent a row kills.
-- Evidence: relayed from the PR #210 judge (`/808` F-3, head `2ef8acd`; `power.rs` code unchanged since): M2e passes 234 of 234 and no
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: mutant M2e, the accumulator quotient at `power.rs:142` times `1 - 2^-20` with its sign kept, is killed by a row, or is
+  recorded as an equivalent mutant together with the largest exponent `k` whose bias `2^-k` a row kills.
+- Evidence: relayed from the PR #210 judge (`/808` F-3, head `2ef8acd`; the saturated branch reads as at `2ef8acd` `power.rs:111-113`, but `power.rs` and the tests have changed since): M2e passes 234 of 234 and no
   mutant-specific failing row shows which binary ran; M2d (`1 - 2^-4`) fails at `F8` `powi(1.5, -17)`, and the upward biases fail.
   The judge's reading: the sweep is exhaustive for e ≤ 128 and every result beyond is zero; a tie occurs only for power-of-two bases,
   and there the correctly rounded neighbour is the lower one or zero.
@@ -84,15 +96,13 @@
 
 <a id="EUNOMIA-POWI-ROUNDOFF-OWNER"></a>
 ## EUNOMIA-POWI-ROUNDOFF-OWNER — the `powi` bound names `u` without saying whose roundoff it is [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-POWI-DOC-CLAIMS; basis: 38d0e2fff1c9.
-- Outcome: the `FloatElement::powi` Rustdoc says `u` is the unit roundoff of `Self`, as the sibling doc at `float.rs:396`
-  and `power.rs:14,53` do.
-- Evidence (`38d0e2fff1c9`, read; the PR #210 judge's `/808` F-2, first half): `float.rs:379` reads "roundoff `u`" with no owner,
-  and `git grep -n -F 'unit roundoff' -- crates/eunomia/src/traits/float.rs` prints only `:396`.
-- Acceptance: that grep also prints a line inside the `powi` doc block (`:377-381` at the basis; `#[inline]` is `:382`, `fn powi` `:383`);
-  `float.rs` counts at most 500 lines (newlines plus one) and has no line over 100 characters.
-- Next step: reword `float.rs:379-381` after EUNOMIA-POWI-DOC-CLAIMS rewords `:381`; those lines sit at the 100-character limit,
-  so the rewording replaces words and adds none.
+- status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-POWI-DOC-CLAIMS; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: the `FloatElement::powi` Rustdoc says `u` is the unit roundoff of `Self`, as `power.rs:13,64` do for `T`.
+- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read; the PR #210 judge's `/808` F-2, first half): `float.rs:379` reads "Roundoff `u`" with no owner,
+  and `git grep -n -F 'unit roundoff' -- crates/eunomia/src/traits/float.rs` prints nothing; `power.rs:13,64` name it.
+- Acceptance: with `DOC` of EUNOMIA-POWI-DOC-CLAIMS (the `powi` doc comment of `float.rs` as one line), ``DOC | awk '{gsub(/unit roundoff of \x60Self\x60\x27/,"")} /unit roundoff of \x60Self\x60/{n++} END{print n+0}'`` prints 1 (0 at the basis), so ``unit roundoff of `Self` `` stands and the same words with an apostrophe after `Self` do not; the bare phrase `unit roundoff`, "with unit roundoff `u`" and the possessive "`Self`'s accumulator" name no owner or the wrong one, and a wrap between `of` and `Self` is accepted;
+  `float.rs` counts at most 500 lines (newlines plus one; 476 at the basis) and keeps the width clause EUNOMIA-POWI-DOC-CLAIMS owns (no line over 100 characters), which the added words in `:379` must not break (98 characters at the basis).
+- Next step: reword `float.rs:379`, rewrapping `:379-381` together with EUNOMIA-POWI-DOC-CLAIMS, which rewrites `:380-381` first.
 - Scope: `crates/eunomia/src/traits/float.rs`.
 
 <a id="EUNOMIA-COMPLEX-POWI-EXACT-CLAIM"></a>
@@ -199,22 +209,49 @@
 
 <a id="EUNOMIA-BOARD-DONE-BLOCKS"></a>
 ## EUNOMIA-BOARD-DONE-BLOCKS — the `done` block EUNOMIA-UNIT-DIVISION keeps the backlog failing the board lint [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
-- Outcome: `backlog.md` holds no block whose status is `done`; EUNOMIA-UNIT-DIVISION's receipt (PR #97, `71fdc60`) lives in ADR 0004 and the board lint reports no status violation.
-- Evidence (`bf0bce90eabd`, run): `atlas-board-lint.py --file` from atlas origin/main `6ee24b06a113` exits 1 with six `status "done"` violations; the #216 filing sweep deletes five (receipts in EUNOMIA-CHECKLIST-RETIRE and the sweep's commit body), leaving EUNOMIA-UNIT-DIVISION (`- status: done`).
-  `docs/adr/0004-unit-scalar-provider-seam.md:8` links `../../backlog.md#EUNOMIA-UNIT-DIVISION`, so deleting the block alone breaks that fragment link; the lint's `--file` mode does not check fragments (probe: deleting all six blocks exits 0).
-- Acceptance: `git grep -n -e '^- status: done' -e '— done$' -- backlog.md` prints nothing (six lines at the basis, one once #216 lands); the lint on `backlog.md` reports 0 schema violations; `git grep -n 'backlog.md#EUNOMIA-UNIT-DIVISION' -- docs` prints nothing (`adr/0004:8` at the basis); `backlog.md` stays at or under 1000 lines.
-- Next step: retarget the ADR 0004 Revision-line link to PR #97 / `71fdc60`, then delete the block.
-- Scope: `backlog.md`, `docs/adr/0004-unit-scalar-provider-seam.md`.
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: `backlog.md` holds no block for EUNOMIA-UNIT-DIVISION and no block whose status is `done`; its receipt (PR #97, `71fdc60`) lives in ADR 0004, and the board lint reports no status violation.
+- Evidence (`bf0bce90eabd`, run; `ac61854df78a`, read): `atlas-board-lint.py --file` from atlas origin/main `6ee24b06a113` exited 1 with six `status "done"` violations; `f990278` deleted five (receipts in EUNOMIA-CHECKLIST-RETIRE and its commit body), leaving EUNOMIA-UNIT-DIVISION (`- status: done`).
+  `docs/adr/0004-unit-scalar-provider-seam.md:8` links `../../backlog.md#EUNOMIA-UNIT-DIVISION` and cites no commit, so deleting the block alone breaks that fragment link; the lint's `--file` mode does not check fragments (probe: deleting all six blocks exits 0). `gap_audit.md:9` names the item as an existing finding.
+- Acceptance: `git grep -n EUNOMIA-UNIT-DIVISION -- backlog.md` prints nothing once the block and this item are deleted (the other mentions at the basis), and `git grep -n -e '^- status: done' -e '— done$' -- backlog.md` prints nothing, and so does ``git grep -c -e 'Divide by unit coef[f]icients' -e 'avoids overflowing intermediate reciproc[a]ls' -- backlog.md`` (`backlog.md:2` at the basis: a block renamed or relabelled but kept fails); the lint on `backlog.md` reports 0 schema violations;
+  `git grep -n 'backlog.md#EUNOMIA-UNIT-DIVISION' -- docs` prints nothing and `git grep -n -F '71fdc60' -- docs/adr/0004-unit-scalar-provider-seam.md` prints a line (the reverse at the basis); `git grep -n -F 'EUNOMIA-UNIT-DIVISION' -- gap_audit.md` prints nothing; `backlog.md` stays at or under 1000 lines.
+- Next step: retarget the ADR 0004 Revision-line link to PR #97 / `71fdc60`, drop the item name from `gap_audit.md:9`, then delete the block.
+- Scope: `backlog.md`, `docs/adr/0004-unit-scalar-provider-seam.md`, `gap_audit.md`.
 
 <a id="EUNOMIA-BOARD-ARCHIVE-NARRATIVE"></a>
-## EUNOMIA-BOARD-ARCHIVE-NARRATIVE — the board keeps five completed-work sections the board rules do not hold [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: bf0bce90eabd.
-- Outcome: `backlog.md` holds open items only: the five sections below are deleted, each receipt left to its landed commit and `Item:` trailer, or moved to its owning ADR or CHANGELOG entry where still cited.
-- Evidence (`bf0bce90eabd`, read; judge verdict on eunomia#216 round 1, F1): headings `## 0.8.0 closure refresh — 2026-08-10`, `## Recently completed`, `## Done`, `## Capabilities (done — enable stack-wide num-complex/num-traits removal)` and `## Capabilities + cleanup (done, this round)`. The sections `## Byte-layout & reduced-precision`, `## Roadmap` and `## Cleanup` are not named: their status is unread.
-- Acceptance: `git grep -n -e '^## 0\.8\.0 closure refresh' -e '^## Recently completed' -e '^## Done' -e '^## Capabilities' -- backlog.md` prints nothing (five lines at the basis); each deleted section's anchor has no inbound reference left (`git grep -n <anchor>` over the repository); `backlog.md` stays at or under 1000 lines.
+## EUNOMIA-BOARD-ARCHIVE-NARRATIVE — the board keeps seven completed-work sections the board rules do not hold [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: `backlog.md` holds open items only: the seven sections below are deleted, each receipt left to its landed commit and `Item:` trailer, or moved to its owning ADR or CHANGELOG entry where still cited.
+- Evidence (`bf0bce90eabd`, read; judge verdict on eunomia#216 round 1 F1, round 2 F2): headings `## 0.8.0 closure refresh — 2026-08-10`, `## Recently completed`, `## Done`, `## Capabilities (done — enable stack-wide num-complex/num-traits removal)` and `## Capabilities + cleanup (done, this round)`, plus `## Cleanup (redundancy removal)` (E-019: `crates/` holds no `eunomia-gpu`) and `## ADR governance — generated index refresh` (`docs/adr/README.md` lists ADRs 0001-0004 Accepted), read at `ac61854df78a`.
+  `## Byte-layout & reduced-precision` and `## Roadmap` are not named here: their status is unread.
+- Acceptance: `git grep -n -E '^#+ (0\.8\.0 closure refresh|Recently completed|Done$|Capabilities|Cleanup \(redundancy|ADR governance)' -- backlog.md` prints nothing (seven lines at the basis), and so does `git grep -n -E '^<a id="eunomia-(closure-refresh-0-8-0|recently-completed|done|capabilities-num-complex-removal|capabilities-and-cleanup|cleanup-redundancy-removal|adr-governance-index-refresh)"></a>$' -- backlog.md` (seven anchors at the basis), so a demoted heading or a kept anchor fails it;
+  `git grep -n -E '#eunomia-(closure-refresh-0-8-0|recently-completed|done|capabilities-num-complex-removal|capabilities-and-cleanup|cleanup-redundancy-removal|adr-governance-index-refresh)' -- .` prints nothing (no inbound link exists at the basis); `backlog.md` stays at or under 1000 lines;
+  the bodies go, not only their labels: with `S.txt` (kept in the session scratch directory, never in the repository) = ``git show ac61854df78a45a2144bf3aa9dc0c21858fa892f:backlog.md | LC_ALL=C awk '/^## /{p=($0 ~ /^## (0\.8\.0 closure refresh|Recently completed|Done$|Capabilities|Cleanup \(redundancy|ADR governance)/)} p && length($0)>=60 && !/^(## |<a id)/' > S.txt`` (the body lines of the seven sections that have 60 characters or more), ``git grep -c -F -f S.txt -- backlog.md`` prints nothing (`backlog.md:104` at the basis; an item filed for a still-open obligation rewords the line, since a verbatim line fails this), and ``grep -c -v '^$' backlog.md`` is at most the same count on the closing PR's base minus 136 (the seven sections' non-blank lines, anchors included) plus the non-blank lines of the `EUNOMIA-` item blocks of at most 15 lines the closing PR adds.
 - Next step: read each section for a still-open obligation, file it as an item, then delete the section.
 - Scope: `backlog.md`.
+
+<a id="EUNOMIA-POWI-BOUND-MARGIN"></a>
+## EUNOMIA-POWI-BOUND-MARGIN — `assert_outside_bound` compares in `f64` without stating why `f64` cannot flip it [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: a comment above `assert_outside_bound` names the least ratio of error to bound over its callers, 8/3, and says `f64` rounding of the bound and the comparison is far smaller.
+- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read; ratios derived in exact rationals): `crates/eunomia/tests/float_element/powi_saturation.rs:254-271` computes `bound` (`:256-261`) and compares (`:268`) in `f64`, with one doc line and no word on the margin;
+  its two callers (`:276-277`) have error over bound `(900−240)/900 ÷ 1/16` = 176/15 (`F8` 30²) and `(9−3)/9 ÷ 1/4` = 8/3 (`Bf4` 3²), against `f64` relative rounding of about 2^-52. The `.powi` in the bound is `f64::powi`, not the trait method.
+- Acceptance: with `ABOVE` = ``awk '/fn assert_outside_bound/{print b; exit} /^ *\/\//{b=b" "$0;next} {b=""}' crates/eunomia/tests/float_element/powi_saturation.rs`` (the comment block directly above the function as one line), ``ABOVE | grep -c -E '8/3|2\.67'``, ``ABOVE | grep -c -F 'f64'`` and ``ABOVE | grep -c -E '2\^-52|2\.2e-16|EPSILON'`` each print 1 (0, 0 and 0 at the basis), and the comment says that 8/3 is the least error-over-bound ratio of the callers and that `f64` rounding (about 2^-52 relative) is far below it;
+  the test still passes: `cargo nextest run -p eunomia --test float_element`.
+- Next step: add the comment above `assert_outside_bound`.
+- Scope: `crates/eunomia/tests/float_element/powi_saturation.rs`.
+
+<a id="EUNOMIA-COMPLEX-EXTREMUM-SIGNED-ZERO"></a>
+## EUNOMIA-COMPLEX-EXTREMUM-SIGNED-ZERO — `Complex::max_scalar` and `min_scalar` return the first argument when parts differ only in zero sign [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- Outcome: for `Complex<T>` with real `T`, `max_scalar` and `min_scalar` return one bit pattern for either argument order, as the real-float contract does (`traits/numeric.rs:81-82,110-111`: `min(-0, +0)` is `-0`, `max(-0, +0)` is `+0`, independent of operand order), or the Complex docs state the tie rule.
+- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read; the branch logic was run in a Python model of IEEE `==`, `>` and `>=`, not the Rust code): `impls/primitives/numeric.rs:335-350` returns `self` when `re` compares equal and `im` meets `<=`/`>=`; `-0 == +0`, so
+  `max_scalar((-0, 0), (+0, 0))` is `(-0, 0)` and the reversed call `(+0, 0)`; `min_scalar` is the same, and an `im` zero sign behaves alike. The real default (`traits/numeric.rs:97-99`) resolves the zero tie by sign; the Complex override never does. `tests/complex_provider_contract.rs:82-128` has no signed-zero cell.
+- Acceptance (either): (a) a test in `crates/eunomia/tests/complex_provider_contract.rs` makes eight calls, {`max_scalar`, `min_scalar`} x {a `Complex64` pair differing only in the sign of a zero `re`, such a pair for a zero `im`} x {both argument orders}, and asserts `to_bits` of both parts equal across the orders and equal to the contract's pattern (`-0` for `min_scalar`, `+0` for `max_scalar`);
+  `cargo nextest run -p eunomia --test complex_provider_contract` fails at the basis and passes at the closing head, and fails on each of four leave-one-out fixes of `numeric.rs:335-350` that resolve the zero tie by sign in three of {`max_scalar`, `min_scalar`} x {`re` tie, `im` tie} and leave the fourth as at the basis (so a test of zero `re` only, of one function only, or of one order only passes one of them and fails this clause);
+  or (b) the `Complex` impl's `max_scalar` and `min_scalar` carry a doc stating the tie rule and a doctest asserting it with `to_bits` for both functions and both orders: ``awk '/^ *\/\/\/ *\x60\x60\x60/{f=f?0:($0 ~ /\x60\x60\x60(rust)? *$/?1:2);next} f==1&&/to_bits/{a++} f==1&&/max_scalar/{b++} f==1&&/min_scalar/{c++} f==1&&/assert/{d++} END{print a+0,b+0,c+0,d+0}' crates/eunomia/src/impls/primitives/numeric.rs`` prints four nonzero counts (`0 0 0 0` at the basis; prose without a code fence, and an `ignore`, `no_run` or `text` fence, count nothing) and `cargo test --doc -p eunomia` passes.
+- Next step: decide the tie rule (the real contract per component is the recommended one), then add the test or the doc; the priority becomes `correctness` if the rule is the real contract and the override is changed.
+- Scope: `crates/eunomia/src/impls/primitives/numeric.rs`, `crates/eunomia/tests/complex_provider_contract.rs`.
 
 <a id="EUNOMIA-UNIT-DIVISION"></a>
 ## EUNOMIA-UNIT-DIVISION — Divide by unit coefficients [major]
