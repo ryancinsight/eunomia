@@ -129,7 +129,8 @@ D2's checked tier emulates on stable.
   corrects the E5M2/E2M1 subnormal scales and four-bit finite-limit/sign
   constants. A dependency-free AArch64 compile harness includes the actual
   kernel and NEON module, providing compile-time verification of that ISA path.
-- Follow-ups tracked as [backlog.md](../../backlog.md) E-022…E-030.
+- Delivered follow-ups are recorded in [CHANGELOG.md](../../CHANGELOG.md); the open
+  residue is in [backlog.md](../../backlog.md) (E-024, E-026, E-027, E-030, E-032).
 
 ## Revision note — 2026-09-28
 
@@ -138,5 +139,10 @@ overflow saturates, while `%` follows Rust truncating-quotient semantics.
 Rounding follows SoftFloat §6.1; remainder follows the Rust Reference.
 The assignment regression compares `%=` with `%`: E2M1 finite-only arithmetic
 saturates `2 * 2` to its maximum finite value `3`, so `3 % 2` is `1`, not `0`.
+
+## Revision note — 2026-11-24
+
+The follow-up pointer named E-022…E-030 as tracked on the board; the board now
+holds only the open residue, and delivered slices live in the CHANGELOG.
 
 [#129097]: https://github.com/rust-lang/rust/issues/129097

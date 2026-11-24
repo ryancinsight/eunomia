@@ -230,6 +230,48 @@
 - Next step: decide the tie rule (the real contract per component is the recommended one), then add the test or the doc; the priority becomes `correctness` if the rule is the real contract and the override is changed.
 - Scope: `crates/eunomia/src/impls/primitives/numeric.rs`, `crates/eunomia/tests/complex_provider_contract.rs`.
 
+<a id="EUNOMIA-ADR3-BYTEMUCK-GATING"></a>
+## EUNOMIA-ADR3-BYTEMUCK-GATING — ADR 0003 D2 says the bytemuck interop is unconditional while the ladder and E-026 plan to gate it [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f.
+- Outcome: ADR 0003 D2 and the board agree on whether `bytemuck` becomes an optional dependency, and the M-layout-derives exit no longer names the merged branch `feat/eunomia-layout-derives`.
+- Evidence (`0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f`, read; judge of eunomia#226, filed): ADR 0003 `:60` reads "interop is unconditional rather than feature-gated" and `crates/eunomia/Cargo.toml:13` declares `bytemuck` non-optional, as D2 says; `backlog/milestones.md:7`, E-026 (`backlog.md`) and `gap_audit.md:71,172` plan "bytemuck optional, default-on" gating.
+  E-026 names hephaestus as the `default-features = false` consumer that relies on `bytemuck::Pod`; hephaestus (origin/master `fbc786279dd4`) has 0 `bytemuck` manifests and 0 `.rs` files naming it, coeus (origin/main `fbfbaafff8d2`) has 7 and 8. `milestones.md:6` names the branch of PRs #86 and #87, merged; the remote branch is gone.
+- Acceptance: with A = `git grep -n 'unconditional rather than feature-gated' -- docs/adr/0003-native-byte-layout-and-reduced-precision.md | wc -l` and B = `git grep -n -i -E 'bytemuck.{0,12}(gating|optional)|(gating|optional).{0,12}bytemuck' -- backlog.md backlog/milestones.md gap_audit.md | wc -l`, A prints 1 and B prints 4 at the basis, and at the closing head exactly one of them prints 0 and the other at least 1 (the decision is one-sided);
+  `git grep -n 'feat/eunomia-layout-derives' -- backlog/milestones.md` prints nothing (`:6` at the basis); the closing change adds a dated `Revision` line to ADR 0003 (D2 changed) or to ADR 0012 with a judge verdict on the ladder edit (exit retired).
+- Next step: record the decision; recommended option: keep D2 and retire the gating exit, since the code matches D2 and the driving consumer no longer depends on `bytemuck` (a veto point).
+- Scope: `docs/adr/0003-native-byte-layout-and-reduced-precision.md`, `docs/adr/0012-release-scope-1-0.md`, `backlog/milestones.md`, `backlog.md` (E-026), `gap_audit.md` (`:71`, `:172`).
+
+<a id="EUNOMIA-CHANGELOG-NEON-VERIFIED"></a>
+## EUNOMIA-CHANGELOG-NEON-VERIFIED — the CHANGELOG says the NEON f8 decode was verified on aarch64 and no aarch64 run exists [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f.
+- Outcome: the `CHANGELOG.md` E-030 entry states what ran: the exhaustive differential exists as an aarch64-only test that has not been executed (E-030), or cites its run once E-030 closes.
+- Evidence (`0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f`, read; judge of eunomia#226, filed): `CHANGELOG.md:248-253` reads "bit-exact against the scalar conversion kernel ... verified by an exhaustive phase-and-length differential test on aarch64";
+  the test `neon_f8_unpack_bit_matches_scalar_for_every_byte_and_phase` is `cfg(target_arch = "aarch64")` (`crates/eunomia/tests/subbyte_convert.rs:307`) and every `runs-on` under `.github/workflows` is `ubuntu-latest` (`ci.yml:40,68,150,198`, `msrv.yml:39`, `book-pages.yml:54`); E-030 records that the test "was not executed". `gap_audit.md` G-T2 carried the same claim and is corrected by the filing PR.
+- Acceptance: `git grep -n 'verified by an exhaustive phase-and-length differential test on' -- CHANGELOG.md` prints nothing (`:251` at the basis); `git grep -c 'neon::unpack_f8_to_f32' -- CHANGELOG.md` prints 1 (the entry survives; deleting it fails);
+  `git grep -n -i 'not executed' -- CHANGELOG.md` prints a line inside that entry (none at the basis), unless E-030 has closed with a recorded run, which the entry then cites.
+- Next step: reword `CHANGELOG.md:248-253` from E-030's text.
+- Scope: `CHANGELOG.md`.
+
+<a id="EUNOMIA-AVX2-F8-TEST-COMMENT"></a>
+## EUNOMIA-AVX2-F8-TEST-COMMENT — the AVX2 f8 differential test's doc comment calls a gather decode branchless and cites E-031 [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f.
+- Outcome: the doc comment above `avx2_f8_unpack_bit_matches_scalar_for_every_byte` describes the decode it tests: a 256-entry table gather, retained after E-032 measured the branchless form slower.
+- Evidence (`0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f`, read; judge of eunomia#226, filed): `crates/eunomia/tests/subbyte_convert.rs:280` reads "the branchless AVX2 `f8 -> f32` decode (E-031)"; `avx2::unpack_f8_to_f32` (`crates/eunomia/src/packed/unpack/intrinsics/avx2.rs:274-302`) indexes `TABLE_BITS: [u32; 256]` through `_mm256_i32gather_ps` (`:294`);
+  E-032 records the branchless form implemented, about 27% slower, and the gather kept; E-031 is the F16C bulk conversion (`CHANGELOG.md:327`).
+- Acceptance: `git grep -n 'branchless AVX2' -- crates` prints nothing (`subbyte_convert.rs:280` at the basis); `git grep -n 'fn avx2_f8_unpack_bit_matches_scalar_for_every_byte' -- crates/eunomia/tests/subbyte_convert.rs` still prints 1 line (the test survives); `cargo nextest run -p eunomia --test subbyte_convert` passes. The change is comment-only.
+- Next step: reword the comment to name the gather and cite E-032.
+- Scope: `crates/eunomia/tests/subbyte_convert.rs` (the doc comment only).
+
+<a id="EUNOMIA-NOSTD-AVX512-DETECTION-TEST"></a>
+## EUNOMIA-NOSTD-AVX512-DETECTION-TEST — no test pins the no_std AVX-512 detection arms that E-028 corrected [patch]
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f.
+- Outcome: a test fails when either no_std AVX-512 detection arm drops its `avx512vl` requirement, the defect E-028 fixed without a test.
+- Evidence (`0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f`, read; judge of eunomia#226, F1): `crates/eunomia/src/packed/unpack/arch.rs:12-17` (`has_avx512bw`) and `:34-38` (`has_avx512f`) are `cfg!(target_feature = ...)` expressions under `#[cfg(not(feature = "std"))]`; `git grep -n 'has_avx512' -- crates/eunomia/tests crates/eunomia/benches` prints nothing and `arch.rs` has no `cfg(test)` module.
+  The CI feature matrix runs `cargo check`, not tests, for `--no-default-features` (`.github/workflows/ci.yml:116-130`), at default target features where `cfg!(target_feature = "avx512f")` is false, so no run evaluates an arm true. E-028 recorded "No unit test"; its entry was deleted from the board and the limit is recorded nowhere else.
+- Acceptance: `git grep -n 'no_std_avx512_detection' -- crates` prints a test definition (nothing at the basis), `cargo nextest run -p eunomia --no-default-features --lib` passes it, and it fails against each of two mutants of `arch.rs` that delete the `avx512vl` requirement from the no_std arm of `has_avx512bw`, or of `has_avx512f`.
+- Next step: express each arm as a `const fn` of the feature booleans so a table-driven test covers every combination without AVX-512 hardware, and have the `cfg!` arms call it.
+- Scope: `crates/eunomia/src/packed/unpack/arch.rs`.
+
 <a id="eunomia-byte-layout-reduced-precision"></a>
 ## Byte-layout & reduced-precision (open residue of E-022…E-033)
 
@@ -249,21 +291,24 @@ E-030 (aarch64 execution evidence), E-032 (recorded finding).
   `default-features = false` consumers (e.g. hephaestus GPU buffers) rely on
   `eunomia::Complex: bytemuck::Pod`, so it requires consumer verification, not a
   solo eunomia commit. Milestone: M-layout-derives (E-026 gating exit).
-- **E-027 [arch] — in-progress; milestone: M-layout-derives; owner: Codex; branch:
-  `feat/eunomia-layout-derives`.** Add the provider-owned `Pod`/`Zeroable`
-  derives required by the consumer GPU-ABI migration, then migrate consumer
-  GPU-ABI structs (hephaestus ~130, coeus ~115, …) onto the E-026 vocabulary
-  while preserving the `bytemuck::Pod` wgpu contract via the bridge; add
-  eunomia as a direct hephaestus dep. Dep: E-026. <a id="e-027"></a>
-  The provider derives are delivered (`eunomia-derive`; [CHANGELOG.md](CHANGELOG.md), ADR 0003 D2);
-  the consumer migration remains.
+- **E-027 [arch] — todo; milestone: M-layout-derives.** Migrate the consumer
+  GPU-ABI structs onto the E-026 vocabulary while preserving the
+  `bytemuck::Pod` wgpu contract via the bridge. Dep: E-026. <a id="e-027"></a>
+  The provider derives are delivered (`eunomia-derive`, PRs #86 and #87;
+  [CHANGELOG.md](CHANGELOG.md), ADR 0003 D2); their branch is merged and deleted.
+  Consumer state by `git grep` at the fetched default branches: hephaestus (origin/master
+  `fbc786279dd4`) has `eunomia` as a direct dependency, 0 `bytemuck` manifests, 0 `.rs` files
+  naming `bytemuck`, and 134 lines matching `derive\(.*(Pod|Zeroable)`; coeus (origin/main
+  `fbfbaafff8d2`) has `bytemuck` in 7 manifests and 8 `.rs` files and 0 such lines.
+  The remaining migration is coeus.
 - **E-030 [patch] — NEON f8 decode delivered; aarch64 execution evidence open**
   `neon::unpack_f8_to_f32` is a branchless 16-element arithmetic decode ([CHANGELOG.md](CHANGELOG.md);
   `crates/eunomia/src/packed/unpack/intrinsics/neon.rs`). Open: the exhaustive NEON-versus-scalar
   differential `neon_f8_unpack_bit_matches_scalar_for_every_byte_and_phase`
   (`crates/eunomia/tests/subbyte_convert.rs`; 256 values x 16 phases x 257 lengths) is
   `cfg(target_arch = "aarch64")` and was not executed. The aarch64 lib and test-target checks passed
-  under the pinned 1.95.0 toolchain, `.github/workflows/ci.yml` has no aarch64 job, the
+  under the 1.95.0 toolchain pinned then (`rust-toolchain.toml` now pins 1.97.0),
+  `.github/workflows/ci.yml` has no aarch64 job, the
   ~700-byte rodata/text reduction is an analytical estimate (no two-revision release build), and the
   `[patch]` SemVer class is by analysis (no mechanical run). An aarch64 hardware or CI run remains
   the open execution evidence.
