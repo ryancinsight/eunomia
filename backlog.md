@@ -3,8 +3,20 @@
 <a id="eunomia-stable-qualification"></a>
 ## EUNOMIA-STABLE-QUALIFICATION — eunomia stable-release qualification [patch] — todo
 - priority: verification; milestone: M-special-functions; basis: `31f90b4808c0`.
-- Outcome: Close the subnormal integer-power proof across the shipped number formats. Follow the [release scope](docs/adr/0012-release-scope-1-0.md) and [milestone exits](backlog/milestones.md). Planning targets for `eunomia` are 0.12.2, then 0.13.0, then 1.0.0. Verification alone can advance the current version.
+- Outcome: Close the subnormal integer-power proof across the shipped number formats. Follow the [release scope](docs/adr/0012-release-scope-1-0.md) and [milestone exits](backlog/milestones.md). Planning targets for `eunomia` are 0.13.0, then 1.0.0: `main` carries the breaking `Complex` bound of [ADR 0013](docs/adr/0013-real-complex-components.md), so a 0.12.2 patch needs a branch at the `0.12.1` tag ([EUNOMIA-REAL-COMPONENT-RELEASE](#EUNOMIA-REAL-COMPONENT-RELEASE)). Verification alone can advance a patch version on that branch.
 - Acceptance and sequence: [stable-release checklist](checklist.md#stable-release-checklist).
+
+<a id="EUNOMIA-REAL-COMPONENT-RELEASE"></a>
+## EUNOMIA-REAL-COMPONENT-RELEASE — the release carrying ADR 0013 is 0.13.0 and ships with the leto `RealElement` bound [major]
+- status: blocked; priority: correctness; milestone: M-special-functions; needs: none; basis: `b13d421f24b9`.
+- Outcome: no 0.12.x release carries the narrowed `Complex<T>` impl; the release that does is the next breaking 0.x, 0.13.0, and leto changes its `Complex` `Scalar` impl in the same co-evolution unit.
+- Evidence (`b13d421f24b9`, read; [ADR 0013](docs/adr/0013-real-complex-components.md) Decision 4 and revision note; eunomia#229): every stack member resolves eunomia from the crates.io registry at 0.12.1 (leto `Cargo.lock:419`, requirement `0.12.1`, caret),
+  so a 0.12.x release cut from `main` reaches leto through `cargo update` and fails there (E0277, `T: RealElement`, through `Scalar: NumericElement`); leto cannot name `eunomia::RealElement` until a release exports it.
+- Acceptance: leto `crates/leto-ops/src/domain/scalar/impls.rs:313` reads `impl<T> Scalar for Complex<T> where T: Scalar + eunomia::RealElement + core::ops::Neg<Output = T> {}` and requires the released eunomia 0.13.x; leto builds and tests against it;
+  `git ls-tree -r <tag> --name-only` and `git grep -n RealElement <tag> -- crates` show `RealElement` in the 0.13.0 tag and in no 0.12.x tag.
+- Blocker: release authority; re-open trigger: the user's release decision for eunomia 0.13.0.
+- Next step: on that decision, release 0.13.0 under the co-evolution protocol, then edit leto line 313 as quoted and move leto's requirement.
+- Scope: leto `crates/leto-ops/src/domain/scalar/impls.rs`, eunomia workspace version.
 
 <a id="EUNOMIA-POWI-SUBNORMAL-SWEEP"></a>
 ## EUNOMIA-POWI-SUBNORMAL-SWEEP — the powi subnormal bound is pinned on three rows, not swept on every format [patch]

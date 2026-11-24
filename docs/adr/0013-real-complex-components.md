@@ -5,9 +5,13 @@ Date: 2026-11-24  \
 Change class: [major] (narrows the bound of a public impl)  \
 Delivery: EUNOMIA-COMPLEX-NESTED-ELEMENT (eunomia#229)
 
-Revision 2026-11-24: Accepted with its delivery; the marker covers all 23
-non-`Complex` element types (was 18), and the nested-`sqrt` witness, the
-in-crate helper bound and the consumer wording are corrected.
+Revision 2026-11-24: Accepted with its delivery (eunomia#229). The marker
+covers all 23 non-`Complex` element types (was 18); the sqrt witness, helper
+bound and consumer wording are corrected. Decision 4 moves from a landing
+precondition to a release precondition: every member resolves eunomia 0.12.1
+from the registry (leto `Cargo.lock:419`), so leto cannot name `RealElement`
+before a release exports it (`impls.rs:313`) and the bound on `main` reaches
+no consumer until then (EUNOMIA-REAL-COMPONENT-RELEASE).
 
 ## Context
 
@@ -21,7 +25,7 @@ the bound.
 for every pair (`types/complex/ops.rs:256-262`), so on a `Complex` component all
 four comparisons are false and both functions return their second argument.
 
-Reproduced at `e9dbcf8` (tree of this branch's base): adding
+Reproduced at `e9dbcf8` (the base of eunomia#228, which proposed this ADR): adding
 `complex_reduction_identity_failures::<Complex64>()` after the `I32` row of
 `complex_reduction_identity_returns_the_element`
 (`tests/complex_provider_contract.rs:130-150` at `fa17b38`) and running
@@ -98,8 +102,9 @@ working name `RealElement`, in `traits/`:
    row, because no admitted component changes. Its helper bound
    (`tests/complex_provider_contract.rs:84`, `T: NumericElement + Neg`) takes
    `RealElement` in the same commit, a value test pins the
-   `MIN_VALUE`/`MAX_VALUE` folds of `Complex<f64>`, and a test requires the
-   marker of each of the 23 types.
+   `MIN_VALUE`/`MAX_VALUE` folds of `Complex<f64>`, and tests require the
+   marker of each of the 23 types, forbid it on `Complex` over each of the
+   18 components, and pin `FloatElement: RealElement`.
 4. The release that carries the change ships with leto `impls.rs:313` adding
    the marker to its bound, in one co-evolution unit (architecture_scoping:
    co-evolution protocol).
@@ -137,8 +142,8 @@ working name `RealElement`, in `traits/`:
   marker; code bounded only `T: NumericElement` never had the impl. Known
   site: leto `impls.rs:313`. Derived from the two cited bounds; leto is not
   compiled against the change.
-- Cargo treats 0.12 to 0.13 as breaking; the version is chosen at release,
-  which this ADR does not authorize.
+- Cargo treats 0.12 to 0.13 as breaking, so the carrying release is 0.13.0,
+  never a 0.12.x patch; this ADR does not authorize the release.
 - One new public sealed trait and one new supertrait on `FloatElement`.
 
 ## Overturning evidence
