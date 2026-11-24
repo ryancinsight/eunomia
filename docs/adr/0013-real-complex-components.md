@@ -102,8 +102,12 @@ working name `RealElement`, in `traits/`:
 - Keep the bound and document that nested complex reduces wrongly: leaves a
   safe-code wrong result on a public contract (the 28 cells above).
 - Fix only `min_scalar`/`max_scalar` to recurse through the component's own
-  `min_scalar`: the identity constants and the `Complex` order they assume
-  remain undefined for a component with no order.
+  `min_scalar`: this repairs the folds without a bound change (the recursion
+  yields the documented lexicographic order), but nested `sqrt`
+  (`numeric.rs:287-297`) stays wrong and no order-based sign rule repairs
+  it: `(0, -2+0i)` gives `(1, 1)`, whose square is `(0, 2)` (derived by hand
+  from the source, not run). Narrowing now can be widened later without a
+  break; keeping the nested impl cannot be withdrawn without one.
 
 ## Consequences
 
