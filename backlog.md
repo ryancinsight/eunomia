@@ -230,6 +230,16 @@
 - Next step: decide the tie rule (the real contract per component is the recommended one), then add the test or the doc; the priority becomes `correctness` if the rule is the real contract and the override is changed.
 - Scope: `crates/eunomia/src/impls/primitives/numeric.rs`, `crates/eunomia/tests/complex_provider_contract.rs`.
 
+<a id="EUNOMIA-WRAPPER-ZERO-SIGN-TEST"></a>
+## EUNOMIA-WRAPPER-ZERO-SIGN-TEST — `is_negative_zero` reads `+0` as negative zero for value-compared wrapper floats [patch]
+- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: fa17b38089ec5822764f84174abbbe1dd66dc8e4.
+- Outcome: the default `min_scalar` and `max_scalar` return `-0` and `+0` for a signed-zero pair in either argument order for `F16`, `Bf16`, `Bf8`, `Bf4`, `F8` and `F4`, as their docs state (`traits/numeric.rs:110-111` for `max`), and the contract test compares encodings.
+- Evidence (basis, read and derived from the trait system; not run): `is_negative_zero` (`traits/numeric.rs:289-291`) tests `value.bitand(T::SIGN_MASK) == T::SIGN_MASK`. The wrapper floats compare by value (`types/floats.rs:80-87`, `to_f32() == to_f32()`), so for `+0` the left side is `+0`, the right side `-0`, and the test is true. `min_scalar(+0, -0)` (`:97-99`) then returns `self`, `+0`; `max_scalar(+0, -0)` (`:126-128`) returns `other`, `-0`. Primitive `f32` and `f64` override both methods (`impls/primitives/numeric.rs:94-104`) and do not reach the helper; that override's comment says native `min` and `max` match the signed-zero contract, which std does not promise for a zero tie.
+  `tests/float_order.rs:283-316` cannot fail on this: its `assert_eq!` calls compare with the same value equality, under which `+0 == -0`.
+- Acceptance: `assert_real_min_max_contract` compares raw encodings (the wrapper's `.0`, or `bitand` results through an encoding accessor) for `min` and `max` in both orders; `cargo nextest run -p eunomia --test float_order` fails at the basis for the wrapper floats and passes at the closing head; the comment at `impls/primitives/numeric.rs:94-95` and `:100` states what std guarantees.
+- Next step: make the test compare encodings and watch it fail, then test the sign bit on the encoding in `is_negative_zero`.
+- Scope: `crates/eunomia/src/traits/numeric.rs`, `crates/eunomia/src/impls/primitives/numeric.rs`, `crates/eunomia/tests/float_order.rs`.
+
 <a id="EUNOMIA-ADR3-BYTEMUCK-GATING"></a>
 ## EUNOMIA-ADR3-BYTEMUCK-GATING — ADR 0003 D2 says the bytemuck interop is unconditional while the ladder and E-026 plan to gate it [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: 0a6bfda3a8a67d548edbcb3f4bb830b5c7f2af9f.
