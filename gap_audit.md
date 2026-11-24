@@ -159,9 +159,11 @@ Const `from_bits`/`to_bits` methods now own the representation-preserving
 boundary and round-trip every `u16` pattern exactly.
 
 Tests/docs — **G-T1 (resolved E-023)** analytical and exhaustive sub-byte
-conversion tests now pin all four formats. **G-T2 (resolved E-030)**
-`neon::unpack_f8_to_f32` is now a branchless 16-lane arithmetic decode,
-exhaustively differential-tested against the scalar kernel on aarch64.
+conversion tests now pin all four formats. **G-T2 (decode delivered E-030;
+execution evidence open)** `neon::unpack_f8_to_f32` is now a branchless
+16-lane arithmetic decode. Its exhaustive differential against the scalar
+kernel is `cfg(target_arch = "aarch64")` and has not been executed: every
+CI job runs on `ubuntu-latest` (E-030).
 **G-D1**
 `impls/wrappers/numeric.rs:217` mislabelled Bf8 "1.4.3"; corrected by E-023.
 
@@ -172,9 +174,9 @@ RNE + pinned conventions + one generic home); G-A2 byte-layout vocabulary
 delivered via E-026 (native `layout` module; `bytemuck`-gating deferred to the
 E-027 consumer co-evolution); G-A1 fully resolved by E-025/E-025b/E-025c
 (`F16`/`Bf16` native `u16`, explicit bit access, foreign raw-half impls deleted,
-independent IEEE-754 test oracle); G-T2 resolved via E-030 (branchless NEON F8 decode +
-exhaustive aarch64 differential). Still open: E-027 (consumer
-bytemuck→eunomia migration).
+independent IEEE-754 test oracle); G-T2 via E-030 (branchless NEON F8 decode; the aarch64
+differential is written, not executed). Still open: E-027 (consumer
+bytemuck→eunomia migration), E-030 (aarch64 execution evidence).
 
 **Re-verified 2026-07-27** (source audit, independent of the E-028/E-029
 delivery claims): `arch.rs` `has_avx512f`/`has_avx512bw` test the correct
