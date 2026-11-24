@@ -1,12 +1,12 @@
 //! The [`FloatElement`] trait — float-specific conversions and the real
 //! transcendental surface (libm-backed, native precision).
 
-use super::{private, NumericElement};
+use super::{private, NumericElement, RealElement};
 
 mod power;
 
 /// Float-specific capabilities.
-pub trait FloatElement: private::Sealed + NumericElement {
+pub trait FloatElement: private::Sealed + NumericElement + RealElement {
     /// The type a reduction over `Self` accumulates in. The per-format
     /// numerical analysis behind these bounds is in the crate's `traits`
     /// module documentation.

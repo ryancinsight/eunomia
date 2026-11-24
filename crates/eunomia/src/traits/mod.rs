@@ -13,10 +13,12 @@ pub(crate) mod digamma;
 mod field;
 mod float;
 mod numeric;
+mod real;
 mod unit;
 
 pub use count::{CountRangeError, TryFromCount};
 pub use field::{ComplexField, RealField};
 pub use float::FloatElement;
 pub use numeric::NumericElement;
+pub use real::RealElement;
 pub use unit::UnitScalar;

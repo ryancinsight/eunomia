@@ -21,7 +21,8 @@ eunomia decides *what* data is.
   COW buffers, rkyv archival, and SIMD-accelerated unpack.
 - **Conversions** — std `From`/`TryFrom` plus the contract-named methods
   of the conversion module.
-- **Element traits** — `NumericElement`, `FloatElement`.
+- **Element traits** — `NumericElement`, `FloatElement`, and the sealed
+  `RealElement` marker for every non-`Complex` element.
 - **Scalar field traits** — `RealField`/`ComplexField` (the `nalgebra`
   scalar-field analogues), so generic numeric code runs over `f32`/`f64` and
   `Complex` without pulling in nalgebra.

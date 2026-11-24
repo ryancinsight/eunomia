@@ -2,8 +2,8 @@ use core::any::type_name;
 use core::ops::Neg;
 
 use eunomia::{
-    Bf16, Bf4, Bf8, Complex, Complex32, Complex64, ComplexField, NumericElement, F16, F32, F4, F64,
-    F8, I16, I32, I8,
+    Bf16, Bf4, Bf8, Complex, Complex32, Complex64, ComplexField, FloatElement, NumericElement,
+    RealElement, F16, F32, F4, F64, F8, I16, I32, I8,
 };
 
 #[test]
@@ -81,7 +81,7 @@ fn native_and_generic_identities_are_equivalent() {
 /// fails; no component is NaN.
 fn complex_reduction_identity_failures<T>() -> Vec<String>
 where
-    T: NumericElement + Neg<Output = T>,
+    T: RealElement + Neg<Output = T>,
 {
     let max_identity = <Complex<T> as NumericElement>::MIN_VALUE;
     let min_identity = <Complex<T> as NumericElement>::MAX_VALUE;
@@ -126,28 +126,101 @@ where
     failures
 }
 
+/// Runs [`complex_reduction_identity_failures`] on each listed component type.
+macro_rules! identity_failures_over {
+    ($($component:ty),+ $(,)?) => {{
+        let mut failures = Vec::new();
+        $(failures.extend(complex_reduction_identity_failures::<$component>());)+
+        failures
+    }};
+}
+
 #[test]
 fn complex_reduction_identity_returns_the_element() {
-    let mut failures = Vec::new();
-    failures.extend(complex_reduction_identity_failures::<f32>());
-    failures.extend(complex_reduction_identity_failures::<f64>());
-    failures.extend(complex_reduction_identity_failures::<i8>());
-    failures.extend(complex_reduction_identity_failures::<i16>());
-    failures.extend(complex_reduction_identity_failures::<i32>());
-    failures.extend(complex_reduction_identity_failures::<i64>());
-    failures.extend(complex_reduction_identity_failures::<isize>());
-    failures.extend(complex_reduction_identity_failures::<F16>());
-    failures.extend(complex_reduction_identity_failures::<Bf16>());
-    failures.extend(complex_reduction_identity_failures::<F32>());
-    failures.extend(complex_reduction_identity_failures::<F64>());
-    failures.extend(complex_reduction_identity_failures::<Bf8>());
-    failures.extend(complex_reduction_identity_failures::<Bf4>());
-    failures.extend(complex_reduction_identity_failures::<F8>());
-    failures.extend(complex_reduction_identity_failures::<F4>());
-    failures.extend(complex_reduction_identity_failures::<I8>());
-    failures.extend(complex_reduction_identity_failures::<I16>());
-    failures.extend(complex_reduction_identity_failures::<I32>());
+    let failures = identity_failures_over!(
+        f32, f64, i8, i16, i32, i64, isize, F16, Bf16, F32, F64, Bf8, Bf4, F8, F4, I8, I16, I32,
+    );
     assert_eq!(failures, Vec::<String>::new());
+}
+
+/// Compiles only for a type that carries the marker.
+fn assert_real_element<T: RealElement>() {}
+
+/// Requires the marker of each listed type.
+macro_rules! assert_real_elements {
+    ($($element:ty),+ $(,)?) => {
+        $(assert_real_element::<$element>();)+
+    };
+}
+
+#[test]
+fn every_non_complex_numeric_element_is_a_real_element() {
+    assert_real_elements!(
+        f32, f64, i8, i16, i32, i64, isize, u8, u16, u32, u64, usize, F16, Bf16, F32, F64, Bf8,
+        Bf4, F8, F4, I8, I16, I32,
+    );
+}
+
+/// Resolves for a type only when that type lacks the marker: a type with the
+/// marker matches both impls, so inference of the parameter is ambiguous and
+/// the call does not compile.
+trait LacksRealElement<Ambiguity> {
+    fn confirm() {}
+}
+
+impl<T> LacksRealElement<()> for T {}
+
+impl<T: RealElement> LacksRealElement<u8> for T {}
+
+/// Requires that `Complex` over each listed component lacks the marker.
+macro_rules! assert_complex_lacks_real_element {
+    ($($component:ty),+ $(,)?) => {
+        $(<Complex<$component> as LacksRealElement<_>>::confirm();)+
+    };
+}
+
+#[test]
+fn no_complex_over_a_real_component_is_a_real_element() {
+    assert_complex_lacks_real_element!(
+        f32, f64, i8, i16, i32, i64, isize, F16, Bf16, F32, F64, Bf8, Bf4, F8, F4, I8, I16, I32,
+    );
+}
+
+fn float_component_max<T: FloatElement + Neg<Output = T>>() -> Complex<T> {
+    <Complex<T> as NumericElement>::MAX_VALUE
+}
+
+#[test]
+fn float_element_implies_the_marker_a_complex_component_needs() {
+    assert_eq!(
+        float_component_max::<f32>(),
+        Complex::new(f32::INFINITY, f32::INFINITY)
+    );
+    assert_eq!(
+        float_component_max::<f64>(),
+        Complex::new(f64::INFINITY, f64::INFINITY)
+    );
+}
+
+#[test]
+fn complex_fold_identities_are_the_extreme_pairs_of_a_real_component() {
+    let min_pair = Complex64::new(f64::NEG_INFINITY, f64::NEG_INFINITY);
+    let max_pair = Complex64::new(f64::INFINITY, f64::INFINITY);
+    assert_eq!(<Complex64 as NumericElement>::MIN_VALUE, min_pair);
+    assert_eq!(<Complex64 as NumericElement>::MAX_VALUE, max_pair);
+
+    let low = Complex64::new(-3.5, 7.25);
+    let high = Complex64::new(-3.5, 9.0);
+    assert_eq!(NumericElement::max_scalar(min_pair, low), low);
+    assert_eq!(NumericElement::max_scalar(low, min_pair), low);
+    assert_eq!(NumericElement::min_scalar(max_pair, low), low);
+    assert_eq!(NumericElement::min_scalar(low, max_pair), low);
+
+    // Two distinct non-seed elements fold to the same extreme in either order.
+    assert_eq!(NumericElement::max_scalar(low, high), high);
+    assert_eq!(NumericElement::max_scalar(high, low), high);
+    assert_eq!(NumericElement::min_scalar(low, high), low);
+    assert_eq!(NumericElement::min_scalar(high, low), low);
 }
 
 #[cfg(feature = "numpy")]

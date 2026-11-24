@@ -3,22 +3,20 @@
 <a id="eunomia-stable-qualification"></a>
 ## EUNOMIA-STABLE-QUALIFICATION — eunomia stable-release qualification [patch] — todo
 - priority: verification; milestone: M-special-functions; basis: `31f90b4808c0`.
-- Outcome: Close the subnormal integer-power proof across the shipped number formats. Follow the [release scope](docs/adr/0012-release-scope-1-0.md) and [milestone exits](backlog/milestones.md). Planning targets for `eunomia` are 0.12.2, then 0.13.0, then 1.0.0. Verification alone can advance the current version.
+- Outcome: Close the subnormal integer-power proof across the shipped number formats. Follow the [release scope](docs/adr/0012-release-scope-1-0.md) and [milestone exits](backlog/milestones.md). Planning targets for `eunomia` are 0.13.0, then 1.0.0: `main` carries the breaking `Complex` bound of [ADR 0013](docs/adr/0013-real-complex-components.md), so a 0.12.2 patch needs a branch at the `0.12.1` tag ([EUNOMIA-REAL-COMPONENT-RELEASE](#EUNOMIA-REAL-COMPONENT-RELEASE)). Verification alone can advance a patch version on that branch.
 - Acceptance and sequence: [stable-release checklist](checklist.md#stable-release-checklist).
 
-<a id="EUNOMIA-COMPLEX-NESTED-ELEMENT"></a>
-## EUNOMIA-COMPLEX-NESTED-ELEMENT — `Complex<Complex<T>>` is a `NumericElement` whose `max_scalar` and `min_scalar` return the seed [major]
-- status: todo; priority: correctness; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
-- Outcome: no instantiation of `Complex<T>`'s `NumericElement` impl returns a wrong reduction: the impl admits only real components, or `Complex<Complex<T>>` meets the `MIN_VALUE`/`MAX_VALUE` fold-identity contract.
-  Recommended: reject nested complex, since nested `sqrt` (`numeric.rs:287-297`) is wrong for it and no order-based sign rule repairs it, while the folds alone could be repaired by recursion (ADR 0013 alternatives; a bound change on a public impl: ADR first).
-- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read and derived; reproduced at `e9dbcf8`, 28 failing identity cells, ADR 0013): the impl at `crates/eunomia/src/impls/primitives/numeric.rs:247-250` bounds `T: NumericElement + Neg`; `Complex<f64>` meets both and is `Sealed` (`:353`),
-  and its other supertrait impls need no real component: the operators (`types/complex/ops.rs:7-53`; `Mul` and `Div` also bound `T: Clone`, `:29,:40`), the `*Assign` impls (`:147-176`, bounded by the by-value operator and `Copy`) and `TryFromCount` (`convert/count.rs:261`, `T: NumericElement`). So `Complex<Complex<f64>>` is a `NumericElement`.
-  Its `min_scalar` (`numeric.rs:335-341`) compares `re < other.re` and `im <= other.im`, its `max_scalar` (`:344-350`) `re > other.re` and `im >= other.im`; on `Complex<f64>`, whose `partial_cmp` is always `None` (`ops.rs:256-262`), all four are false, so both return `other`:
-  `max_scalar(element, MIN_VALUE)` returns the seed. `complex_reduction_identity_failures` (`tests/complex_provider_contract.rs:82-128`) runs only real `T`.
-- Acceptance: `complex_reduction_identity_failures::<Complex64>()` added to `complex_reduction_identity_returns_the_element` fails at the basis (right-hand `max` and `min` cells) and passes at the closing head, together with a cell asserting `max_scalar(a, b) == max_scalar(b, a)` for two distinct non-seed `Complex<Complex64>` elements (a special case on the seed passes the grid alone),
-  or a `compile_fail,E0277` doctest on the impl shows `Complex<Complex<f64>>: NumericElement` rejected (it compiles at the basis): `cargo nextest run -p eunomia --test complex_provider_contract` and `cargo test --doc -p eunomia`.
-- Next step: [ADR 0013](docs/adr/0013-real-complex-components.md) (Proposed) chooses a sealed real-component marker; no in-stack code spells nested `Complex`, but leto `crates/leto-ops/src/domain/scalar/impls.rs:313` (`T: Scalar + Neg`) needs the marker bound in the same co-evolution unit before the impl bound changes.
-- Scope: `crates/eunomia/src/impls/primitives/numeric.rs`, `crates/eunomia/tests/complex_provider_contract.rs`, `docs/adr/`.
+<a id="EUNOMIA-REAL-COMPONENT-RELEASE"></a>
+## EUNOMIA-REAL-COMPONENT-RELEASE — the release carrying ADR 0013 is 0.13.0 and ships with the leto `RealElement` bound [major]
+- status: blocked; priority: correctness; milestone: M-special-functions; needs: none; basis: `b13d421f24b9`.
+- Outcome: no 0.12.x release carries the narrowed `Complex<T>` impl; the release that does is the next breaking 0.x, 0.13.0, and leto changes its `Complex` `Scalar` impl in the same co-evolution unit.
+- Evidence (`b13d421f24b9`, read; [ADR 0013](docs/adr/0013-real-complex-components.md) Decision 4 and revision note; eunomia#229): every stack member resolves eunomia from the crates.io registry at 0.12.1 (leto `Cargo.lock:419`, requirement `0.12.1`, caret),
+  so a 0.12.x release cut from `main` reaches leto through `cargo update` and fails there (E0277, `T: RealElement`, through `Scalar: NumericElement`); leto cannot name `eunomia::RealElement` until a release exports it.
+- Acceptance: leto `crates/leto-ops/src/domain/scalar/impls.rs:313` reads `impl<T> Scalar for Complex<T> where T: Scalar + eunomia::RealElement + core::ops::Neg<Output = T> {}` and requires the released eunomia 0.13.x; leto builds and tests against it;
+  `git ls-tree -r <tag> --name-only` and `git grep -n RealElement <tag> -- crates` show `RealElement` in the 0.13.0 tag and in no 0.12.x tag.
+- Blocker: release authority; re-open trigger: the user's release decision for eunomia 0.13.0.
+- Next step: on that decision, release 0.13.0 under the co-evolution protocol, then edit leto line 313 as quoted and move leto's requirement.
+- Scope: leto `crates/leto-ops/src/domain/scalar/impls.rs`, eunomia workspace version.
 
 <a id="EUNOMIA-POWI-SUBNORMAL-SWEEP"></a>
 ## EUNOMIA-POWI-SUBNORMAL-SWEEP — the powi subnormal bound is pinned on three rows, not swept on every format [patch]

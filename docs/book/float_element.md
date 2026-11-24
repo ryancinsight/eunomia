@@ -21,10 +21,11 @@ since reduced formats have no hardware transcendentals).
 ## The crate's abstraction
 
 `FloatElement` extends `NumericElement` with float-specific conversions and
-the real transcendental surface:
+the real transcendental surface, and carries the sealed `RealElement` marker
+that every non-`Complex` element has:
 
 ```rust,ignore
-pub trait FloatElement: Sealed + NumericElement {
+pub trait FloatElement: Sealed + NumericElement + RealElement {
     fn from_f32(val: f32) -> Self;
     fn from_f64(val: f64) -> Self;
     fn to_f32(self) -> f32;

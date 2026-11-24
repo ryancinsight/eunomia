@@ -1,6 +1,6 @@
 //! `NumericElement` impls for primitive floats and signed/unsigned integers.
 
-use crate::traits::{private, NumericElement};
+use crate::traits::{private, NumericElement, RealElement};
 use crate::types::Complex;
 
 /// Shared `NumericElement` body for the primitive float types. The two widths
@@ -244,9 +244,33 @@ impl_numeric_element_signed!(i32, 4);
 impl_numeric_element_signed!(i64, 8);
 impl_numeric_element_signed!(isize, core::mem::size_of::<isize>());
 
+/// `Complex<T>` is a [`NumericElement`] for a real component `T` that has a
+/// negation; a complex component is rejected because it has no order for
+/// `min_scalar`, `max_scalar` and `sqrt` to use.
+///
+/// # Examples
+///
+/// ```
+/// use eunomia::{Complex, NumericElement};
+///
+/// fn element<T: NumericElement>() {}
+///
+/// element::<Complex<f64>>();
+/// element::<Complex<f32>>();
+/// ```
+///
+/// A complex component does not satisfy the bound:
+///
+/// ```compile_fail,E0277
+/// use eunomia::{Complex, NumericElement};
+///
+/// fn element<T: NumericElement>() {}
+///
+/// element::<Complex<Complex<f64>>>();
+/// ```
 impl<T> NumericElement for Complex<T>
 where
-    T: NumericElement + core::ops::Neg<Output = T>,
+    T: RealElement + core::ops::Neg<Output = T>,
 {
     const ZERO: Self = Self::new(<T as NumericElement>::ZERO, <T as NumericElement>::ZERO);
     const ONE: Self = Self::new(<T as NumericElement>::ONE, <T as NumericElement>::ZERO);
