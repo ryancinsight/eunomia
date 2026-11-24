@@ -5,7 +5,7 @@
 - Class: [minor]
 
 Revision 2026-09-21 ([major]): add native inverse scaling for
-[EUNOMIA-UNIT-DIVISION](../../backlog.md#EUNOMIA-UNIT-DIVISION).
+EUNOMIA-UNIT-DIVISION (PR #97, `71fdc60`).
 Multiplication by a reciprocal can overflow before applying it to a
 subnormal value. `UnitScalar::divide_by_factor` divides in the storage precision,
 componentwise for complex values. External implementations must add this
