@@ -22,7 +22,8 @@ the placement law in the foundation.
   rkyv archival, and SIMD-accelerated unpack.
 - **Contract-named conversions** (std `From`/`TryFrom`, the conversion
   module) and **element traits**
-  (`NumericElement`/`FloatElement`).
+  (`NumericElement`/`FloatElement`, and the sealed `RealElement` marker for
+  every non-`Complex` element).
 - **Count conversions** — `FloatElement::from_count`/`from_integer` (rounded
   to nearest, exact below each format's significand bound) and
   `TryFromCount::try_from_count` (exact or refused for integers), the stack's

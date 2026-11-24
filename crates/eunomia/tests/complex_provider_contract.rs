@@ -143,6 +143,24 @@ fn complex_reduction_identity_returns_the_element() {
     assert_eq!(failures, Vec::<String>::new());
 }
 
+/// Compiles only for a type that carries the marker.
+fn assert_real_element<T: RealElement>() {}
+
+/// Requires the marker of each listed type.
+macro_rules! assert_real_elements {
+    ($($element:ty),+ $(,)?) => {
+        $(assert_real_element::<$element>();)+
+    };
+}
+
+#[test]
+fn every_non_complex_numeric_element_is_a_real_element() {
+    assert_real_elements!(
+        f32, f64, i8, i16, i32, i64, isize, u8, u16, u32, u64, usize, F16, Bf16, F32, F64, Bf8,
+        Bf4, F8, F4, I8, I16, I32,
+    );
+}
+
 #[test]
 fn complex_fold_identities_are_the_extreme_pairs_of_a_real_component() {
     let min_pair = Complex64::new(f64::NEG_INFINITY, f64::NEG_INFINITY);

@@ -24,7 +24,7 @@ four comparisons are false and both functions return their second argument.
 Reproduced at `e9dbcf8` (tree of this branch's base): adding
 `complex_reduction_identity_failures::<Complex64>()` after the `I32` row of
 `complex_reduction_identity_returns_the_element`
-(`tests/complex_provider_contract.rs:130-150`) and running
+(`tests/complex_provider_contract.rs:130-150` at `fa17b38`) and running
 `cargo nextest run -p eunomia --test complex_provider_contract` fails that test
 (exit 100) with 28 failing cells, all `max seed right` or `min seed right`:
 `max_scalar(element, MIN_VALUE)` returns `MIN_VALUE`. The test file was
@@ -37,7 +37,7 @@ operators (`types/complex/ops.rs`), `TryFromCount` (`convert/count.rs:261`),
 (`impls/field.rs:208`, `T: RealField`) do not need an ordered component and are
 unchanged by any option below.
 
-Component types the contract test exercises today (`complex_provider_contract.rs:132-149`):
+Component types the contract test exercises (`complex_provider_contract.rs:132-149` at `fa17b38`):
 `f32`, `f64`, `i8`, `i16`, `i32`, `i64`, `isize`, `F16`, `Bf16`, `F32`, `F64`,
 `Bf8`, `Bf4`, `F8`, `F4`, `I8`, `I16`, `I32` (18 types). The five unsigned
 primitives are `NumericElement` too and are not in the grid: they have no
@@ -97,8 +97,9 @@ working name `RealElement`, in `traits/`:
    `Complex<f64>` and `Complex<f32>` accepted; the grid test above gains no
    row, because no admitted component changes. Its helper bound
    (`tests/complex_provider_contract.rs:84`, `T: NumericElement + Neg`) takes
-   `RealElement` in the same commit, and a value test pins the
-   `MIN_VALUE`/`MAX_VALUE` folds of `Complex<f64>`.
+   `RealElement` in the same commit, a value test pins the
+   `MIN_VALUE`/`MAX_VALUE` folds of `Complex<f64>`, and a test requires the
+   marker of each of the 23 types.
 4. The release that carries the change ships with leto `impls.rs:313` adding
    the marker to its bound, in one co-evolution unit (architecture_scoping:
    co-evolution protocol).
