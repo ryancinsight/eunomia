@@ -2,8 +2,8 @@ use core::any::type_name;
 use core::ops::Neg;
 
 use eunomia::{
-    Bf16, Bf4, Bf8, Complex, Complex32, Complex64, ComplexField, NumericElement, RealElement, F16,
-    F32, F4, F64, F8, I16, I32, I8,
+    Bf16, Bf4, Bf8, Complex, Complex32, Complex64, ComplexField, FloatElement, NumericElement,
+    RealElement, F16, F32, F4, F64, F8, I16, I32, I8,
 };
 
 #[test]
@@ -158,6 +158,47 @@ fn every_non_complex_numeric_element_is_a_real_element() {
     assert_real_elements!(
         f32, f64, i8, i16, i32, i64, isize, u8, u16, u32, u64, usize, F16, Bf16, F32, F64, Bf8,
         Bf4, F8, F4, I8, I16, I32,
+    );
+}
+
+/// Resolves for a type only when that type lacks the marker: a type with the
+/// marker matches both impls, so inference of the parameter is ambiguous and
+/// the call does not compile.
+trait LacksRealElement<Ambiguity> {
+    fn confirm() {}
+}
+
+impl<T> LacksRealElement<()> for T {}
+
+impl<T: RealElement> LacksRealElement<u8> for T {}
+
+/// Requires that `Complex` over each listed component lacks the marker.
+macro_rules! assert_complex_lacks_real_element {
+    ($($component:ty),+ $(,)?) => {
+        $(<Complex<$component> as LacksRealElement<_>>::confirm();)+
+    };
+}
+
+#[test]
+fn no_complex_over_a_real_component_is_a_real_element() {
+    assert_complex_lacks_real_element!(
+        f32, f64, i8, i16, i32, i64, isize, F16, Bf16, F32, F64, Bf8, Bf4, F8, F4, I8, I16, I32,
+    );
+}
+
+fn float_component_max<T: FloatElement + Neg<Output = T>>() -> Complex<T> {
+    <Complex<T> as NumericElement>::MAX_VALUE
+}
+
+#[test]
+fn float_element_implies_the_marker_a_complex_component_needs() {
+    assert_eq!(
+        float_component_max::<f32>(),
+        Complex::new(f32::INFINITY, f32::INFINITY)
+    );
+    assert_eq!(
+        float_component_max::<f64>(),
+        Complex::new(f64::INFINITY, f64::INFINITY)
     );
 }
 
