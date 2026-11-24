@@ -20,3 +20,4 @@
 | [0010](0010-const-native-float-construction.md) | Canonical const native float construction | Accepted |
 | [0011](0011-numpy-030-unreleased-bundle.md) | Bundle optional NumPy 0.30 interop into the 0.12 cohort | Accepted |
 | [0012](0012-release-scope-1-0.md) | Eunomia release scope for 1.0 | Accepted |
+| [0013](0013-real-complex-components.md) | Real components for Complex NumericElement | Proposed |
