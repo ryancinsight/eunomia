@@ -58,8 +58,7 @@ pub trait NumericElement:
 ## Minimum and maximum special values
 
 `NumericElement::min_scalar` and `max_scalar` are value operations, not raw
-`PartialOrd` expressions. For every shipped real floating-point scalar they
-use the same table:
+`PartialOrd` expressions. The eight real floating-point wrappers use the following rules.
 
 | Inputs | `min_scalar` | `max_scalar` |
 | --- | --- | --- |
@@ -69,8 +68,7 @@ use the same table:
 | all other values | numeric minimum | numeric maximum |
 
 The NaN rule is commutative even though `PartialOrd` correctly reports every
-NaN comparison as unordered. The signed-zero rule is also independent of
-operand order. Primitive `f32`/`f64` implementations use their native
-operations; wrapper types inherit the single trait default, so reductions and
-`RealField::clamp` do not diverge by storage format. Integer sentinels named
+NaN comparison as unordered. Wrapper minimums and maximums select the same zero sign in either
+operand order. Primitive `f32` and `f64` use Rust’s native minimum and
+maximum, which may select either zero on a mixed-sign tie. Integer sentinels named
 `NAN` are ordinary zero values and follow integer comparison semantics.

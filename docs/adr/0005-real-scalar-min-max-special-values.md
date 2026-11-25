@@ -20,8 +20,7 @@ results unspecified across the shipped real scalar representations.
 
 ## Decision
 
-`NumericElement` owns one value contract for all real floating-point
-implementations:
+`NumericElement` defines the following default for the real floating-point wrappers.
 
 | Inputs | `min_scalar` | `max_scalar` |
 | --- | --- | --- |
@@ -32,13 +31,13 @@ implementations:
 
 The default implementation checks the NaN predicate and sign bit in the
 element's native representation, then uses `PartialOrd` for ordinary values.
-It does not widen or narrow a value. Primitive `f32` and `f64` retain native
-overrides because their operations implement the same table. Wrapper types use
-the one trait default. `Complex<T>` keeps its explicit lexicographic
+All eight real wrappers use this default in their native precision. Primitive
+`f32` and `f64` use Rust’s native `min` and `max`, which may return either
+zero for a mixed-sign zero pair. They share the NaN rules in the table. `Complex<T>` keeps its explicit lexicographic
 implementation and is not a real scalar.
 
-`RealField::clamp` inherits the table through its existing min/max composition:
-a NaN input reduces to the lower bound, and a NaN bound is ignored.
+`RealField::clamp` composes the scalar’s min and max operations. A NaN input
+reduces to the lower bound, and a NaN bound is ignored.
 
 ## Alternatives rejected
 
@@ -54,7 +53,7 @@ a NaN input reduces to the lower bound, and a NaN bound is ignored.
 
 ## Consequences
 
-- Reductions and clamps have operand-order-independent real-scalar semantics.
+- Wrapper reductions and clamps select the same zero sign in either operand order.
 - NaN comparison remains unordered; this decision does not add `Eq` or `Ord`.
 - The trait default performs the special-value checks for wrapper types, while
   primitive native overrides retain the existing zero-cost path.
@@ -63,9 +62,9 @@ a NaN input reduces to the lower bound, and a NaN bound is ignored.
 
 ## Verification
 
-`crates/eunomia/tests/float_order.rs` instantiates the contract for every
-shipped real scalar type and checks both operand orders, two-NaN behavior,
-signed-zero bit selection, and generic clamp composition. It also checks
+`crates/eunomia/tests/float_order.rs` checks NaN handling and generic clamp
+composition for every shipped real scalar type. It compares the native integer
+encodings of the min and max results in both operand orders for all eight wrappers. It also checks
 `RealField::clamp` directly for primitive real fields. Provider format,
 warning-denied Clippy, Nextest, doctest, Rustdoc, package, and hosted gates are
 the remaining acceptance evidence for the implementation revision.
