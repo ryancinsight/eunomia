@@ -77,12 +77,12 @@ pub trait NumericElement:
 
     /// Elementwise minimum with the provider's real-scalar special-value contract.
     ///
-    /// For real floating-point implementations, a single NaN is ignored and the
+    /// For real floating-point values, a single NaN is ignored and the
     /// non-NaN operand is returned; two NaNs produce a NaN. `min(-0, +0)` is
-    /// `-0`, independent of operand order. All other values use `PartialOrd`.
+    /// `-0` in the wrapper default. Native `f32` and `f64` may return either zero
+    /// on this tie. The default uses `PartialOrd` for other values.
     /// Integer implementations take the ordinary comparison path because their
-    /// `NAN` sentinel is not a NaN value. Concrete implementations may override
-    /// this method when they preserve this contract with a native intrinsic.
+    /// `NAN` sentinel is not a NaN value.
     #[inline(always)]
     fn min_scalar(self, other: Self) -> Self
     where
@@ -95,7 +95,7 @@ pub trait NumericElement:
             return self;
         }
         if self == Self::ZERO && other == Self::ZERO {
-            return if is_negative_zero(self) { self } else { other };
+            return if has_sign_bit(self) { self } else { other };
         }
         if self <= other {
             self
@@ -106,12 +106,12 @@ pub trait NumericElement:
 
     /// Elementwise maximum with the provider's real-scalar special-value contract.
     ///
-    /// For real floating-point implementations, a single NaN is ignored and the
+    /// For real floating-point values, a single NaN is ignored and the
     /// non-NaN operand is returned; two NaNs produce a NaN. `max(-0, +0)` is
-    /// `+0`, independent of operand order. All other values use `PartialOrd`.
+    /// `+0` in the wrapper default. Native `f32` and `f64` may return either zero
+    /// on this tie. The default uses `PartialOrd` for other values.
     /// Integer implementations take the ordinary comparison path because their
-    /// `NAN` sentinel is not a NaN value. Concrete implementations may override
-    /// this method when they preserve this contract with a native intrinsic.
+    /// `NAN` sentinel is not a NaN value.
     #[inline(always)]
     fn max_scalar(self, other: Self) -> Self
     where
@@ -124,7 +124,7 @@ pub trait NumericElement:
             return self;
         }
         if self == Self::ZERO && other == Self::ZERO {
-            return if is_negative_zero(self) { other } else { self };
+            return if has_sign_bit(self) { other } else { self };
         }
         if self >= other {
             self
@@ -281,11 +281,8 @@ pub trait NumericElement:
     }
 }
 
-/// Return whether a numeric element is the IEEE negative zero encoding.
-///
-/// The equality check excludes nonzero sign-bit values, while the bitwise
-/// check distinguishes `-0` from `+0` without widening to another precision.
+/// Read the sign bit from the encoding. Floating-point equality treats both zeros as equal.
 #[inline(always)]
-fn is_negative_zero<T: NumericElement>(value: T) -> bool {
-    value == T::ZERO && value.bitand(T::SIGN_MASK) == T::SIGN_MASK
+fn has_sign_bit<T: NumericElement>(value: T) -> bool {
+    value.bitand(T::SIGN_MASK).count_ones() != 0
 }

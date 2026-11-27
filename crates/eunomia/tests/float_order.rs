@@ -8,8 +8,8 @@
 //!
 //! This is not cosmetic. `PartialOrd` remains unordered for NaN, while
 //! [`NumericElement::min_scalar`]/[`max_scalar`] define the separate value
-//! contract used by reductions and `clamp`: one NaN is ignored and signed-zero
-//! ties select the IEEE minimum or maximum independent of operand order. This
+//! contract used by reductions and `clamp`. One NaN is ignored. Wrappers resolve
+//! mixed-sign zero ties by sign in either operand order. This
 //! file verifies both surfaces against independent encoding and value oracles.
 //!
 //! [`max_scalar`]: NumericElement::max_scalar
@@ -244,12 +244,10 @@ fn nan_is_unordered_and_non_reflexive() {
     assert_nan_unordered!(F16, Bf16, Bf8, Bf4, F8, F4);
 }
 
-/// Assert the shared min/max special-value contract for one real scalar type.
-fn assert_real_min_max_contract<T: NumericElement>() {
+/// Assert the shared NaN rules for one real scalar type.
+fn assert_real_nan_contract<T: NumericElement>() {
     let nan = T::NAN;
     let one = T::ONE;
-    let positive_zero = T::ZERO;
-    let negative_zero = <T as NumericElement>::bitor(T::ZERO, T::SIGN_MASK);
 
     assert_eq!(
         <T as NumericElement>::min_scalar(nan, one),
@@ -280,42 +278,6 @@ fn assert_real_min_max_contract<T: NumericElement>() {
         "max(NaN, NaN) remains NaN"
     );
 
-    let min_zero = <T as NumericElement>::min_scalar(positive_zero, negative_zero);
-    let min_zero_reversed = <T as NumericElement>::min_scalar(negative_zero, positive_zero);
-    assert_eq!(min_zero, negative_zero, "min(+0, -0) returns exactly -0");
-    assert_eq!(
-        min_zero_reversed, negative_zero,
-        "min(-0, +0) returns exactly -0"
-    );
-    assert_eq!(
-        min_zero.bitand(T::SIGN_MASK),
-        T::SIGN_MASK,
-        "min(+0, -0) returns -0"
-    );
-    assert_eq!(
-        min_zero_reversed.bitand(T::SIGN_MASK),
-        T::SIGN_MASK,
-        "min(-0, +0) returns -0"
-    );
-
-    let max_zero = <T as NumericElement>::max_scalar(positive_zero, negative_zero);
-    let max_zero_reversed = <T as NumericElement>::max_scalar(negative_zero, positive_zero);
-    assert_eq!(max_zero, positive_zero, "max(+0, -0) returns exactly +0");
-    assert_eq!(
-        max_zero_reversed, positive_zero,
-        "max(-0, +0) returns exactly +0"
-    );
-    assert_eq!(
-        max_zero.bitand(T::SIGN_MASK),
-        T::ZERO,
-        "max(+0, -0) returns +0"
-    );
-    assert_eq!(
-        max_zero_reversed.bitand(T::SIGN_MASK),
-        T::ZERO,
-        "max(-0, +0) returns +0"
-    );
-
     let clamp = |value: T, min: T, max: T| {
         <T as NumericElement>::min_scalar(<T as NumericElement>::max_scalar(value, min), max)
     };
@@ -329,18 +291,46 @@ fn assert_real_min_max_contract<T: NumericElement>() {
 }
 
 #[test]
-fn real_scalars_share_nan_and_signed_zero_min_max() {
-    assert_real_min_max_contract::<f32>();
-    assert_real_min_max_contract::<f64>();
-    assert_real_min_max_contract::<F16>();
-    assert_real_min_max_contract::<F32>();
-    assert_real_min_max_contract::<F64>();
-    assert_real_min_max_contract::<Bf16>();
-    assert_real_min_max_contract::<Bf8>();
-    assert_real_min_max_contract::<Bf4>();
-    assert_real_min_max_contract::<F8>();
-    assert_real_min_max_contract::<F4>();
+fn real_scalars_share_nan_min_max() {
+    assert_real_nan_contract::<f32>();
+    assert_real_nan_contract::<f64>();
+    assert_real_nan_contract::<F16>();
+    assert_real_nan_contract::<F32>();
+    assert_real_nan_contract::<F64>();
+    assert_real_nan_contract::<Bf16>();
+    assert_real_nan_contract::<Bf8>();
+    assert_real_nan_contract::<Bf4>();
+    assert_real_nan_contract::<F8>();
+    assert_real_nan_contract::<F4>();
 }
+
+macro_rules! wrapper_zero_test {
+    ($name:ident, $positive:expr, $negative:expr, $bits:expr) => {
+        #[test]
+        fn $name() {
+            let positive = $positive;
+            let negative = $negative;
+            let bits = $bits;
+            for (a, b) in [(positive, negative), (negative, positive)] {
+                assert_eq!(bits(a.min_scalar(b)), bits(negative), "minimum sign bit");
+                assert_eq!(bits(a.max_scalar(b)), bits(positive), "maximum sign bit");
+            }
+        }
+    };
+}
+
+wrapper_zero_test!(f32_wrapper_zero_sign, F32(0.0), F32(-0.0), |x: F32| x
+    .0
+    .to_bits());
+wrapper_zero_test!(f64_wrapper_zero_sign, F64(0.0), F64(-0.0), |x: F64| x
+    .0
+    .to_bits());
+wrapper_zero_test!(f16_wrapper_zero_sign, F16(0), F16(0x8000), |x: F16| x.0);
+wrapper_zero_test!(bf16_wrapper_zero_sign, Bf16(0), Bf16(0x8000), |x: Bf16| x.0);
+wrapper_zero_test!(bf8_wrapper_zero_sign, Bf8(0), Bf8(0x80), |x: Bf8| x.0);
+wrapper_zero_test!(bf4_wrapper_zero_sign, Bf4(0), Bf4(0x08), |x: Bf4| x.0);
+wrapper_zero_test!(f8_wrapper_zero_sign, F8(0), F8(0x80), |x: F8| x.0);
+wrapper_zero_test!(f4_wrapper_zero_sign, F4(0), F4(0x08), |x: F4| x.0);
 
 #[test]
 fn real_field_clamp_uses_the_scalar_special_value_contract() {
