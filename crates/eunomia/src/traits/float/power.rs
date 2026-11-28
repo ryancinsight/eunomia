@@ -109,8 +109,8 @@ fn square_and_multiply<M: Copy>(
 /// correctly (to even at a tie). That no midpoint does is finite arithmetic, settled by the exact
 /// integer oracle in `tests/float_element/powi_saturation.rs` for every base and `e ≤ 128`, in
 /// both regimes. From `P̂ ≥ 2^126`, or on overflow, the quotient is at most `2^-126` and converts
-/// to zero, correctly: for `e < 2^23`, `(e − 1)·u < 1/2` keeps `|x|^e` above `2^125`, far below
-/// half the least positive value of `T` (at least `2^-10`).
+/// to zero, correctly: for `e < 2^23`, `(e − 1)·u < 1/2` keeps `|x|^e` above `2^125`, so the exact
+/// `|x|^−e` lies below `2^-125`, far below half the least positive value of `T` (at least `2^-10`).
 ///
 /// Beyond `e = 128` the result is a signed zero: `F8`'s least `|x| > 1` is `9/8` and its least
 /// positive value `2^-9` (the others are larger), the quotient rounds to zero once `P̂ > 2^10`,

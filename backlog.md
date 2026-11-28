@@ -31,20 +31,6 @@
 - Next step: restore the sweep and the hook from `refs/pull/218/head`; the counted diff is about 236 lines against `main` once the fix has landed.
 - Scope: `crates/eunomia/tests/float_element/powi_subnormal.rs`, `crates/eunomia/tests/float_element/integer_power.rs`.
 
-<a id="EUNOMIA-POWI-DOC-CLAIMS"></a>
-## EUNOMIA-POWI-DOC-CLAIMS — two powi doc statements read false as written [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
-- Outcome: each statement is true as written or says what it holds for. (1) `crates/eunomia/src/traits/float.rs:380-381`, "(exact when a `F4`/`Bf4`/`F8` upward power clamps)", reads as an exact returned value; for `n < 0` the clamped case returns the correctly rounded `x^n`, and the doc says so.
-  (2) `crates/eunomia/src/traits/float/power.rs:112-113`, "`(e − 1)·u < 1/2` keeps `|x|^e` above `2^125`, far below half the least positive value of `T`", has the wrong subject for "far below": the exact `|x|^-e` lies below `2^-125`, far below that value (at least `2^-10`).
-  This item owns the width clause: `float.rs` has no line over 100 characters; EUNOMIA-POWI-ROUNDOFF-OWNER references it.
-- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read; (1) from the pinned row): `powi_saturation.rs:247` pins `F8` `powi(2.25, -7)`, whose upward power 291.9 clamps to 240, to `2^-8` = 3.906e-3 where the exact value is 3.4255e-3 (derived: `2.25^7`), so the value is rounded, not exact (`power.rs:98-99` says an `n > 0` clamp is the result, `208.6` rounding to `208`); `power.rs:107` says the clamped quotient converts to the correctly rounded `|x|^−e`, settled by the exact-integer oracle in that test file.
-  (2) the sentence follows "the quotient is at most `2^-126` and converts to zero, correctly" (`power.rs:111-112`); `|x|^e` above `2^125` is true (derived: `P̂ ≥ 2^126` and `P̂ ≤ |x|^e·(1+u)^(e−1) < 2·|x|^e`), but as written it is the thing said to be far below `2^-10`. `float.rs:380` and `:381` are 102 and 111 characters; the file is 476 lines.
-- Acceptance: with `DOC` = ``awk '/^ *\/\/\//{b=b" "$0;next} /^ *#\[/{next} /fn powi\(self/{print b} {b=""}' crates/eunomia/src/traits/float.rs | sed -E 's#/// ?##g' | tr -s ' '`` (the doc comment above `fn powi(self` as one line, wherever its summary sits), ``DOC | grep -c -F 'correctly rounded'`` prints 1 and ``DOC | grep -c -F 'exact when'`` prints 0 (0 and 1 at the basis);
-  `git grep -n -P '(*UTF)^.{101,}$' -- crates/eunomia/src/traits/float.rs` prints nothing (`:380`, `:381` at the basis); `float.rs` counts at most 500 lines (newlines plus one); with `FLAT` = `git show HEAD:crates/eunomia/src/traits/float/power.rs | sed -E 's#^ *//[/!]? ?##' | tr '\n' ' '`,
-  ``FLAT | grep -c -E -e '`\|x\|\^.{1,3}e` [a-z ,]*below `2\^.{1,3}125`' -e '`\|x\|\^.{1,3}e *< *2\^.{1,3}125`'`` prints 1 and ``FLAT | grep -c -F '`2^125`, far below'`` prints 0 (0 and 1 at the basis); `.{1,3}` admits `-` or `−`.
-- Next step: reword `float.rs:380-381` and `power.rs:112-113`; `float.rs` sits at 476 lines and must not grow past 500.
-- Scope: `crates/eunomia/src/traits/float.rs`, `crates/eunomia/src/traits/float/power.rs`.
-
 <a id="EUNOMIA-POWI-SATURATION-GUARD"></a>
 ## EUNOMIA-POWI-SATURATION-GUARD — the finite-only guard of powi's saturation predicate cannot change a result [patch]
 - status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-FLOAT-EXTREMES-BITS; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
@@ -94,13 +80,13 @@
 
 <a id="EUNOMIA-POWI-ROUNDOFF-OWNER"></a>
 ## EUNOMIA-POWI-ROUNDOFF-OWNER — the `powi` bound names `u` without saying whose roundoff it is [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: EUNOMIA-POWI-DOC-CLAIMS; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
+- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
 - Outcome: the `FloatElement::powi` Rustdoc says `u` is the unit roundoff of `Self`, as `power.rs:13,64` do for `T`.
 - Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read; the PR #210 judge's `/808` F-2, first half): `float.rs:379` reads "Roundoff `u`" with no owner,
   and `git grep -n -F 'unit roundoff' -- crates/eunomia/src/traits/float.rs` prints nothing; `power.rs:13,64` name it.
-- Acceptance: with `DOC` of EUNOMIA-POWI-DOC-CLAIMS (the `powi` doc comment of `float.rs` as one line), ``DOC | awk '{gsub(/unit roundoff of \x60Self\x60\x27/,"")} /unit roundoff of \x60Self\x60/{n++} END{print n+0}'`` prints 1 (0 at the basis), so ``unit roundoff of `Self` `` stands and the same words with an apostrophe after `Self` do not; the bare phrase `unit roundoff`, "with unit roundoff `u`" and the possessive "`Self`'s accumulator" name no owner or the wrong one, and a wrap between `of` and `Self` is accepted;
-  `float.rs` counts at most 500 lines (newlines plus one; 476 at the basis) and keeps the width clause EUNOMIA-POWI-DOC-CLAIMS owns (no line over 100 characters), which the added words in `:379` must not break (98 characters at the basis).
-- Next step: reword `float.rs:379`, rewrapping `:379-381` together with EUNOMIA-POWI-DOC-CLAIMS, which rewrites `:380-381` first.
+- Acceptance: with `DOC` = ``awk '/^ *\/\/\//{b=b" "$0;next} /^ *#\[/{next} /fn powi\(self/{print b} {b=""}' crates/eunomia/src/traits/float.rs | sed -E 's#/// ?##g' | tr -s ' '`` (the doc comment above `fn powi(self` as one line, wherever its summary sits), ``DOC | awk '{gsub(/unit roundoff of \x60Self\x60\x27/,"")} /unit roundoff of \x60Self\x60/{n++} END{print n+0}'`` prints 1 (0 at the basis), so ``unit roundoff of `Self` `` stands and the same words with an apostrophe after `Self` do not; the bare phrase `unit roundoff`, "with unit roundoff `u`" and the possessive "`Self`'s accumulator" name no owner or the wrong one, and a wrap between `of` and `Self` is accepted;
+  `float.rs` counts at most 500 lines (newlines plus one; 476 at the basis) and keeps `git grep -n -P '(*UTF)^.{101,}$' -- crates/eunomia/src/traits/float.rs` empty (no line over 100 characters), which the added words in `:379` must not break (98 characters at the basis).
+- Next step: reword `float.rs:379`, rewrapping `:379-382` if the added words need it.
 - Scope: `crates/eunomia/src/traits/float.rs`.
 
 <a id="EUNOMIA-COMPLEX-POWI-EXACT-CLAIM"></a>

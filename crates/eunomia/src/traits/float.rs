@@ -377,8 +377,9 @@ pub trait FloatElement: private::Sealed + NumericElement + RealElement {
     /// `self` raised to an integer power via exponentiation by squaring.
     ///
     /// Correct for negative bases; `n = 0` is exact. Roundoff `u`, least positive `s`, `e = |n|`:
-    /// `n > 0` errs by `(1+u)^(e−1) − 1` relative, `n < 0` by `(1−u)^−e − 1` plus `s/2` (exact when a
-    /// `F4`/`Bf4`/`F8` upward power clamps); nothing may near overflow or, for `n > 0`, clamp or be subnormal.
+    /// `n > 0` errs by `(1+u)^(e−1) − 1` relative, `n < 0` by `(1−u)^−e − 1` plus `s/2` (an
+    /// `F4`/`Bf4`/`F8` upward power that clamps, for `n < 0`, returns the correctly rounded `x^n`);
+    /// nothing may near overflow or, for `n > 0`, clamp or be subnormal.
     #[inline]
     fn powi(self, n: i32) -> Self {
         power::powi(self, n)
