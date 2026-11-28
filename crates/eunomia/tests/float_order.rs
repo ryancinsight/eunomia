@@ -359,7 +359,7 @@ where
 }
 
 #[test]
-fn signed_zero_ties_return_the_contract_encoding() {
+fn signed_zero_ties_return_the_documented_encoding() {
     let mismatches: Vec<String> = [
         zero_tie_mismatch(
             "F32",
