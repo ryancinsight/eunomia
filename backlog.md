@@ -39,7 +39,7 @@
 - Evidence: the dropped-conjunct mutant passes `--test float_element` (20 of 20) and the package (234 of 234), relayed from the PR #210 judge at `2ef8acd`;
   `power.rs` has changed since (139 lines added since `2ef8acd`; `saturates` has a second use at `:167`, after an infinity test on the same line), so the survivor is relayed, not confirmed at the basis. A rerun here is void, its disabled-branch control also passed.
 - Risk: the conjunct is a per-monomorphization constant, so it may let LLVM drop the branch for the seven formats with an infinity.
-- Acceptance: `power::powi` and `saturates` are `#[inline(always)]` and `float.rs:382` is `#[inline]`, so take the asm of a non-inlined wrapper per format with an infinity,
+- Acceptance: `power::powi` and `saturates` are `#[inline(always)]` and `float.rs:384` is `#[inline]`, so take the asm of a non-inlined wrapper per format with an infinity,
   conjunct dropped against the basis. (i) No wrapper gains a compare or branch: delete the conjunct, record the clean asm diffs in the closing PR, keep
   `powi_equals_the_loop_it_replaced_bit_for_bit` and `powi_negative_exponent_rounds_the_exact_power_when_upward_saturates` passing unchanged, and have the `saturates` doc comment say the
   predicate admits every clamped power and an exact power equal to `T::MAX_VALUE` (`F8` `powi(240, -1)`), which the accumulator path rounds correctly. (ii) Any wrapper gains one: keep the
@@ -77,17 +77,6 @@
   `git grep -n -i bias -- crates/eunomia/tests/float_element/powi_saturation.rs` prints a line, and nothing at the basis.
 - Next step: apply each bias to a `git archive` export of the head, touch the files, and run `cargo nextest run -p eunomia --test float_element`.
 - Scope: `crates/eunomia/tests/float_element/powi_saturation.rs`.
-
-<a id="EUNOMIA-POWI-ROUNDOFF-OWNER"></a>
-## EUNOMIA-POWI-ROUNDOFF-OWNER — the `powi` bound names `u` without saying whose roundoff it is [patch]
-- status: todo; priority: verification; milestone: M-special-functions; needs: none; basis: ac61854df78a45a2144bf3aa9dc0c21858fa892f.
-- Outcome: the `FloatElement::powi` Rustdoc says `u` is the unit roundoff of `Self`, as `power.rs:13,64` do for `T`.
-- Evidence (`ac61854df78a45a2144bf3aa9dc0c21858fa892f`, read; the PR #210 judge's `/808` F-2, first half): `float.rs:379` reads "Roundoff `u`" with no owner,
-  and `git grep -n -F 'unit roundoff' -- crates/eunomia/src/traits/float.rs` prints nothing; `power.rs:13,64` name it.
-- Acceptance: with `DOC` = ``awk '/^ *\/\/\//{b=b" "$0;next} /^ *#\[/{next} /fn powi\(self/{print b} {b=""}' crates/eunomia/src/traits/float.rs | sed -E 's#/// ?##g' | tr -s ' '`` (the doc comment above `fn powi(self` as one line, wherever its summary sits), ``DOC | awk '{gsub(/unit roundoff of \x60Self\x60\x27/,"")} /unit roundoff of \x60Self\x60/{n++} END{print n+0}'`` prints 1 (0 at the basis), so ``unit roundoff of `Self` `` stands and the same words with an apostrophe after `Self` do not; the bare phrase `unit roundoff`, "with unit roundoff `u`" and the possessive "`Self`'s accumulator" name no owner or the wrong one, and a wrap between `of` and `Self` is accepted;
-  `float.rs` counts at most 500 lines (newlines plus one; 476 at the basis) and keeps `git grep -n -P '(*UTF)^.{101,}$' -- crates/eunomia/src/traits/float.rs` empty (no line over 100 characters), which the added words in `:379` must not break (98 characters at the basis).
-- Next step: reword `float.rs:379`, rewrapping `:379-382` if the added words need it.
-- Scope: `crates/eunomia/src/traits/float.rs`.
 
 <a id="EUNOMIA-COMPLEX-POWI-EXACT-CLAIM"></a>
 ## EUNOMIA-COMPLEX-POWI-EXACT-CLAIM — Complex::powi is called exact but rounds its products [patch]
